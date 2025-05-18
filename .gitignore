@@ -1,0 +1,9 @@
+node_modules
+
+/.cache
+/build
+/generated
+/docker-tmp
+/storage
+.env
+

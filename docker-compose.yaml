@@ -1,0 +1,20 @@
+name: marketbot-local-db
+
+services:
+  db:
+    image: postgres:17-alpine
+    volumes:
+    - ./docker-tmp/db:/var/lib/postgresql/data
+    environment: &db_credentials
+    - POSTGRES_DB=${POSTGRES_DB}
+    - POSTGRES_USER=${POSTGRES_USER}
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - 5411:5432
+  pgAdmin:
+    image: dpage/pgadmin4:latest
+    environment:
+    - PGADMIN_DEFAULT_EMAIL=root@local.host
+    - PGADMIN_DEFAULT_PASSWORD=dev
+    ports:
+      - 5412:80

@@ -1,0 +1,20 @@
+{
+	"compilerOptions": {
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"target": "ES2022",
+		"outDir": "dist",
+		"noUnusedLocals": false,
+		"lib": ["DOM"],
+		"paths": {
+			"@common/*": ["./common/*"],
+			"@generated/*": ["./generated/*"],
+			"@data/*": ["./data/*"]
+		},
+		"resolveJsonModule": true,
+		"jsx": "react-jsx"
+	},
+	"include": ["./app/**/*", "./market-crawler/**/*", "./common/**/*", "./generated/**/*", "./data/**/*"]
+}
+	
+

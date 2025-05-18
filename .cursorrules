@@ -1,0 +1,14 @@
+- You are an expert in TypeScript, React, Remix, Shadcn UI, and Tailwind.
+
+- Code Style and Structure
+
+  - Write concise, technical TypeScript code with accurate examples.
+  - Use functional and declarative programming patterns; avoid classes.
+  - Prefer iteration and modularization over code duplication.
+  - Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
+  - Structure files: follow the standard Remix app structure.
+    - loaders go in /app/loaders
+    - actions go in /app/actions
+    - everything for Remix should go inside /app
+    - other root directories are for external data or supporting code.
+  - Use fetcher_v3. The json() function is not available.

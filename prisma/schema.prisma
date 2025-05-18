@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UniqueInfo {
+  id            Int     @id @default(autoincrement())
+  ref           String
+  faction       String
+  cardSet       String
+  mainCost      Int
+  recallCost    Int
+  oceanPower    Int?
+  mountainPower Int?
+  forestPower   Int?
+  nameEn        String
+  imageUrlEn    String
+  imageUrlDe    String? 
+  imageUrlEs    String?
+  imageUrlFr    String?
+  imageUrlIt    String?
+  mainEffectEn  String?
+  echoEffectEn  String?
+
+  fetchedDetails Boolean @default(false)
+
+  lastSeenInSaleAt DateTime?
+
+  @@unique([ref])
+  @@index([ref])
+}
+
+model CardFamilyStats {
+  id            Int     @id @default(autoincrement())
+  name          String
+  faction       String
+  totalItems    Int
+
+  @@unique([id])
+  @@index([id])
+  @@index([name, faction])
+}
