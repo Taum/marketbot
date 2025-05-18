@@ -38,3 +38,27 @@ Make sure to deploy the output of `npm run build`
 ## Styling
 
 This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever css framework you prefer. See the [Vite docs on css](https://vitejs.dev/guide/features.html#css) for more information.
+
+## Run local database
+
+```
+docker compose up -d
+
+# On first run, migrate DB:
+npx prisma migrate dev
+```
+
+## Example .env file:
+
+```
+# used by Prisma
+DATABASE_URL="postgresql://test:test@localhost:5411/test"
+
+# used by docker-compose / pg-admin
+POSTGRES_DB=test
+POSTGRES_USER=test
+POSTGRES_PASSWORD=test
+
+# For marketplace crawler
+ALTERED_TOKEN=ey...
+```

@@ -1,4 +1,4 @@
-import pkg, { PrismaClient } from '@generated/prisma/client';
+import pkg, { PrismaClient } from '@prisma/client';
 
 const dev = process.env.NODE_ENV !== 'production';
 
@@ -15,7 +15,7 @@ if (dev) {
 } else {
   const { PrismaClient: PrismaClientProd } = pkg;
   const dbUrl = process.env.DATABASE_URL;
-  console.log('dbUrl:', dbUrl?.replace(/(?:c39)(.*)(?:@)/, '[redacted]'));
+  console.log('dbUrl:', dbUrl?.replace(/(.*)(?:@)/, '[redacted]'));
   prisma = new PrismaClientProd();
 }
 

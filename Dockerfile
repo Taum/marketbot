@@ -1,51 +1,37 @@
-# Specify the base Docker image. You can read more about
-# the available images at https://crawlee.dev/docs/guides/docker-images
-# You can also use any other image from Docker Hub.
-FROM apify/actor-node-playwright-chrome:20 AS builder
+# base node image
+FROM node:22-alpine3.20 AS base
 
-# Copy just package.json and package-lock.json
-# to speed up the build using Docker layer cache.
-COPY --chown=myuser package*.json ./
+# Install all node_modules, including dev dependencies
+FROM base AS deps
+RUN mkdir /app && mkdir /app/prisma
+WORKDIR /app
 
-# Install all dependencies. Don't audit to speed up the installation.
-RUN npm install --include=dev --audit=false
+ADD package.json package-lock.json ./
+ADD prisma/schema.prisma ./prisma/schema.prisma
+# This installs the dependencies from package-lock.json
+# (like npm install, but will fail if package.json and package-lock.json are out of sync)
+RUN npm ci
+RUN npx prisma generate
 
-# Next, copy the source files using the user set
-# in the base image.
-COPY --chown=myuser . ./
+# Setup production node_modules
+FROM base AS production-deps
+RUN mkdir /app
+WORKDIR /app
 
-# Install all dependencies and build the project.
-# Don't audit to speed up the installation.
-RUN npm run build
+COPY --from=deps /app/node_modules /app/node_modules
+ADD package.json package-lock.json ./
+RUN npm prune --production
 
-# Create final image
-FROM apify/actor-node-playwright-chrome:20
+# Build the app
+FROM base
+ENV NODE_ENV=production
+RUN mkdir /app
+WORKDIR /app
 
-# Copy only built JS files from builder image
-COPY --from=builder --chown=myuser /home/myuser/dist ./dist
+COPY --from=deps /app/node_modules /app/node_modules
+ADD common ./common
+ADD market-crawler ./market-crawler
+ADD data ./data
+ADD package.json package-lock.json tsconfig.json .env ./
 
-# Copy just package.json and package-lock.json
-# to speed up the build using Docker layer cache.
-COPY --chown=myuser package*.json ./
-
-# Install NPM packages, skip optional and development dependencies to
-# keep the image small. Avoid logging too much and print the dependency
-# tree for debugging
-RUN npm --quiet set progress=false \
-    && npm install --omit=dev --omit=optional \
-    && echo "Installed NPM packages:" \
-    && (npm list --omit=dev --all || true) \
-    && echo "Node.js version:" \
-    && node --version \
-    && echo "NPM version:" \
-    && npm --version
-
-# Next, copy the remaining files and directories with the source code.
-# Since we do this after NPM install, quick build will be really fast
-# for most source file changes.
-COPY --chown=myuser . ./
-
-
-# Run the image. If you know you won't need headful browsers,
-# you can remove the XVFB start script for a micro perf gain.
-CMD ./start_xvfb_and_run_cmd.sh && npm run start:prod --silent
+ENTRYPOINT ["npm", "run"]

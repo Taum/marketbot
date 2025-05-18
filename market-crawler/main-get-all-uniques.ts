@@ -3,7 +3,7 @@ import { UniquesCrawler } from "./uniques.js";
 
 const uniquesCrawler = new UniquesCrawler();
 
-await uniquesCrawler.enqueueUniquesWithMissingEffects();
+await uniquesCrawler.enqueueUniquesWithMissingEffects({ limit: 25000 });
 
 await uniquesCrawler.waitForCompletion();
 

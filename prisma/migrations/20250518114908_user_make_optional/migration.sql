@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "AltggSession" ALTER COLUMN "accessToken" DROP NOT NULL,
+ALTER COLUMN "expiresAt" DROP NOT NULL,
+ALTER COLUMN "userId" DROP NOT NULL;

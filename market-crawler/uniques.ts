@@ -1,6 +1,7 @@
 import { GenericIndexer } from "./generic-indexer.js";
 import { AlteredggCard } from "@common/models/cards.js";
 import prisma from "@common/utils/prisma.server.js";
+import { delay } from "@common/utils/promise.js";
 
 export interface UniqueRequest {
   id: string;
@@ -50,11 +51,11 @@ export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
     };
 
     // Call super with the fetch and persist functions, plus any options
-    super(fetchUnique, persistUnique, { maxOperationsPerWindow: 10, windowMs: 5000 });
+    super(fetchUnique, persistUnique, { maxOperationsPerWindow: 10, windowMs: 6000 });
   }
 
 
-  public async enqueueUniquesWithMissingEffects() {
+  public async enqueueUniquesWithMissingEffects({ limit = 1000 }: { limit?: number } = {}) {
     const uniques = await prisma.uniqueInfo.findMany({
       where: {
         fetchedDetails: false,
@@ -62,11 +63,23 @@ export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
       orderBy: {
         lastSeenInSaleAt: 'desc', 
       },
-      take: 1000,
+      take: limit,
     });
 
+    console.log(`Uniques tasking enqueueing ${uniques.length} uniques...`)
     for (const unique of uniques) {
       await this.addRequests([{ id: unique.ref }]);
+    }
+  }
+
+  public async enqueueUntil(otherPromise: Promise<void>) {
+    let otherDone = false
+    otherPromise.finally(() => otherDone = true)
+    while (!otherDone) {
+      await this.enqueueUniquesWithMissingEffects()
+      await this.waitForCompletion()
+      console.log("Uniques task pausing for 60s...")
+      await delay(60_000)
     }
   }
 }

@@ -1,20 +1,36 @@
 {
 	"compilerOptions": {
-		"module": "NodeNext",
-		"moduleResolution": "NodeNext",
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
 		"target": "ES2022",
 		"outDir": "dist",
 		"noUnusedLocals": false,
-		"lib": ["DOM"],
+		"lib": [
+			"DOM"
+		],
 		"paths": {
-			"@common/*": ["./common/*"],
-			"@generated/*": ["./generated/*"],
-			"@data/*": ["./data/*"]
+			"@common/*": [
+				"./common/*"
+			],
+			"@generated/*": [
+				"./generated/*"
+			],
+			"@data/*": [
+				"./data/*"
+			],
+			"~/*": [
+				"./app/*"
+			]
 		},
 		"resolveJsonModule": true,
-		"jsx": "react-jsx"
+		"jsx": "react-jsx",
+		"esModuleInterop": true
 	},
-	"include": ["./app/**/*", "./market-crawler/**/*", "./common/**/*", "./generated/**/*", "./data/**/*"]
+	"include": [
+		"./app/**/*",
+		"./market-crawler/**/*",
+		"./common/**/*",
+		"./generated/**/*",
+		"./data/**/*"
+	]
 }
-	
-

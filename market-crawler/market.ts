@@ -1,21 +1,33 @@
 import { CardSet, CardType, Faction, Rarity } from "@common/models/cards.js";
 import { CardDbEntry } from "@common/models/cards.js";
 import { GenericIndexer } from "./generic-indexer.js";
+import { Prisma } from '@prisma/client';
 import prisma from "@common/utils/prisma.server.js";
+
 import { unique } from 'radash';
 
 import cardsJson from "@data/cards_min.json" assert { type: "json" };
-import { UniqueInfo } from "@generated/prisma/client/index.js";
+import Decimal from "decimal.js";
+import { AuthTokenService } from "./refresh-token.js";
+import { differenceInDays } from "date-fns";
 
 
+// Add the type from Prisma namespace
+type UniqueInfoCreateInput = Prisma.UniqueInfoCreateInput;
 export interface CardFamilyRequest {
   name: string;
   faction: string;
   nextPage?: string;
 }
 
-export interface CardFamilyStatsData {
+export interface HydraResponse {
   "hydra:totalItems": number;
+  "hydra:view": {
+    "@id": string;
+    "hydra:next": string;
+  };
+}
+export interface CardFamilyCardsData extends HydraResponse {
   "hydra:member": {
     reference: string;
     imagePath: string;
@@ -37,10 +49,14 @@ export interface CardFamilyStatsData {
       FOREST_POWER: string;
     }
   }[];
-  "hydra:view": {
-    "@id": string;
-    "hydra:next": string;
-  };
+}
+
+export interface CardFamilyStatsData extends HydraResponse {
+  "hydra:member": {
+    "@id": string,
+    lowerPrice: number,
+    lowerOfferId: string,
+  }[];
 }
 
 const bannedWords = [
@@ -49,7 +65,7 @@ const bannedWords = [
   'Haven', 'Foundry'
 ]
 
-export class CardFamilyStatsCrawler extends GenericIndexer<CardFamilyRequest, CardFamilyStatsData> {
+export class CardFamilyStatsCrawler extends GenericIndexer<CardFamilyRequest, CardFamilyCardsData> {
   constructor(authToken: string) {
     // Create fetch and persist functions
     const fetchFunc = async (request: CardFamilyRequest) => {
@@ -61,11 +77,11 @@ export class CardFamilyStatsCrawler extends GenericIndexer<CardFamilyRequest, Ca
       const response = await fetch(url, {
         headers
       });
-      const json = await response.json() as CardFamilyStatsData;
+      const json = await response.json() as CardFamilyCardsData;
       return json;
     };
 
-    const persistFunc = async (data: CardFamilyStatsData, request: CardFamilyRequest) => {
+    const persistFunc = async (data: CardFamilyCardsData, request: CardFamilyRequest) => {
       console.log(" ==> ", request)
       console.log("Total Items: ", data["hydra:totalItems"]);
       if (data["hydra:totalItems"] >= 1000) {
@@ -142,7 +158,7 @@ export class CardFamilyStatsCrawler extends GenericIndexer<CardFamilyRequest, Ca
 
 
 export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, CardFamilyStatsData> {
-  constructor(authToken: string) {
+  constructor(authTokenService: AuthTokenService) {
     // Create fetch and persist functions
     const fetchPage = async (request: CardFamilyRequest) => {
       let url: string;
@@ -152,12 +168,8 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
         url = this.buildUrl(request);
       }
 
-      const headers = {
-        'Authorization': `Bearer ${authToken}`
-      }
-      const response = await fetch(url, {
-        headers
-      });
+      const headers = await authTokenService.getAuthorizationHeaders()
+      const response = await fetch(url, { headers });
       const json = await response.json() as CardFamilyStatsData;
       return json;
     };
@@ -168,10 +180,10 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
       console.log(`Family: ${request.name} Page: ${pageNumber} -> ${data["hydra:member"].length} items`)
 
       await prisma.$transaction(async (tx) => {
+        let i = 0
         for (const member of data["hydra:member"]) {
-          let cardBlob = buildCardBlob(member);
+          let cardBlob = buildCardBlobWithStats(member, request);
           cardBlob.lastSeenInSaleAt = new Date();
-          console.log(`Recording ${cardBlob.ref} (${cardBlob.nameEn})`)
           await tx.uniqueInfo.upsert({
             where: {
               ref: cardBlob.ref,
@@ -179,6 +191,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
             update: cardBlob,
             create: cardBlob,
           })
+          i += 1
         }
       })
 
@@ -190,14 +203,32 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
             faction: request.faction,
             nextPage: nextPath,
           }
-        ])
+        ], true)
       }
     }
 
     // Call super with the fetch and persist functions, plus any options
-    super(fetchPage, persistPage, { maxOperationsPerWindow: 1, windowMs: 1000 });
+    super(fetchPage, persistPage, { maxOperationsPerWindow: 1, windowMs: 2000 });
   }
-  
+
+  public async addAllWithFilter(filter: ((card: CardDbEntry) => boolean | null) = null) {
+    const cardsDb = cardsJson as unknown as Record<string, CardDbEntry>
+
+    let requests = []
+    for (const cardKey in cardsDb) {
+      const card = cardsDb[cardKey];
+      if (card.type == CardType.CHARACTER && card.rarity == Rarity.RARE) {
+        if (filter && !filter(card)) { continue }
+        requests.push({
+          name: card.name.en,
+          faction: card.mainFaction,
+        })
+      }
+    }
+    const requestsArray = unique(requests, (r) => `${r.name}-${r.faction}`);
+    this.addRequests(requestsArray)
+  }
+
   private buildUrl(request: CardFamilyRequest) {
     let strippedName = request.name.toLowerCase();
     for (const word of bannedWords) {
@@ -208,12 +239,12 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
     }
     const urlSafeName = encodeURIComponent(strippedName.trim());
 
-    return `https://api.altered.gg/cards?factions%5B%5D=${request.faction}&inSale=true&translations.name=${urlSafeName}&rarity%5B%5D=UNIQUE&itemsPerPage=36&locale=en-us`;
+    return `https://api.altered.gg/cards/stats?factions%5B%5D=${request.faction}&inSale=true&translations.name=${urlSafeName}&rarity%5B%5D=UNIQUE&itemsPerPage=36&locale=en-us`;
   }
 }
 
 
-function buildCardBlob(member: CardFamilyStatsData["hydra:member"][0]): Partial<UniqueInfo> {
+function buildCardBlob(member: CardFamilyCardsData["hydra:member"][0]): UniqueInfoCreateInput {
   return {
     ref: member.reference,
     faction: member.mainFaction.reference,
@@ -227,3 +258,13 @@ function buildCardBlob(member: CardFamilyStatsData["hydra:member"][0]): Partial<
     forestPower: parseInt(member.elements.FOREST_POWER),
   }
 }
+
+function buildCardBlobWithStats(member: CardFamilyStatsData["hydra:member"][0], request: CardFamilyRequest): UniqueInfoCreateInput {
+  return {
+    ref: member["@id"].replace("/cards/", ""),
+    lastSeenInSalePrice: new Decimal(member.lowerPrice).toFixed(2),
+    lastSeenInSaleAt: new Date(),
+    faction: request.faction,
+  }
+}
+

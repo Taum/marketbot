@@ -9,21 +9,35 @@
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
     "start": "remix-serve ./build/server/index.js",
     "crawler": "tsx --env-file=.env market-crawler/main.ts",
-    "crawler-uniques": "tsx --env-file=.env market-crawler/main-get-uniques.ts",
+    "crawler-refresh-token": "tsx --env-file=.env market-crawler/main-refresh-token.ts",
+    "crawler-all-uniques": "tsx --env-file=.env market-crawler/main-get-all-uniques.ts",
     "typecheck": "tsc"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",
+    "@radix-ui/react-label": "^2.1.6",
+    "@radix-ui/react-select": "^2.2.4",
+    "@radix-ui/react-slot": "^1.2.2",
     "@remix-run/node": "^2.16.6",
     "@remix-run/react": "^2.16.6",
     "@remix-run/serve": "^2.16.6",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "crawlee": "^3.0.0",
+    "date-fns": "^4.1.0",
+    "decimal.js": "^10.5.0",
     "isbot": "^4.1.0",
+    "lucide-react": "^0.511.0",
     "playwright": "*",
     "radash": "^12.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "tailwind-merge": "^3.3.0",
+    "tailwindcss-animate": "^1.0.7",
     "throttled-queue": "^2.1.4"
+  },
+  "prisma": {
+    "seed": "tsx --env-file=.env prisma/seed.ts"
   },
   "devDependencies": {
     "@remix-run/dev": "^2.16.6",

@@ -37,7 +37,7 @@ export class GenericIndexer<Req = any, Data = any> {
     // Create throttle instance for rate limiting
     const maxOps = options.maxOperationsPerWindow || 60;
     const windowTime = options.windowMs || 60000;
-    this.throttle = throttledQueue(maxOps, windowTime);
+    this.throttle = throttledQueue(maxOps, windowTime, true);
   }
 
   /**

@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma/client"
 }
 
 datasource db {
@@ -11,15 +10,15 @@ datasource db {
 model UniqueInfo {
   id            Int     @id @default(autoincrement())
   ref           String
-  faction       String
-  cardSet       String
-  mainCost      Int
-  recallCost    Int
+  faction       String?
+  cardSet       String?
+  mainCost      Int?
+  recallCost    Int?
   oceanPower    Int?
   mountainPower Int?
   forestPower   Int?
-  nameEn        String
-  imageUrlEn    String
+  nameEn        String?
+  imageUrlEn    String?
   imageUrlDe    String? 
   imageUrlEs    String?
   imageUrlFr    String?
@@ -30,6 +29,7 @@ model UniqueInfo {
   fetchedDetails Boolean @default(false)
 
   lastSeenInSaleAt DateTime?
+  lastSeenInSalePrice Decimal?
 
   @@unique([ref])
   @@index([ref])
@@ -44,4 +44,16 @@ model CardFamilyStats {
   @@unique([id])
   @@index([id])
   @@index([name, faction])
+}
+
+model AltggSession {
+  id             Int     @id @default(autoincrement())
+  name           String
+  accessToken    String?
+  expiresAt      DateTime?
+  userId         String?
+  refreshCookies Json?
+
+  @@unique([id])
+  @@index([id])
 }

@@ -1,35 +1,93 @@
 import prisma from "@common/utils/prisma.server.js";
+import { DisplayUniqueCard } from "../models/cards";
+import { Prisma } from '@prisma/client';
 
-export interface DisplayUniqueCard {
-  id: number;
-  name: string;
-  imageUrl: string;
-  mainEffect: string;
-  echoEffect: string;
-  lastSeenInSaleAt: string;
-}
+// Add the type from Prisma namespace
+type UniqueInfoWhereInput = Prisma.UniqueInfoWhereInput;
 
 export interface SearchQuery {
-  query: string;
+  faction: string;
+  characterName: string;
+  mainEffect: string;
 }
 
-export async function search({ query }: SearchQuery): Promise<DisplayUniqueCard[]> {
+interface Token {
+  text: string
+  negated: boolean
+}
+
+export async function search({ faction, characterName, mainEffect }: SearchQuery): Promise<DisplayUniqueCard[]> {
+  if (faction == null && characterName == null && mainEffect == null) {
+    return []
+  }
+
+  let searchParams: UniqueInfoWhereInput[] = []
+
+  if (faction != null) {
+    searchParams.push({
+      faction: {
+        equals: faction
+      }
+    })
+  }
+
+  if (characterName != null) {
+    searchParams.push({
+      nameEn: {
+        contains: characterName,
+        mode: "insensitive"
+      }
+    })
+  }  
+
+  if (mainEffect != null) {
+    const quotedRegex = /(-?)(?:"([^"]+)"|(\S+))/g;
+    let match;
+    const tokens: Token[] = [];
+
+    while ((match = quotedRegex.exec(mainEffect)) !== null) {
+      // match[1] contains text inside quotes, match[2] contains unquoted text
+      tokens.push({ text: match[2] || match[3], negated: match[1] === "-" });
+    }
+
+    console.log("Tokens: ", tokens);
+
+    searchParams = searchParams.concat(tokens.map((token) => {
+      if (token.negated) {
+        return {
+          NOT: { mainEffectEn: { contains: token.text, mode: "insensitive" } }
+        }
+      }
+      return {
+        mainEffectEn: { contains: token.text, mode: "insensitive" },
+      }
+    }))
+  }
+  
+
+  const whereClause: UniqueInfoWhereInput = {
+    AND: searchParams,
+  }
+  
+  console.dir(whereClause, { depth: null });
+
   const results = await prisma.uniqueInfo.findMany({
-    where: {
-      or: [
-        { mainEffectEn: { contains: query } },
-        { echoEffectEn: { contains: query } },
-      ],
-    },
+    where: whereClause,
+    orderBy: {
+      lastSeenInSalePrice: 'asc'
+    }
   });
 
   const outResults = results.map((result) => ({
-    id: result.id,
+    ref: result.ref,
     name: result.nameEn,
     imageUrl: result.imageUrlEn,
     mainEffect: result.mainEffectEn,
     echoEffect: result.echoEffectEn,
+    lastSeenInSaleAt: result.lastSeenInSaleAt?.toISOString(),
+    lastSeenInSalePrice: result.lastSeenInSalePrice?.toString(),
   }));
 
   return outResults;
 }
+
