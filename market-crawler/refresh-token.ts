@@ -96,11 +96,15 @@ export async function refreshAccessToken(name: string, inCookies: RefreshCookies
     }
   });
 
+  if (!session) {
+    throw new Error(`Session ${name} not found`);
+  }
+
   const refreshCookies = inCookies ?? (session.refreshCookies as unknown as RefreshCookies[]);
-  let cookies = [];
+  let cookies: string[] = [];
   refreshCookies.forEach((cookie) => {
     const expireDate = cookie.expires != null ? new Date(cookie.expires) : undefined;
-    if (expireDate == null || expireDate > new Date()) {
+    if (!expireDate || expireDate > new Date()) {
       cookies.push(`${cookie.name}=${cookie.value}`);
     }
   });
@@ -176,7 +180,7 @@ export async function findAuthToken(sessionName: string): Promise<string | null>
       name: sessionName,
     },
   });
-  if (session.accessToken != null && session.expiresAt != null && session.expiresAt > new Date()) {
+  if (session && session.accessToken && session.expiresAt && session.expiresAt > new Date()) {
     return session.accessToken;
   }
   return null;

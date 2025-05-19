@@ -1,9 +1,10 @@
 import prisma from "@common/utils/prisma.server"
-import { AbilityPartType, GenericTriggerType, MainUniqueAbility, MainUniqueAbilityPart, UniqueInfo } from "@prisma/client"
-import { pick, shuffle } from "radash"
+import { AbilityPartType, GenericTriggerType, MainUniqueAbilityPart, UniqueInfo } from "@prisma/client"
+import { pick } from "radash"
+import { getEnv } from "./helpers";
 
 
-const verboseLevel = 1;
+const verboseLevel = parseInt(getEnv("VERBOSE_LEVEL") ?? "1");
 
 interface ProcessedCard {
   uniqueInfo: UniqueInfo
@@ -151,6 +152,7 @@ export async function processUniques(fromPage: number = 0, toPage: number | unde
 
     for (let unique of uniques) {
       let processedCard = processOneCard(unique);
+      
       if (processedCard && processedCard.mainAbilities.length > 0) {
         if (verboseLevel >= 2) {
           console.log(`---------------------`)
@@ -204,14 +206,3 @@ export async function processUniques(fromPage: number = 0, toPage: number | unde
     page += 1;
   }
 }
-
-
-const batch1 = processUniques(0, 150);
-const batch2 = processUniques(150, 300);
-const batch3 = processUniques(300, 450);
-const batch4 = processUniques(450, 600);
-const batch5 = processUniques(600, 750);
-
-await Promise.all([batch1, batch2, batch3, batch4, batch5]);
-
-console.log("Done")

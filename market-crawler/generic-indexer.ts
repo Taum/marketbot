@@ -20,8 +20,8 @@ export class GenericIndexer<Req = any, Data = any, Response = Data> {
   private throttle: any;
 
   private _waitForCompletionPromise: Promise<void> | null = null;
-  private _waitForCompletionResolve: (value: void) => void | null = null;
-  private _waitForCompletionReject: (error: Error) => void | null = null;
+  private _waitForCompletionResolve: ((value: void) => void) | null = null;
+  private _waitForCompletionReject: ((error: Error) => void) | null = null;
   private _isProcessing = false;
 
   constructor(

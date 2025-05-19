@@ -9,7 +9,7 @@ import { unique } from 'radash';
 import cardsJson from "@data/cards_min.json" assert { type: "json" };
 import Decimal from "decimal.js";
 import { AuthTokenService } from "./refresh-token.js";
-import { differenceInDays } from "date-fns";
+import { getFamilyIdFromRef } from "@common/utils/altered.js";
 
 
 // Add the type from Prisma namespace
@@ -17,6 +17,7 @@ type UniqueInfoCreateInput = Prisma.UniqueInfoCreateInput;
 export interface CardFamilyRequest {
   name: string;
   faction: string;
+  cardFamilyId: string;
   nextPage?: string;
 }
 
@@ -91,6 +92,7 @@ export class CardFamilyStatsCrawler extends GenericIndexer<CardFamilyRequest, Ca
       const blob = {
         name: request.name,
         faction: request.faction,
+        cardFamilyId: request.cardFamilyId,
         totalItems: data["hydra:totalItems"],
       }
 
@@ -131,9 +133,11 @@ export class CardFamilyStatsCrawler extends GenericIndexer<CardFamilyRequest, Ca
           }
         })
         if (!inDb || inDb.totalItems >= 1000 || inDb.totalItems <= 0) {
+          const familyId = getFamilyIdFromRef(card.id);
           requests.push({
             name: card.name.en,
             faction: card.mainFaction,
+            cardFamilyId: familyId,
           })
         }
       }
@@ -208,6 +212,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
           {
             name: request.name,
             faction: request.faction,
+            cardFamilyId: request.cardFamilyId,
             nextPage: nextPath,
           }
         ], true)
@@ -229,6 +234,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
         requests.unshift({
           name: card.name.en,
           faction: card.mainFaction,
+          cardFamilyId: getFamilyIdFromRef(card.id),
         })
       }
     }
@@ -266,12 +272,15 @@ function buildCardBlob(member: CardFamilyCardsData["hydra:member"][0]): UniqueIn
   }
 }
 
+// This builds a partial card blob from the `/cards/stats` endpoint, which includes the lowest price
+// but not other card details such as cost, terrain power, etc.
 function buildCardBlobWithStats(member: CardFamilyStatsData["hydra:member"][0], request: CardFamilyRequest): UniqueInfoCreateInput {
   return {
     ref: member["@id"].replace("/cards/", ""),
     lastSeenInSalePrice: new Decimal(member.lowerPrice).toFixed(2),
     lastSeenInSaleAt: new Date(),
     faction: request.faction,
+    cardFamilyId: request.cardFamilyId,
   }
 }
 

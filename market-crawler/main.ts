@@ -6,6 +6,9 @@ import { AuthTokenService } from './refresh-token.js';
 import { Faction } from '@common/models/cards.js';
 
 const sessionName = getEnv("ALT_SESSION_NAME")
+if (!sessionName) {
+  throw new Error("ALT_SESSION_NAME is not set");
+}
 
 // const refreshToken = await refreshAccessToken(sessionName);
 const authTokenService = new AuthTokenService(sessionName);
@@ -24,12 +27,12 @@ const inSaleCompletion = exhaustiveInSaleCrawler
   .then(() => console.log("InSale task completed"))
   .catch((e) => console.error("InSale task failed with error: ", e));
 
-// await uniquesCrawler.enqueueUntil(inSaleCompletion)
+await uniquesCrawler.enqueueUntil(inSaleCompletion)
 
-// // Enqueue one more when finished
-// await uniquesCrawler.enqueueUniquesWithMissingEffects();
-// await uniquesCrawler
-//   .waitForCompletion()
-//   .then(() => console.log("Uniques task completed"));;
+// Enqueue one more when finished
+await uniquesCrawler.enqueueUniquesWithMissingEffects();
+await uniquesCrawler
+  .waitForCompletion()
+  .then(() => console.log("Uniques task completed"));
 
 await prisma.$disconnect();

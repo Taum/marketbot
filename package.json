@@ -11,7 +11,7 @@
     "crawler": "tsx --env-file=.env market-crawler/main.ts",
     "crawler-refresh-token": "tsx --env-file=.env market-crawler/main-refresh-token.ts",
     "crawler-all-uniques": "tsx --env-file=.env market-crawler/main-get-all-uniques.ts",
-    "crawler-uniques-post-process": "tsx --env-file=.env market-crawler/uniques-post-process.ts",
+    "crawler-post-process": "tsx --env-file=.env market-crawler/main-post-process.ts",
     "typecheck": "tsc"
   },
   "dependencies": {
