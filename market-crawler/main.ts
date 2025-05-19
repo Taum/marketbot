@@ -21,8 +21,8 @@ await exhaustiveInSaleCrawler.addAllWithFilter((c) => {
 
 const inSaleCompletion = exhaustiveInSaleCrawler
   .waitForCompletion()
-  .catch((e) => console.error("InSale task failed with error: ", e))
-  .then(() => console.log("InSale task completed"));
+  .then(() => console.log("InSale task completed"))
+  .catch((e) => console.error("InSale task failed with error: ", e));
 
 // await uniquesCrawler.enqueueUntil(inSaleCompletion)
 

@@ -25,13 +25,13 @@ export function trim(value: string): string {
   return value.trim();
 }
 
-export function nullifyTrim(value: string | null): string | null {
+export function nullifyTrim(value: string | null | undefined): string | undefined {
   const v = value?.trim();
-  if (v == null || v == "") { return null }
+  if (v == null || v == "") { return undefined }
   return v;
 }
 
-export function nullifyParseInt(value: string): number | null {
+export function nullifyParseInt(value: string | null | undefined): number | null {
   const t = nullifyTrim(value);
   if (t == null) { return null }
   const v = parseInt(t, 10);

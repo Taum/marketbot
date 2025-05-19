@@ -119,7 +119,7 @@ export class CardFamilyStatsCrawler extends GenericIndexer<CardFamilyRequest, Ca
   public async addAllNotInDatabase() {
     const cardsDb = cardsJson as unknown as Record<string, CardDbEntry>
 
-    let requests = []
+    let requests: CardFamilyRequest[] = []
     for (const cardKey in cardsDb) {
       // if (requests.size > 3) break;
       const card = cardsDb[cardKey];
@@ -157,7 +157,7 @@ export class CardFamilyStatsCrawler extends GenericIndexer<CardFamilyRequest, Ca
 }
 
 
-export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, CardFamilyStatsData> {
+export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, CardFamilyStatsData, Response> {
   constructor(authTokenService: AuthTokenService) {
     // Create fetch and persist functions
     const fetchPage = async (request: CardFamilyRequest) => {
@@ -170,14 +170,21 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
 
       const headers = await authTokenService.getAuthorizationHeaders()
       const response = await fetch(url, { headers });
-      const json = await response.json() as CardFamilyStatsData;
-      return json;
+      return response;
     };
 
-    const persistPage = async (data: CardFamilyStatsData, request: CardFamilyRequest) => {
-      const pageNumber = data["hydra:view"]["@id"].match(/page=\d+$/)?.[0];
-
-      console.log(`Family: ${request.name} Page: ${pageNumber} -> ${data["hydra:member"].length} items`)
+    const persistPage = async (response: Response, request: CardFamilyRequest) => {
+      const data = await response.json() as CardFamilyStatsData;
+      try {
+        const pageNumber = data["hydra:view"]["@id"].match(/page=\d+$/)?.[0];
+        // const pageNumber = data["hydra:view"]["@id"].match(/page=\d+$/)?.[0];
+        console.log(`Family=${request.name} Faction=${request.faction} : ${pageNumber} -> ${data["hydra:member"].length} items`)
+      } catch (e) {
+        console.error(`Error parsing hydra:view for Family=${request.name} Faction=${request.faction}`, e)
+        const responseText = await response.text
+        console.log("Raw response:", responseText)
+        throw e;
+      }
 
       await prisma.$transaction(async (tx) => {
         let i = 0
@@ -211,15 +218,15 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
     super(fetchPage, persistPage, { maxOperationsPerWindow: 1, windowMs: 2000 });
   }
 
-  public async addAllWithFilter(filter: ((card: CardDbEntry) => boolean | null) = null) {
+  public async addAllWithFilter(filter: ((card: CardDbEntry) => boolean) | null = null) {
     const cardsDb = cardsJson as unknown as Record<string, CardDbEntry>
 
-    let requests = []
+    let requests: CardFamilyRequest[] = []
     for (const cardKey in cardsDb) {
       const card = cardsDb[cardKey];
       if (card.type == CardType.CHARACTER && card.rarity == Rarity.RARE) {
         if (filter && !filter(card)) { continue }
-        requests.push({
+        requests.unshift({
           name: card.name.en,
           faction: card.mainFaction,
         })

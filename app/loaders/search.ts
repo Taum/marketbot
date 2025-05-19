@@ -1,14 +1,23 @@
 import prisma from "@common/utils/prisma.server.js";
-import { DisplayUniqueCard } from "../models/cards";
-import { Prisma } from '@prisma/client';
+import { DisplayUniqueCard, Faction } from "~/models/cards";
+import { AbilityPartType, Prisma } from '@prisma/client';
 
 // Add the type from Prisma namespace
 type UniqueInfoWhereInput = Prisma.UniqueInfoWhereInput;
+type MainUniqueAbilityWhereInput = Prisma.MainUniqueAbilityWhereInput;
 
 export interface SearchQuery {
-  faction: string;
-  characterName: string;
-  mainEffect: string;
+  faction?: string;
+  characterName?: string;
+  mainEffect?: string;
+  triggerPart?: string;
+  conditionPart?: string;
+  effectPart?: string;
+}
+
+export interface PageParams {
+  page: number;
+  includeCount: boolean;
 }
 
 interface Token {
@@ -16,9 +25,71 @@ interface Token {
   negated: boolean
 }
 
-export async function search({ faction, characterName, mainEffect }: SearchQuery): Promise<DisplayUniqueCard[]> {
-  if (faction == null && characterName == null && mainEffect == null) {
+
+function tokenize(text: string): Token[] {
+  const quotedRegex = /(-?)(?:"([^"]+)"|(\S+))/g;
+  let match;
+  const tokens: Token[] = [];
+
+  while ((match = quotedRegex.exec(text)) !== null) {
+    // match[1] contains text inside quotes, match[2] contains unquoted text
+    tokens.push({ text: match[2] || match[3], negated: match[1] === "-" });
+  }
+  return tokens;
+}
+
+function searchInPart(partType: AbilityPartType, query?: string): MainUniqueAbilityWhereInput[] {
+  if (!query) {
     return []
+  }
+
+  const tokens = tokenize(query);
+  console.log(`Tokens for ${partType}`)
+  console.dir(tokens);
+
+  let partTypeKey: keyof MainUniqueAbilityWhereInput
+  switch (partType) {
+    case AbilityPartType.Trigger:
+      partTypeKey = "trigger"
+      break
+    case AbilityPartType.TriggerCondition:
+      partTypeKey = "triggerCondition"
+      break
+    case AbilityPartType.Condition:
+      partTypeKey = "condition"
+      break
+    case AbilityPartType.Effect:
+      partTypeKey = "effect"
+      break
+    default:
+      throw new Error(`Unknown part type: ${partType}`)
+  }
+
+  return [{
+    [partTypeKey]: {
+      AND: tokens.map((token) => (
+        token.negated ?
+          {
+            NOT: { textEn: { contains: token.text, mode: "insensitive" } }
+          } :
+          {
+            textEn: { contains: token.text, mode: "insensitive" }
+          }
+      ))
+    }
+  }]
+}
+
+export async function search({
+  faction,
+  characterName,
+  mainEffect,
+  triggerPart,
+  conditionPart,
+  effectPart
+}: SearchQuery, { page, includeCount }: PageParams): Promise<{ results: DisplayUniqueCard[], total?: number }> {
+  if (faction == null && characterName == null && mainEffect == null && triggerPart == null && conditionPart == null && effectPart == null) {
+    return { results: [], total: 0 }
   }
 
   let searchParams: UniqueInfoWhereInput[] = []
@@ -38,20 +109,11 @@ export async function search({ faction, characterName, mainEffect }: SearchQuery
         mode: "insensitive"
       }
     })
-  }  
+  }
 
   if (mainEffect != null) {
-    const quotedRegex = /(-?)(?:"([^"]+)"|(\S+))/g;
-    let match;
-    const tokens: Token[] = [];
-
-    while ((match = quotedRegex.exec(mainEffect)) !== null) {
-      // match[1] contains text inside quotes, match[2] contains unquoted text
-      tokens.push({ text: match[2] || match[3], negated: match[1] === "-" });
-    }
-
-    console.log("Tokens: ", tokens);
-
+    const tokens = tokenize(mainEffect);
+    console.log("Main effect Tokens: ", tokens);
     searchParams = searchParams.concat(tokens.map((token) => {
       if (token.negated) {
         return {
@@ -63,31 +125,64 @@ export async function search({ faction, characterName, mainEffect }: SearchQuery
       }
     }))
   }
-  
+
+  const mainAbilitySearchParams = [
+    ...searchInPart(AbilityPartType.Trigger, triggerPart),
+    ...searchInPart(AbilityPartType.Condition, conditionPart),
+    ...searchInPart(AbilityPartType.Effect, effectPart),
+  ]
+  if (mainAbilitySearchParams.length > 0) {
+    searchParams.push({
+      mainAbilities: {
+        some: {
+          AND: mainAbilitySearchParams
+        }
+      }
+    })
+  }
 
   const whereClause: UniqueInfoWhereInput = {
-    AND: searchParams,
+    AND: [
+      { fetchedDetails: true },
+      ...searchParams,
+    ]
   }
-  
+
   console.dir(whereClause, { depth: null });
 
   const results = await prisma.uniqueInfo.findMany({
     where: whereClause,
     orderBy: {
       lastSeenInSalePrice: 'asc'
-    }
+    },
+    skip: 250 * (page - 1), // Page is 1-indexed
+    take: 250,
   });
 
-  const outResults = results.map((result) => ({
-    ref: result.ref,
-    name: result.nameEn,
-    imageUrl: result.imageUrlEn,
-    mainEffect: result.mainEffectEn,
-    echoEffect: result.echoEffectEn,
-    lastSeenInSaleAt: result.lastSeenInSaleAt?.toISOString(),
-    lastSeenInSalePrice: result.lastSeenInSalePrice?.toString(),
-  }));
+  let total: number | undefined = undefined
+  if (includeCount) {
+    total = await prisma.uniqueInfo.count({
+      where: whereClause,
+    })
+  }
 
-  return outResults;
+  const outResults: DisplayUniqueCard[] = results.map((result) => {
+    if (!result.nameEn || !result.faction || !result.mainEffectEn) {
+      return null;
+    }
+    return {
+      ref: result.ref,
+      name: result.nameEn,
+      faction: result.faction as Faction,
+      cardSet: result.cardSet!,
+      imageUrl: result.imageUrlEn!,
+      mainEffect: result.mainEffectEn,
+      echoEffect: result.echoEffectEn,
+      lastSeenInSaleAt: result.lastSeenInSaleAt?.toISOString(),
+      lastSeenInSalePrice: result.lastSeenInSalePrice?.toString(),
+    }
+  }).filter((result) => result !== null);
+
+  return { results: outResults, total };
 }
 

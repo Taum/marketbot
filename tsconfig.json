@@ -24,7 +24,8 @@
 		},
 		"resolveJsonModule": true,
 		"jsx": "react-jsx",
-		"esModuleInterop": true
+		"esModuleInterop": true,
+		"strictNullChecks": true,
 	},
 	"include": [
 		"./app/**/*",

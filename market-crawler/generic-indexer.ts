@@ -2,6 +2,7 @@
  * Generic Crawler class that manages a request queue
  */
 
+import { delay } from '@common/utils/promise';
 import throttledQueue from 'throttled-queue';
 
 export interface IdentifiedRequest<T = any> {
@@ -12,19 +13,20 @@ export interface IdentifiedRequest<T = any> {
 export type FetchFunction<Req = any, Data = any> = (request: Req) => Promise<Data>;
 export type PersistFunction<Req = any, Data = any> = (data: Data, request: Req) => Promise<void>;
 
-export class GenericIndexer<Req = any, Data = any> {
+export class GenericIndexer<Req = any, Data = any, Response = Data> {
   private queue: Req[] = [];
-  private fetchFn: FetchFunction<Req, Data>;
-  private persistFn: PersistFunction<Req, Data>;
+  private fetchFn: FetchFunction<Req, Response>;
+  private persistFn: PersistFunction<Req, Response>;
   private throttle: any;
 
   private _waitForCompletionPromise: Promise<void> | null = null;
   private _waitForCompletionResolve: (value: void) => void | null = null;
+  private _waitForCompletionReject: (error: Error) => void | null = null;
   private _isProcessing = false;
 
   constructor(
-    fetch: FetchFunction<Req, Data>,
-    persist: PersistFunction<Req, Data>,
+    fetch: FetchFunction<Req, Response>,
+    persist: PersistFunction<Req, Response>,
     options: {
       concurrency?: number,
       maxOperationsPerWindow?: number,
@@ -74,8 +76,9 @@ export class GenericIndexer<Req = any, Data = any> {
     if (this._waitForCompletionPromise) {
       return this._waitForCompletionPromise;
     }
-    this._waitForCompletionPromise = new Promise((resolve) => {
+    this._waitForCompletionPromise = new Promise((resolve, reject) => {
       this._waitForCompletionResolve = resolve;
+      this._waitForCompletionReject = reject;
     });
     return this._waitForCompletionPromise;
   }
@@ -105,19 +108,27 @@ export class GenericIndexer<Req = any, Data = any> {
       const request = this.queue.shift();
       if (!request) break;
 
-      await this.throttle(async () => {
+      let retries = 0
+      while (true) {
         try {
-          // Process the request
-          const data = await this.fetchFn(request);
-          // Persist the data if a persist function is provided
-          await this.persistFn(data, request);
+          await this.throttle(async () => {
+            // Process the request
+            const response = await this.fetchFn(request);
+            // Persist the data if a persist function is provided
+            await this.persistFn(response, request);
+          })
+          break;
         } catch (error) {
-          console.error(`Error processing request:`, error);
-        } finally {
-          // Continue processing the queue
-          this.processQueue();
+          console.error(`Error processing request (retry=${retries}):`, error);
+          if (retries >= 3) {
+            this._isProcessing = false;
+            this._waitForCompletionReject?.(error);
+            return;
+          }
+          await delay(5000)
+          retries += 1
         }
-      })
+      }
     }
 
     this._isProcessing = false;

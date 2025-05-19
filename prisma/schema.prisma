@@ -19,7 +19,7 @@ model UniqueInfo {
   forestPower   Int?
   nameEn        String?
   imageUrlEn    String?
-  imageUrlDe    String? 
+  imageUrlDe    String?
   imageUrlEs    String?
   imageUrlFr    String?
   imageUrlIt    String?
@@ -28,18 +28,71 @@ model UniqueInfo {
 
   fetchedDetails Boolean @default(false)
 
-  lastSeenInSaleAt DateTime?
+  lastSeenInSaleAt    DateTime?
   lastSeenInSalePrice Decimal?
 
+  // This is the short unique ID of the "family" e.g. LY_14
+  // Note that Out-of-faction uniques will have the same family ID as the in-faction
+  cardFamilyId String?
+
+  mainAbilities MainUniqueAbility[]
+
+  @@unique([id])
   @@unique([ref])
+  @@index([id])
   @@index([ref])
+  @@index([cardFamilyId])
+  @@index([lastSeenInSaleAt])
+  @@index([nameEn])
+}
+
+model MainUniqueAbility {
+  id           Int        @id @default(autoincrement())
+  uniqueInfoId Int
+  uniqueInfo   UniqueInfo @relation(fields: [uniqueInfoId], references: [id])
+  lineNumber   Int
+
+  textEn String
+
+  genericTrigger          GenericTriggerType?
+  triggerId               Int?
+  trigger                 MainUniqueAbilityPart? @relation("trigger", fields: [triggerId], references: [id])
+  triggerConditionId      Int?
+  triggerCondition        MainUniqueAbilityPart? @relation("triggerCondition", fields: [triggerConditionId], references: [id])
+  conditionId             Int?
+  condition               MainUniqueAbilityPart? @relation("condition", fields: [conditionId], references: [id])
+  effectId                Int?
+  effect                  MainUniqueAbilityPart? @relation("effect", fields: [effectId], references: [id])
+
+  @@unique([id])
+  @@unique([uniqueInfoId, lineNumber])
+  @@index([id])
+  @@index([uniqueInfoId, lineNumber])
+}
+
+model MainUniqueAbilityPart {
+  id     Int    @id @default(autoincrement())
+  textEn String
+
+  partType AbilityPartType
+
+  triggerFor          MainUniqueAbility[] @relation("trigger")
+  triggerConditionFor MainUniqueAbility[] @relation("triggerCondition")
+  conditionFor        MainUniqueAbility[] @relation("condition")
+  effectFor           MainUniqueAbility[] @relation("effect")
+
+  @@unique([id])
+  @@unique([textEn, partType])
+  @@index([id])
+  @@index([textEn])
 }
 
 model CardFamilyStats {
-  id            Int     @id @default(autoincrement())
-  name          String
-  faction       String
-  totalItems    Int
+  id           Int    @id @default(autoincrement())
+  name         String
+  cardFamilyId String
+  faction      String
+  totalItems   Int
 
   @@unique([id])
   @@index([id])
@@ -47,7 +100,7 @@ model CardFamilyStats {
 }
 
 model AltggSession {
-  id             Int     @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   name           String
   accessToken    String?
   expiresAt      DateTime?
@@ -56,4 +109,17 @@ model AltggSession {
 
   @@unique([id])
   @@index([id])
+}
+
+enum GenericTriggerType {
+  FromHand
+  FromReserve
+  FromAnwhere
+}
+
+enum AbilityPartType {
+  Trigger
+  TriggerCondition
+  Condition
+  Effect
 }

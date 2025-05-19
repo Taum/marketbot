@@ -1,9 +1,11 @@
 export interface DisplayUniqueCard {
   ref: string;
   name: string;
+  faction: Faction;
+  cardSet: string;
   imageUrl: string;
-  mainEffect: string;
-  echoEffect: string;
+  mainEffect: string | null;
+  echoEffect: string | null;
   lastSeenInSaleAt?: string;
   lastSeenInSalePrice?: string;
 }
