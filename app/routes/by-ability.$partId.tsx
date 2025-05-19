@@ -1,5 +1,5 @@
 import { LoaderFunctionArgs, json } from "@remix-run/node";
-import { Link, useLoaderData } from "@remix-run/react";
+import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
 import { MainUniqueAbility, MainUniqueAbilityPart, UniqueInfo } from "@prisma/client";
 import prisma from "@common/utils/prisma.server";
 import {
@@ -12,6 +12,7 @@ import {
 } from "~/components/ui/table";
 import { DisplayUniqueCard, Faction } from "~/models/cards";
 import { ResultGrid } from "~/components/altered/ResultGrid";
+import { ResultsPagination } from "~/components/common/pagination";
 
 interface DisplayAbility {
   id: number
@@ -28,10 +29,16 @@ type LoaderData = {
   part: MainUniqueAbilityPart | null;
   abilities: MainUniqueAbility[]
   results: DisplayUniqueCard[]
+  pagination: { totalCount: number, pageCount: number, currentPage: number }
 };
 
-export async function loader({ params }: LoaderFunctionArgs) {
+const PAGE_SIZE = 100;
+
+export async function loader({ params, request }: LoaderFunctionArgs) {
+  const url = new URL(request.url);
+  const searchParams = new URLSearchParams(url.search);
   const partId = parseInt(params.partId || "", 10);
+  const currentPage = parseInt(searchParams.get("p") ?? "1");
 
   if (isNaN(partId)) {
     throw new Response("Invalid part ID", { status: 400 });
@@ -76,20 +83,20 @@ export async function loader({ params }: LoaderFunctionArgs) {
         },
       },
     },
+    take: PAGE_SIZE,
+    skip: (currentPage - 1) * PAGE_SIZE,
   });
 
-  // const abilities: DisplayAbility[] = dbAbilities.map((ability) => {
-  //   return {
-  //     id: ability.id,
-  //     textEn: ability.textEn,
-  //     parts: {
-  //       trigger: ability.trigger,
-  //       triggerCondition: ability.triggerCondition,
-  //       condition: ability.condition,
-  //       effect: ability.effect,
-  //     }
-  //   }
-  // });
+  const totalCount = await prisma.mainUniqueAbility.count({
+    where: {
+      OR: [
+        { triggerId: partId },
+        { triggerConditionId: partId },
+        { conditionId: partId },
+        { effectId: partId },
+      ],
+    }
+  });
 
   const results: DisplayUniqueCard[] = dbAbilities.map((ability) => {
     if (!ability.uniqueInfo.ref || !ability.uniqueInfo.nameEn || !ability.uniqueInfo.faction) {
@@ -108,14 +115,21 @@ export async function loader({ params }: LoaderFunctionArgs) {
     };
   }).filter((unique) => unique !== null);
 
-  return { part, results };
+  return { part, results, pagination: { totalCount, pageCount: Math.ceil(totalCount / PAGE_SIZE), currentPage: currentPage } };
 }
 
 export default function ByAbilityPartRoute() {
-  const { part, results, abilities } = useLoaderData<LoaderData>();
+  const { part, results, pagination } = useLoaderData<LoaderData>();
+  const { currentPage, totalCount, pageCount } = pagination;
+  const [searchParams] = useSearchParams();
 
   if (!part) {
     return <div className="container mx-auto p-6">Ability part not found</div>;
+  }
+
+  const handlePageChange = (page: number) => {
+    searchParams.set("p", page.toString());
+    window.location.search = searchParams.toString();
   }
 
   const now = new Date()
@@ -134,6 +148,16 @@ export default function ByAbilityPartRoute() {
           <p>Found in {results.length} cards</p>
         </div>
       </div>
+
+      {pagination.pageCount && pagination.pageCount > 1 ? (
+        <div className="mb-6">
+          <ResultsPagination
+            currentPage={currentPage}
+            totalPages={pagination.pageCount}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      ) : null}
 
       {results.length > 0 ? (
         <ResultGrid results={results} now={now} />

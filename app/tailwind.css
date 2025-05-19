@@ -89,4 +89,8 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+
+  .global-page {
+    @apply max-w-screen-xl mx-auto p-6
+  }
 }

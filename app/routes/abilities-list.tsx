@@ -54,7 +54,7 @@ export default function AbilitiesList() {
   const { abilityParts } = useLoaderData<LoaderData>();
   
   return (
-    <div className="container mx-auto p-6">
+    <div className="global-page">
       <h1 className="text-2xl font-bold mb-6">Unique Ability Parts List</h1>
       
       <div className="grid gap-8">

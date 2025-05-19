@@ -17,7 +17,7 @@ export interface SearchQuery {
 
 export interface PageParams {
   page: number;
-  includeCount: boolean;
+  includePagination: boolean;
 }
 
 interface Token {
@@ -80,16 +80,22 @@ function searchInPart(partType: AbilityPartType, query?: string): MainUniqueAbil
   }]
 }
 
-export async function search({
-  faction,
-  characterName,
-  mainEffect,
-  triggerPart,
-  conditionPart,
-  effectPart
-}: SearchQuery, { page, includeCount }: PageParams): Promise<{ results: DisplayUniqueCard[], total?: number }> {
+const PAGE_SIZE = 100
+
+export interface SearchResults {
+  results: DisplayUniqueCard[],
+  pagination?: {
+    totalCount: number,
+    pageCount: number
+  }
+}
+
+export async function search(searchQuery: SearchQuery, pageParams: PageParams): Promise<SearchResults> {
+  const { faction, characterName, mainEffect, triggerPart, conditionPart, effectPart } = searchQuery
+  const { page, includePagination } = pageParams
+
   if (faction == null && characterName == null && mainEffect == null && triggerPart == null && conditionPart == null && effectPart == null) {
-    return { results: [], total: 0 }
+    return { results: [], pagination: undefined }
   }
 
   let searchParams: UniqueInfoWhereInput[] = []
@@ -155,15 +161,19 @@ export async function search({
     orderBy: {
       lastSeenInSalePrice: 'asc'
     },
-    skip: 250 * (page - 1), // Page is 1-indexed
-    take: 250,
+    skip: PAGE_SIZE * (page - 1), // Page is 1-indexed
+    take: PAGE_SIZE,
   });
 
-  let total: number | undefined = undefined
-  if (includeCount) {
-    total = await prisma.uniqueInfo.count({
+  let pagination: { totalCount: number, pageCount: number } | undefined = undefined
+  if (includePagination) {
+    const totalCount = await prisma.uniqueInfo.count({
       where: whereClause,
     })
+    pagination = {
+      totalCount: totalCount,
+      pageCount: Math.ceil(totalCount / PAGE_SIZE)
+    }
   }
 
   const outResults: DisplayUniqueCard[] = results.map((result) => {
@@ -183,6 +193,6 @@ export async function search({
     }
   }).filter((result) => result !== null);
 
-  return { results: outResults, total };
+  return { results: outResults, pagination };
 }
 

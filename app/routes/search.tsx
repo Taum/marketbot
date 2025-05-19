@@ -1,35 +1,15 @@
-import { ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { Form, Link, useActionData, useLoaderData, useSearchParams } from "@remix-run/react";
+import { type LoaderFunctionArgs } from "@remix-run/node";
+import { Form, useLoaderData, useSearchParams } from "@remix-run/react";
 import { search } from "~/loaders/search.js";
-import { CardImage } from "~/components/altered/CardImage.js";
-import { DisplayUniqueCard } from "~/models/cards";
-import { FC, useMemo, useState } from "react";
-import { formatDistance } from "date-fns";
+import { useMemo, useState } from "react";
 import { FactionSelect } from "~/components/altered/FactionSelect";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { nullifyParseInt, nullifyTrim } from "~/lib/utils";
 import { ResultGrid } from "~/components/altered/ResultGrid";
+import { ResultsPagination } from "~/components/common/pagination";
 
-// Define the type for a search result item
-type SearchResult = {
-  id: string;
-  title: string;
-  description: string;
-  url: string;
-};
-
-// Loader function to handle search requests
-// export async function action({ request }: ActionFunctionArgs) {
-//   const url = new URL(request.url);
-//   const formData = await request.formData();
-//   const query = formData.get("q") as string || "";
-//   // TODO: Implement actual search logic here
-//   const results: SearchResult[] = [];
-
-//   return { query, results };
-// }
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
@@ -40,15 +20,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const conditionPart = nullifyTrim(url.searchParams.get("cond"));
   const effectPart = nullifyTrim(url.searchParams.get("eff"));
 
-  const pageNumber = nullifyParseInt(url.searchParams.get("p")) ?? 1;
+  const currentPage = nullifyParseInt(url.searchParams.get("p")) ?? 1;
 
-  // TODO: Implement actual search logic here
-  const { results, total } = await search(
+  const { results, pagination } = await search(
     { faction, characterName, mainEffect, triggerPart, conditionPart, effectPart },
-    { page: pageNumber, includeCount: (pageNumber == 1) }
+    { page: currentPage, includePagination: true }
   );
 
-  return { query: { faction, characterName, mainEffect, triggerPart, conditionPart, effectPart }, results, total };
+  return {
+    results,
+    pagination: { ...pagination, currentPage },
+    query: { faction, characterName, mainEffect, triggerPart, conditionPart, effectPart },
+  };
 }
 
 export default function SearchPage() {
@@ -60,12 +43,20 @@ export default function SearchPage() {
   // Safely destructure with default values
   const { faction, characterName, mainEffect, triggerPart, conditionPart, effectPart } = loaderData?.query ?? {};
   const results = loaderData.results
-  const total = loaderData.total
+  const pagination = loaderData.pagination
 
   const [selectedFaction, setSelectedFaction] = useState(faction ?? undefined);
 
+  const currentPage = parseInt(searchParams.get("p") ?? "1");
+  const totalPages = pagination;
+
+  const handlePageChange = (page: number) => {
+    searchParams.set("p", page.toString());
+    window.location.search = searchParams.toString();
+  };
+
   return (
-    <div className="max-w-screen-xl mx-auto p-6">
+    <div className="global-page">
       {/* Search Form */}
       <Form method="get" className="mb-8">
         <div className="flex flex-col gap-2">
@@ -128,22 +119,33 @@ export default function SearchPage() {
             </div>
           </div>
           <div className="align-self-start">
-              <Button
-                type="submit"
-                className="bg-accent/80 text-foreground hover:bg-accent"
-              >
-                Search
-              </Button>
-            </div>
+            <Button
+              type="submit"
+              className="bg-accent/80 text-foreground hover:bg-accent"
+            >
+              Search
+            </Button>
+          </div>
         </div>
       </Form>
 
       {/* Results Section */}
       {results.length > 0 ? (
         <div className="space-y-6">
-          <h2 className="text-xl font-semibold">
-            Showing {results.length} matching {total ? `(total ${total})` : ""}
-          </h2>
+          <div className="flex flex-row justify-between gap-8">
+            <h2 className="grow-1 text-xl font-semibold">
+              Showing {pagination.totalCount} matching
+            </h2>
+            {pagination.pageCount && pagination.pageCount > 1 ? (
+              <div>
+                <ResultsPagination
+                  currentPage={currentPage ?? 1}
+                  totalPages={pagination.pageCount ?? 1}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            ) : null}
+          </div>
           <ResultGrid results={results} now={now} />
         </div>
       ) : loaderData?.query ? (
