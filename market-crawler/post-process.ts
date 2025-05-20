@@ -132,10 +132,59 @@ async function upsertAbilityPart(partType: AbilityPartType, text?: string): Prom
 
 let totalProcessed = 0;
 
-export async function processUniques(fromPage: number = 0, toPage: number | undefined = undefined, batchSize = 100) {
+export async function processOneUnique(unique: UniqueInfo) {
+  let processedCard = processOneCard(unique);
+  if (processedCard && processedCard.mainAbilities.length > 0) {
+    if (verboseLevel >= 2) {
+      console.log(`---------------------`)
+      console.log(`${processedCard.uniqueInfo.nameEn} (${processedCard.uniqueInfo.ref})`)
+      console.log(`text: ${processedCard.uniqueInfo.mainEffectEn}`)
+    }
+
+    let i = 1;
+    for (let ability of processedCard.mainAbilities) {
+      let triggerPart = await upsertAbilityPart(AbilityPartType.Trigger, ability.triggerText);
+      let triggerConditionPart = await upsertAbilityPart(AbilityPartType.TriggerCondition, ability.triggerConditionText);
+      let conditionPart = await upsertAbilityPart(AbilityPartType.Condition, ability.conditionText);
+      let effectPart = await upsertAbilityPart(AbilityPartType.Effect, ability.effectText);
+
+      let blob = {
+        textEn: ability.textEn,
+        genericTrigger: ability.genericTrigger,
+        triggerId: triggerPart?.id,
+        triggerConditionId: triggerConditionPart?.id,
+        conditionId: conditionPart?.id,
+        effectId: effectPart?.id,
+      }
+      let dbAbility = await prisma.mainUniqueAbility.upsert({
+        where: {
+          uniqueInfoId_lineNumber: {
+            uniqueInfoId: unique.id,
+            lineNumber: i,
+          }
+        },
+        update: blob,
+        create: {
+          uniqueInfoId: unique.id,
+          lineNumber: i,
+          ...blob,
+        }
+      })
+      
+      if (verboseLevel >= 3) {
+        console.log(` - ${ability.textEn}`)
+        console.dir(pick(ability, ["genericTrigger", "triggerText", "triggerConditionText", "conditionText", "effectText"]))
+        console.log(`  --> Ability #${dbAbility.id} (trigger=${triggerPart?.id}, trigCond=${triggerConditionPart?.id} condition=${conditionPart?.id}, effect=${effectPart?.id})`)
+      }
+      i += 1;
+    }
+  }
+}
+
+export async function processUniquesBatch(fromPage: number = 0, toPage: number | undefined = undefined, batchSize = 100) {
   let page = fromPage;
   while (toPage && page < toPage) {
-    let uniques = await prisma.uniqueInfo.findMany({
+    let batchUniques = await prisma.uniqueInfo.findMany({
       where: {
         AND: [
           { mainEffectEn: { not: null } },
@@ -145,61 +194,14 @@ export async function processUniques(fromPage: number = 0, toPage: number | unde
       skip: batchSize * page,
     })
 
-    if (uniques.length == 0) {
+    if (batchUniques.length == 0) {
       console.log(`Reached end of UniqueInfo (at page ${page})`)
       break;
     }
 
-    for (let unique of uniques) {
-      let processedCard = processOneCard(unique);
-      
-      if (processedCard && processedCard.mainAbilities.length > 0) {
-        if (verboseLevel >= 2) {
-          console.log(`---------------------`)
-          console.log(`${processedCard.uniqueInfo.nameEn} (${processedCard.uniqueInfo.ref})`)
-          console.log(`text: ${processedCard.uniqueInfo.mainEffectEn}`)
-        }
-
-        let i = 1;
-        for (let ability of processedCard.mainAbilities) {
-          let triggerPart = await upsertAbilityPart(AbilityPartType.Trigger, ability.triggerText);
-          let triggerConditionPart = await upsertAbilityPart(AbilityPartType.TriggerCondition, ability.triggerConditionText);
-          let conditionPart = await upsertAbilityPart(AbilityPartType.Condition, ability.conditionText);
-          let effectPart = await upsertAbilityPart(AbilityPartType.Effect, ability.effectText);
-
-          let blob = {
-            textEn: ability.textEn,
-            genericTrigger: ability.genericTrigger,
-            triggerId: triggerPart?.id,
-            triggerConditionId: triggerConditionPart?.id,
-            conditionId: conditionPart?.id,
-            effectId: effectPart?.id,
-          }
-          let dbAbility = await prisma.mainUniqueAbility.upsert({
-            where: {
-              uniqueInfoId_lineNumber: {
-                uniqueInfoId: unique.id,
-                lineNumber: i,
-              }
-            },
-            update: blob,
-            create: {
-              uniqueInfoId: unique.id,
-              lineNumber: i,
-              ...blob,
-            }
-          })
-          
-          if (verboseLevel >= 3) {
-            console.log(` - ${ability.textEn}`)
-            console.dir(pick(ability, ["genericTrigger", "triggerText", "triggerConditionText", "conditionText", "effectText"]))
-            console.log(`  --> Ability #${dbAbility.id} (trigger=${triggerPart?.id}, trigCond=${triggerConditionPart?.id} condition=${conditionPart?.id}, effect=${effectPart?.id})`)
-          }
-          i += 1;
-        }
-
-        totalProcessed += 1;
-      }
+    for (let unique of batchUniques) {
+      await processOneUnique(unique);
+      totalProcessed += 1;
     }
     
     console.log(`Done with page ${page} (${totalProcessed} cards processed)`)

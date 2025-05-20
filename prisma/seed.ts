@@ -33,5 +33,9 @@ if (!session) {
     },
   });
 } else {
-  console.log("Session already exists: " + sessionName);
+  console.log("Session already exists, overwriting cookies " + sessionName);
+  await prisma.altggSession.update({
+    where: { id: session.id },
+    data: { refreshCookies: cookiesForDb },
+  });
 }

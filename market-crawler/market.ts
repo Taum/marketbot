@@ -15,6 +15,7 @@ import { getFamilyIdFromRef } from "@common/utils/altered.js";
 // Add the type from Prisma namespace
 type UniqueInfoCreateInput = Prisma.UniqueInfoCreateInput;
 export interface CardFamilyRequest {
+  fetchGenerationId: number;
   name: string;
   faction: string;
   cardFamilyId: string;
@@ -28,6 +29,8 @@ export interface HydraResponse {
     "hydra:next": string;
   };
 }
+
+// interface for the `/cards` endpoint -- not used currently
 export interface CardFamilyCardsData extends HydraResponse {
   "hydra:member": {
     reference: string;
@@ -52,6 +55,7 @@ export interface CardFamilyCardsData extends HydraResponse {
   }[];
 }
 
+// interface for the `/cards/stats` endpoint
 export interface CardFamilyStatsData extends HydraResponse {
   "hydra:member": {
     "@id": string,
@@ -66,100 +70,17 @@ const bannedWords = [
   'Haven', 'Foundry'
 ]
 
-export class CardFamilyStatsCrawler extends GenericIndexer<CardFamilyRequest, CardFamilyCardsData> {
-  constructor(authToken: string) {
-    // Create fetch and persist functions
-    const fetchFunc = async (request: CardFamilyRequest) => {
-      const url = this.buildUrl(request)
-
-      const headers = {
-        'Authorization': `Bearer ${authToken}`
-      }
-      const response = await fetch(url, {
-        headers
-      });
-      const json = await response.json() as CardFamilyCardsData;
-      return json;
-    };
-
-    const persistFunc = async (data: CardFamilyCardsData, request: CardFamilyRequest) => {
-      console.log(" ==> ", request)
-      console.log("Total Items: ", data["hydra:totalItems"]);
-      if (data["hydra:totalItems"] >= 1000) {
-        console.warn("$$$$$$$ Total items is greater than 1000 $$$$$$$")
-      }
-
-      const blob = {
-        name: request.name,
-        faction: request.faction,
-        cardFamilyId: request.cardFamilyId,
-        totalItems: data["hydra:totalItems"],
-      }
-
-      const previous = await prisma.cardFamilyStats.findFirst({
-        where: {
-          name: request.name,
-          faction: request.faction,
-        }
-      })
-      if (previous) {
-        await prisma.cardFamilyStats.update({
-          where: { id: previous.id },
-          data: blob,
-        })
-      } else {
-        await prisma.cardFamilyStats.create({
-          data: blob,
-        })
-      }
-    };
-
-    // Call super with the fetch and persist functions, plus any options
-    super(fetchFunc, persistFunc, { maxOperationsPerWindow: 1, windowMs: 2000 });
+export async function getNextFetchGenerationId(): Promise<number> {
+  const marketUpdateStats = await prisma.marketUpdateStats.findFirst({
+    orderBy: {
+      generationId: 'desc',
+    },
+  })
+  if (!marketUpdateStats) {
+    return 1;
   }
-
-  public async addAllNotInDatabase() {
-    const cardsDb = cardsJson as unknown as Record<string, CardDbEntry>
-
-    let requests: CardFamilyRequest[] = []
-    for (const cardKey in cardsDb) {
-      // if (requests.size > 3) break;
-      const card = cardsDb[cardKey];
-      if (card.type == CardType.CHARACTER && card.rarity == Rarity.RARE) {
-        const inDb = await prisma.cardFamilyStats.findFirst({
-          where: {
-            name: card.name.en,
-            faction: card.mainFaction,
-          }
-        })
-        if (!inDb || inDb.totalItems >= 1000 || inDb.totalItems <= 0) {
-          const familyId = getFamilyIdFromRef(card.id);
-          requests.push({
-            name: card.name.en,
-            faction: card.mainFaction,
-            cardFamilyId: familyId,
-          })
-        }
-      }
-    }
-    const requestsArray = unique(requests, (r) => `${r.name}-${r.faction}`);
-    this.addRequests(requestsArray)
-  }
-
-  private buildUrl(request: CardFamilyRequest) {
-    let strippedName = request.name.toLowerCase();
-    for (const word of bannedWords) {
-      strippedName = strippedName.replace(new RegExp(`\\b${word}\\b`, "i"), '');
-    }
-    if (strippedName != request.name.toLowerCase()) {
-      console.debug(`Stripped name from ${request.name} -> ${strippedName}`)
-    }
-    const urlSafeName = encodeURIComponent(strippedName.trim());
-
-    return `https://api.altered.gg/cards?factions%5B%5D=${request.faction}&inSale=true&translations.name=${urlSafeName}&rarity%5B%5D=UNIQUE&itemsPerPage=5&locale=en-us`;
-  }
+  return marketUpdateStats.generationId + 1;
 }
-
 
 export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, CardFamilyStatsData, Response> {
   constructor(authTokenService: AuthTokenService) {
@@ -170,6 +91,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
         url = "https://api.altered.gg" + request.nextPage;
       } else {
         url = this.buildUrl(request);
+        this.cardFamilyStatsRecordFetchStart(request);
       }
 
       const headers = await authTokenService.getAuthorizationHeaders()
@@ -185,8 +107,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
         console.log(`Family=${request.name} Faction=${request.faction} : ${pageNumber} -> ${data["hydra:member"].length} items`)
       } catch (e) {
         console.error(`Error parsing hydra:view for Family=${request.name} Faction=${request.faction}`, e)
-        const responseText = await response.text
-        console.log("Raw response:", responseText)
+        console.log("Raw response:", data)
         throw e;
       }
 
@@ -195,12 +116,16 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
         for (const member of data["hydra:member"]) {
           let cardBlob = buildCardBlobWithStats(member, request);
           cardBlob.lastSeenInSaleAt = new Date();
+          cardBlob.lastSeenGenerationId = request.fetchGenerationId
           await tx.uniqueInfo.upsert({
             where: {
               ref: cardBlob.ref,
             },
             update: cardBlob,
-            create: cardBlob,
+            create: {
+              ...cardBlob,
+              firstSeenGenerationId: request.fetchGenerationId,
+            },
           })
           i += 1
         }
@@ -210,12 +135,16 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
       if (nextPath) {
         await this.addRequests([
           {
+            fetchGenerationId: request.fetchGenerationId,
             name: request.name,
             faction: request.faction,
             cardFamilyId: request.cardFamilyId,
             nextPage: nextPath,
           }
         ], true)
+      } else {
+        const totalItems = data["hydra:totalItems"]
+        await this.cardFamilyStatsRecordFetchComplete(request, totalItems)
       }
     }
 
@@ -223,7 +152,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
     super(fetchPage, persistPage, { maxOperationsPerWindow: 1, windowMs: 2000 });
   }
 
-  public async addAllWithFilter(filter: ((card: CardDbEntry) => boolean) | null = null) {
+  public async addAllWithFilter(fetchGenerationId: number, filter: ((card: CardDbEntry) => boolean) | null = null) {
     const cardsDb = cardsJson as unknown as Record<string, CardDbEntry>
 
     let requests: CardFamilyRequest[] = []
@@ -231,14 +160,15 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
       const card = cardsDb[cardKey];
       if (card.type == CardType.CHARACTER && card.rarity == Rarity.RARE) {
         if (filter && !filter(card)) { continue }
-        requests.unshift({
+        requests.push({
+          fetchGenerationId: fetchGenerationId,
           name: card.name.en,
           faction: card.mainFaction,
           cardFamilyId: getFamilyIdFromRef(card.id),
         })
       }
     }
-    const requestsArray = unique(requests, (r) => `${r.name}-${r.faction}`);
+    const requestsArray = unique(requests, (r) => `${r.cardFamilyId}-${r.faction}`);
     this.addRequests(requestsArray)
   }
 
@@ -253,6 +183,60 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
     const urlSafeName = encodeURIComponent(strippedName.trim());
 
     return `https://api.altered.gg/cards/stats?factions%5B%5D=${request.faction}&inSale=true&translations.name=${urlSafeName}&rarity%5B%5D=UNIQUE&itemsPerPage=36&locale=en-us`;
+  }
+
+  private async cardFamilyStatsRecordFetchStart(request: CardFamilyRequest) {
+    const cardFamilyStats = await prisma.cardFamilyStats.findUnique({
+      where: {
+        cardFamilyId_faction: {
+          cardFamilyId: request.cardFamilyId,
+          faction: request.faction,
+        },
+      },
+    })
+    const blob = {
+      fetchStartedAt: new Date(),
+      fetchStartGeneration: request.fetchGenerationId,
+    }
+    await prisma.cardFamilyStats.upsert({
+      where: {
+        cardFamilyId_faction: {
+          cardFamilyId: request.cardFamilyId,
+          faction: request.faction,
+        },
+      },
+      update: blob,
+      create: {
+        name: request.name,
+        cardFamilyId: request.cardFamilyId,
+        faction: request.faction,
+        ...blob,
+      },
+    })
+  }
+
+  private async cardFamilyStatsRecordFetchComplete(request: CardFamilyRequest, totalItems: number) {
+    try {
+      const cardFamilyStats = await prisma.cardFamilyStats.findUniqueOrThrow({
+        where: {
+          cardFamilyId_faction: {
+            cardFamilyId: request.cardFamilyId,
+            faction: request.faction,
+          },
+        }
+      })
+      const blob = {
+        fetchCompletedAt: new Date(),
+        fetchCompletedGeneration: request.fetchGenerationId,
+        totalItems: totalItems,
+      }
+      await prisma.cardFamilyStats.update({
+        where: { id: cardFamilyStats.id },
+        data: blob,
+      })
+    } catch (err) {
+      console.error("Error in cardFamilyStatsRecordFetchComplete: ", err)
+    }
   }
 }
 

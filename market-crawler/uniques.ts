@@ -2,6 +2,7 @@ import { GenericIndexer } from "./generic-indexer.js";
 import { AlteredggCard } from "@common/models/cards.js";
 import prisma from "@common/utils/prisma.server.js";
 import { delay } from "@common/utils/promise.js";
+import { processOneUnique } from "./post-process.js";
 
 export interface UniqueRequest {
   id: string;
@@ -36,18 +37,24 @@ export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
         echoEffectEn: cardData!.elements.ECHO_EFFECT,
         cardSet: cardData!.cardSet.reference,
         fetchedDetails: true,
+        fetchedDetailsAt: new Date(),
       }
 
       try {
-        await prisma.uniqueInfo.upsert({
+        const uniqueInfo = await prisma.uniqueInfo.upsert({
           where: { ref: blob.ref },
           update: blob,
           create: blob,
         });
         console.debug(`Recorded unique ${blob.ref} (${blob.nameEn})`);
+
+        // Post-process the unique -- breakdown abilities and upsert them
+        await processOneUnique(uniqueInfo);
+
       } catch (error) {
         console.error(`Error recording unique ${blob.ref} (${blob.nameEn}): ${error}`);
       }
+
     };
 
     // Call super with the fetch and persist functions, plus any options

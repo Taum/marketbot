@@ -14,7 +14,7 @@ export class AuthTokenService {
   constructor(private sessionName: string) {
   }
 
-  async getToken(): Promise<AuthToken> {
+  async getToken({ forceRefresh = false }: { forceRefresh?: boolean } = {}): Promise<AuthToken> {
     if (this._token && !this.expiredSoon(this._token.expiresAt)) {
       return this._token;
     }
@@ -25,30 +25,32 @@ export class AuthTokenService {
 
     // We cache the actual token refresh, so that multiple callers wait on the same promise
     // rather than each triggering their own refresh
-    this._getTokenPromise = this._doGetToken();
+    this._getTokenPromise = this._doGetToken(forceRefresh);
     this._getTokenPromise.finally(() => this._getTokenPromise = null);
     return this._getTokenPromise;
   }
 
-  private async _doGetToken(): Promise<AuthToken> {
-    const session = await prisma.altggSession.findFirst({
-      where: {
-        name: this.sessionName,
-      },
-    });
-    if (!session) {
-      throw new Error(`Session ${this.sessionName} not found`);
-    }
-    if (session.accessToken != null && session.expiresAt != null && this.expiredSoon(session.expiresAt)) {
-      const token = {
-        token: session.accessToken,
-        expiresAt: session.expiresAt,
+  private async _doGetToken(forceRefresh: boolean): Promise<AuthToken> {
+    if (!forceRefresh) {
+      const session = await prisma.altggSession.findFirst({
+        where: {
+          name: this.sessionName,
+        },
+      });
+      if (!session) {
+        throw new Error(`Session ${this.sessionName} not found`);
       }
-      this._token = token;
-      return token;
+      if (session.accessToken != null && session.expiresAt != null && this.expiredSoon(session.expiresAt)) {
+        const token = {
+          token: session.accessToken,
+          expiresAt: session.expiresAt,
+        }
+        this._token = token;
+        return token;
+      }
     }
 
-    // We don't have a token in DB or it's expired, let's refresh it
+    // We don't have a token in DB or it's expired, or we're forcing a refresh, let's refresh it
     const newToken = await refreshAccessToken(this.sessionName);
     if (newToken) {
       this._token = newToken

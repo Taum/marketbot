@@ -1,6 +1,6 @@
 import { getEnv } from './helpers.js';
 import { UniquesCrawler } from './uniques.js';
-import { ExhaustiveInSaleCrawler } from './market.js';
+import { ExhaustiveInSaleCrawler, getNextFetchGenerationId } from './market.js';
 import prisma from '@common/utils/prisma.server.js';
 import { AuthTokenService } from './refresh-token.js';
 import { Faction } from '@common/models/cards.js';
@@ -17,7 +17,14 @@ const exhaustiveInSaleCrawler = new ExhaustiveInSaleCrawler(authTokenService);
 
 const uniquesCrawler = new UniquesCrawler();
 
-await exhaustiveInSaleCrawler.addAllWithFilter((c) => {
+const fetchGenerationId = await getNextFetchGenerationId();
+
+// Let AuthTokenService refresh the token first if needed
+const token = await authTokenService.getToken({ forceRefresh: true });
+
+console.log(`Token refreshed: ${token.token.slice(0, 20)}...[redacted] - Expires: ${token.expiresAt}`);
+
+await exhaustiveInSaleCrawler.addAllWithFilter(fetchGenerationId, (c) => {
   // We can implement filters here to exclude certain families
   return true;
 })
@@ -29,8 +36,9 @@ const inSaleCompletion = exhaustiveInSaleCrawler
 
 await uniquesCrawler.enqueueUntil(inSaleCompletion)
 
-// Enqueue one more when finished
-await uniquesCrawler.enqueueUniquesWithMissingEffects();
+// Enqueue large batch when market crawler is finished
+// this should ensure we get all the missing uniques -- we may have to even remove this limit
+await uniquesCrawler.enqueueUniquesWithMissingEffects({ limit: 10000 });
 await uniquesCrawler
   .waitForCompletion()
   .then(() => console.log("Uniques task completed"));

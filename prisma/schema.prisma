@@ -27,9 +27,12 @@ model UniqueInfo {
   echoEffectEn  String?
 
   fetchedDetails Boolean @default(false)
+  fetchedDetailsAt DateTime?
 
-  lastSeenInSaleAt    DateTime?
-  lastSeenInSalePrice Decimal?
+  firstSeenGenerationId Int?
+  lastSeenGenerationId  Int?
+  lastSeenInSaleAt      DateTime?
+  lastSeenInSalePrice   Decimal?
 
   // This is the short unique ID of the "family" e.g. LY_14
   // Note that Out-of-faction uniques will have the same family ID as the in-faction
@@ -54,15 +57,15 @@ model MainUniqueAbility {
 
   textEn String
 
-  genericTrigger          GenericTriggerType?
-  triggerId               Int?
-  trigger                 MainUniqueAbilityPart? @relation("trigger", fields: [triggerId], references: [id])
-  triggerConditionId      Int?
-  triggerCondition        MainUniqueAbilityPart? @relation("triggerCondition", fields: [triggerConditionId], references: [id])
-  conditionId             Int?
-  condition               MainUniqueAbilityPart? @relation("condition", fields: [conditionId], references: [id])
-  effectId                Int?
-  effect                  MainUniqueAbilityPart? @relation("effect", fields: [effectId], references: [id])
+  genericTrigger     GenericTriggerType?
+  triggerId          Int?
+  trigger            MainUniqueAbilityPart? @relation("trigger", fields: [triggerId], references: [id])
+  triggerConditionId Int?
+  triggerCondition   MainUniqueAbilityPart? @relation("triggerCondition", fields: [triggerConditionId], references: [id])
+  conditionId        Int?
+  condition          MainUniqueAbilityPart? @relation("condition", fields: [conditionId], references: [id])
+  effectId           Int?
+  effect             MainUniqueAbilityPart? @relation("effect", fields: [effectId], references: [id])
 
   @@unique([id])
   @@unique([uniqueInfoId, lineNumber])
@@ -87,16 +90,33 @@ model MainUniqueAbilityPart {
   @@index([textEn])
 }
 
+// This will be a singleton entry
+model MarketUpdateStats {
+  generationId Int @id @default(autoincrement())
+
+  updateStartedAt   DateTime
+  updateCompletedAt DateTime?
+
+  @@unique([generationId])
+  @@index([generationId])
+}
+
 model CardFamilyStats {
   id           Int    @id @default(autoincrement())
   name         String
   cardFamilyId String
   faction      String
-  totalItems   Int
+
+  fetchStartedAt           DateTime?
+  fetchCompletedAt         DateTime?
+  fetchStartGeneration     Int
+  fetchCompletedGeneration Int?
+  totalItems               Int?
 
   @@unique([id])
+  @@unique([cardFamilyId, faction])
   @@index([id])
-  @@index([name, faction])
+  @@index([cardFamilyId, faction])
 }
 
 model AltggSession {
