@@ -19,6 +19,8 @@ const uniquesCrawler = new UniquesCrawler();
 
 const fetchGenerationId = await getNextFetchGenerationId();
 
+console.log(`Start crawler with fetchGenerationId=${fetchGenerationId}`);
+
 // Let AuthTokenService refresh the token first if needed
 const token = await authTokenService.getToken({ forceRefresh: true });
 

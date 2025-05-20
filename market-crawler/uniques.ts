@@ -3,6 +3,7 @@ import { AlteredggCard } from "@common/models/cards.js";
 import prisma from "@common/utils/prisma.server.js";
 import { delay } from "@common/utils/promise.js";
 import { processOneUnique } from "./post-process.js";
+import { throttlingConfig } from "./config.js";
 
 export interface UniqueRequest {
   id: string;
@@ -58,7 +59,7 @@ export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
     };
 
     // Call super with the fetch and persist functions, plus any options
-    super(fetchUnique, persistUnique, { maxOperationsPerWindow: 10, windowMs: 6000 });
+    super(fetchUnique, persistUnique, throttlingConfig["uniques"]);
   }
 
 

@@ -10,6 +10,7 @@ import cardsJson from "@data/cards_min.json" assert { type: "json" };
 import Decimal from "decimal.js";
 import { AuthTokenService } from "./refresh-token.js";
 import { getFamilyIdFromRef } from "@common/utils/altered.js";
+import { throttlingConfig } from "./config.js";
 
 
 // Add the type from Prisma namespace
@@ -149,7 +150,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
     }
 
     // Call super with the fetch and persist functions, plus any options
-    super(fetchPage, persistPage, { maxOperationsPerWindow: 1, windowMs: 2000 });
+    super(fetchPage, persistPage, throttlingConfig["market"]);
   }
 
   public async addAllWithFilter(fetchGenerationId: number, filter: ((card: CardDbEntry) => boolean) | null = null) {
@@ -186,14 +187,6 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
   }
 
   private async cardFamilyStatsRecordFetchStart(request: CardFamilyRequest) {
-    const cardFamilyStats = await prisma.cardFamilyStats.findUnique({
-      where: {
-        cardFamilyId_faction: {
-          cardFamilyId: request.cardFamilyId,
-          faction: request.faction,
-        },
-      },
-    })
     const blob = {
       fetchStartedAt: new Date(),
       fetchStartGeneration: request.fetchGenerationId,
@@ -217,6 +210,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
 
   private async cardFamilyStatsRecordFetchComplete(request: CardFamilyRequest, totalItems: number) {
     try {
+      // This throw is caught within this method, so we don't interrupt the crawler for stats errors
       const cardFamilyStats = await prisma.cardFamilyStats.findUniqueOrThrow({
         where: {
           cardFamilyId_faction: {
@@ -240,7 +234,8 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
   }
 }
 
-
+// This builds a partial card blob from the `/cards` endpoint.
+// (not used currently)
 function buildCardBlob(member: CardFamilyCardsData["hydra:member"][0]): UniqueInfoCreateInput {
   return {
     ref: member.reference,
