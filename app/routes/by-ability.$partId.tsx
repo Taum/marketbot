@@ -83,6 +83,11 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
         },
       },
     },
+    orderBy: {
+      uniqueInfo: {
+        lastSeenInSalePrice: "asc",
+      },
+    },
     take: PAGE_SIZE,
     skip: (currentPage - 1) * PAGE_SIZE,
   });
@@ -145,7 +150,7 @@ export default function ByAbilityPartRoute() {
         <span className="text text-muted-foreground">Ability ({part.partType}):</span>
         <h1 className="text-xl font-bold mb-2">{part.textEn}</h1>
         <div className="text-sm text-muted-foreground">
-          <p>Found in {results.length} cards</p>
+          <p>Found in {pagination.totalCount} cards</p>
         </div>
       </div>
 
