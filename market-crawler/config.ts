@@ -6,8 +6,8 @@ export interface ThrottlingConfig {
 
 export const throttlingConfig: { [key: string]: ThrottlingConfig } = {
   "market": {
-    maxOperationsPerWindow: 1,
-    windowMs: 2000,
+    maxOperationsPerWindow: 5,
+    windowMs: 5000,
   },
   "uniques": {
     maxOperationsPerWindow: 5,

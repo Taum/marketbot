@@ -13,20 +13,29 @@ export interface IdentifiedRequest<T = any> {
 export type FetchFunction<Req = any, Data = any> = (request: Req) => Promise<Data>;
 export type PersistFunction<Req = any, Data = any> = (data: Data, request: Req) => Promise<void>;
 
-export class GenericIndexer<Req = any, Data = any, Response = Data> {
+export class GenericIndexer<Req = any, Data = any, Response = Data, Comp = any> {
   private queue: Req[] = [];
   private fetchFn: FetchFunction<Req, Response>;
   private persistFn: PersistFunction<Req, Response>;
   private throttle: any;
 
-  private _waitForCompletionPromise: Promise<void> | null = null;
-  private _waitForCompletionResolve: ((value: void) => void) | null = null;
+  protected _completionValue: Comp;
+  protected set completionValue(value: Comp) {
+    this._completionValue = value;
+  }
+  protected get completionValue(): Comp {
+    return this._completionValue;
+  }
+
+  private _waitForCompletionPromise: Promise<Comp> | null = null;
+  private _waitForCompletionResolve: ((value: Comp) => void) | null = null;
   private _waitForCompletionReject: ((error: Error) => void) | null = null;
   private _isProcessing = false;
 
   constructor(
     fetch: FetchFunction<Req, Response>,
     persist: PersistFunction<Req, Response>,
+    initialCompletionValue: Comp,
     options: {
       concurrency?: number,
       maxOperationsPerWindow?: number,
@@ -35,6 +44,8 @@ export class GenericIndexer<Req = any, Data = any, Response = Data> {
   ) {
     this.fetchFn = fetch;
     this.persistFn = persist;
+
+    this._completionValue = initialCompletionValue;
 
     // Create throttle instance for rate limiting
     const maxOps = options.maxOperationsPerWindow || 60;
@@ -69,9 +80,9 @@ export class GenericIndexer<Req = any, Data = any, Response = Data> {
     this.processQueue();
   }
 
-  public waitForCompletion(): Promise<void> {
+  public waitForCompletion(): Promise<Comp> {
     if (!this._isProcessing) {
-      return Promise.resolve();
+      return Promise.resolve(this.completionValue);
     }
     if (this._waitForCompletionPromise) {
       return this._waitForCompletionPromise;
@@ -132,6 +143,6 @@ export class GenericIndexer<Req = any, Data = any, Response = Data> {
     }
 
     this._isProcessing = false;
-    this._waitForCompletionResolve?.();
+    this._waitForCompletionResolve?.(this.completionValue);
   }
 } 

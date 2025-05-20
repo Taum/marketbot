@@ -4,6 +4,7 @@ import prisma from "@common/utils/prisma.server.js";
 import { delay } from "@common/utils/promise.js";
 import { processOneUnique } from "./post-process.js";
 import { throttlingConfig } from "./config.js";
+import { getEnv } from "./helpers.js";
 
 export interface UniqueRequest {
   id: string;
@@ -12,6 +13,8 @@ export interface UniqueRequest {
 export interface UniqueData {
   card: AlteredggCard;
 }
+
+const debugCrawler = getEnv("DEBUG_CRAWLER") == "true";
 
 export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
   constructor() {
@@ -74,7 +77,7 @@ export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
       take: limit,
     });
 
-    console.log(`Uniques tasking enqueueing ${uniques.length} uniques...`)
+    console.log(`Uniques task enqueueing ${uniques.length} uniques...`)
     for (const unique of uniques) {
       await this.addRequests([{ id: unique.ref }]);
     }
@@ -86,8 +89,12 @@ export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
     while (!otherDone) {
       await this.enqueueUniquesWithMissingEffects()
       await this.waitForCompletion()
-      console.log("Uniques task pausing for 60s...")
-      await delay(60_000)
+      if (debugCrawler) {
+        console.log("Uniques task pausing for 10s...")
+        await delay(10_000)
+      } else {
+        await delay(60_000)
+      }
     }
   }
 }

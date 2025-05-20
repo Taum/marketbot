@@ -65,6 +65,11 @@ export interface CardFamilyStatsData extends HydraResponse {
   }[];
 }
 
+export interface MarketUpdateCrawlerStats {
+  totalOffersUpdated: number;
+  newCardsAdded: number;
+}
+
 const bannedWords = [
   'Lyra', 'Ordis', 'Yzmir', 'Muna', 'Axiom', 'Bravos',
   'The', 'of',
@@ -83,7 +88,30 @@ export async function getNextFetchGenerationId(): Promise<number> {
   return marketUpdateStats.generationId + 1;
 }
 
-export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, CardFamilyStatsData, Response> {
+export async function marketUpdateStatsStart(generationId: number): Promise<void> {
+  await prisma.marketUpdateStats.create({
+    data: {
+      generationId: generationId,
+      updateStartedAt: new Date(),
+    },
+  })
+}
+
+export async function marketUpdateStatsComplete(
+  generationId: number,
+  crawlerStats: MarketUpdateCrawlerStats | null): Promise<void> {
+  await prisma.marketUpdateStats.update({
+    where: { generationId: generationId },
+    data: {
+      ...crawlerStats,
+      updateCompletedAt: new Date(),
+    },
+  })
+}
+
+
+export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, CardFamilyStatsData, Response, MarketUpdateCrawlerStats> {
+
   constructor(authTokenService: AuthTokenService) {
     // Create fetch and persist functions
     const fetchPage = async (request: CardFamilyRequest) => {
@@ -118,7 +146,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
           let cardBlob = buildCardBlobWithStats(member, request);
           cardBlob.lastSeenInSaleAt = new Date();
           cardBlob.lastSeenGenerationId = request.fetchGenerationId
-          await tx.uniqueInfo.upsert({
+          const updatedOrCreated = await tx.uniqueInfo.upsert({
             where: {
               ref: cardBlob.ref,
             },
@@ -128,9 +156,15 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
               firstSeenGenerationId: request.fetchGenerationId,
             },
           })
+          if (updatedOrCreated.firstSeenGenerationId == request.fetchGenerationId) {
+            this.statsCardAddedIncrement();
+          }
           i += 1
         }
+
+        this.statsOffersUpdatedIncrement(i);
       })
+
 
       const nextPath = data["hydra:view"]["hydra:next"];
       if (nextPath) {
@@ -149,8 +183,13 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
       }
     }
 
+    const initialCrawlerStats: MarketUpdateCrawlerStats = {
+      totalOffersUpdated: 0,
+      newCardsAdded: 0,
+    }
+
     // Call super with the fetch and persist functions, plus any options
-    super(fetchPage, persistPage, throttlingConfig["market"]);
+    super(fetchPage, persistPage, initialCrawlerStats, throttlingConfig["market"]);
   }
 
   public async addAllWithFilter(fetchGenerationId: number, filter: ((card: CardDbEntry) => boolean) | null = null) {
@@ -171,6 +210,19 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
     }
     const requestsArray = unique(requests, (r) => `${r.cardFamilyId}-${r.faction}`);
     this.addRequests(requestsArray)
+  }
+
+  private statsCardAddedIncrement() {
+    this.completionValue = {
+      ...this.completionValue,
+      newCardsAdded: this.completionValue.newCardsAdded + 1,
+    }
+  }
+  private statsOffersUpdatedIncrement(by: number) {
+    this.completionValue = {
+      ...this.completionValue,
+      totalOffersUpdated: this.completionValue.totalOffersUpdated + by,
+    }
   }
 
   private buildUrl(request: CardFamilyRequest) {
