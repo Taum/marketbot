@@ -76,25 +76,13 @@ const bannedWords = [
   'Haven', 'Foundry'
 ]
 
-export async function getNextFetchGenerationId(): Promise<number> {
-  const marketUpdateStats = await prisma.marketUpdateStats.findFirst({
-    orderBy: {
-      generationId: 'desc',
-    },
-  })
-  if (!marketUpdateStats) {
-    return 1;
-  }
-  return marketUpdateStats.generationId + 1;
-}
-
-export async function marketUpdateStatsStart(generationId: number): Promise<void> {
-  await prisma.marketUpdateStats.create({
+export async function marketUpdateStatsStartAndGetGenerationId(): Promise<number> {
+  const stats = await prisma.marketUpdateStats.create({
     data: {
-      generationId: generationId,
       updateStartedAt: new Date(),
     },
   })
+  return stats.generationId;
 }
 
 export async function marketUpdateStatsComplete(

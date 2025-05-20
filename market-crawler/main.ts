@@ -1,6 +1,6 @@
 import { getEnv } from './helpers.js';
 import { UniquesCrawler } from './uniques.js';
-import { ExhaustiveInSaleCrawler, getNextFetchGenerationId, MarketUpdateCrawlerStats, marketUpdateStatsComplete, marketUpdateStatsStart } from './market.js';
+import { ExhaustiveInSaleCrawler, getNextFetchGenerationId, MarketUpdateCrawlerStats, marketUpdateStatsComplete, marketUpdateStatsStart, marketUpdateStatsStartAndGetGenerationId } from './market.js';
 import prisma from '@common/utils/prisma.server.js';
 import { AuthTokenService } from './refresh-token.js';
 
@@ -17,10 +17,9 @@ const exhaustiveInSaleCrawler = new ExhaustiveInSaleCrawler(authTokenService);
 
 const uniquesCrawler = new UniquesCrawler();
 
-const fetchGenerationId = await getNextFetchGenerationId();
+const fetchGenerationId = await marketUpdateStatsStartAndGetGenerationId();
 
-console.log(`Start crawler with fetchGenerationId=${fetchGenerationId}`);
-await marketUpdateStatsStart(fetchGenerationId);
+console.log(`Started crawler with fetchGenerationId=${fetchGenerationId}`);
 
 // Let AuthTokenService refresh the token first if needed
 const token = await authTokenService.getToken({ forceRefresh: true });
@@ -30,7 +29,7 @@ console.log(`Token refreshed: ${token.token.slice(0, 20)}...[redacted] - Expires
 await exhaustiveInSaleCrawler.addAllWithFilter(fetchGenerationId, (c) => {
   // We can implement filters here to exclude certain families
   if (debugCrawler) {
-    return c.name.en == "Alice";
+    return c.name.en == "Sun Wukong" && c.mainFaction == "MU";
   }
   return true;
 })
