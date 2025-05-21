@@ -128,31 +128,34 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
         throw e;
       }
 
-      await prisma.$transaction(async (tx) => {
-        let i = 0
-        for (const member of data["hydra:member"]) {
-          let cardBlob = buildCardBlobWithStats(member, request);
-          cardBlob.lastSeenInSaleAt = new Date();
-          cardBlob.lastSeenGenerationId = request.fetchGenerationId
-          const updatedOrCreated = await tx.uniqueInfo.upsert({
-            where: {
-              ref: cardBlob.ref,
-            },
-            update: cardBlob,
-            create: {
-              ...cardBlob,
-              firstSeenGenerationId: request.fetchGenerationId,
-            },
-          })
-          if (updatedOrCreated.firstSeenGenerationId == request.fetchGenerationId) {
-            this.statsCardAddedIncrement();
-          }
-          i += 1
-        }
-
-        this.statsOffersUpdatedIncrement(i);
+      const now = new Date();
+      // Prepare the card blobs to be upserted into the database
+      const cardBlobs: UniqueInfoCreateInput[] = data["hydra:member"].map((member) => {
+        const cardBlob = buildCardBlobWithStats(member, request);
+        cardBlob.lastSeenInSaleAt = now;
+        cardBlob.lastSeenGenerationId = request.fetchGenerationId;
+        return cardBlob;
       })
 
+      // Upsert the card blobs into the database
+      let addedCount = 0;
+      for (const cardBlob of cardBlobs) {
+        const updatedOrCreated = await prisma.uniqueInfo.upsert({
+          where: {
+            ref: cardBlob.ref,
+          },
+          update: cardBlob,
+          create: {
+            ...cardBlob,
+            firstSeenGenerationId: request.fetchGenerationId,
+          },
+        })
+        if (updatedOrCreated.firstSeenGenerationId == request.fetchGenerationId) {
+          addedCount += 1;
+        }
+      }
+      this.statsCardAddedIncrement(addedCount);
+      this.statsOffersUpdatedIncrement(cardBlobs.length);
 
       const nextPath = data["hydra:view"]["hydra:next"];
       if (nextPath) {
@@ -196,14 +199,16 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
         })
       }
     }
+
+    // Remove duplicates
     const requestsArray = unique(requests, (r) => `${r.cardFamilyId}-${r.faction}`);
     this.addRequests(requestsArray)
   }
 
-  private statsCardAddedIncrement() {
+  private statsCardAddedIncrement(by: number) {
     this.completionValue = {
       ...this.completionValue,
-      newCardsAdded: this.completionValue.newCardsAdded + 1,
+      newCardsAdded: this.completionValue.newCardsAdded + by,
     }
   }
   private statsOffersUpdatedIncrement(by: number) {
