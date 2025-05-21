@@ -13,6 +13,8 @@ export interface SearchQuery {
   triggerPart?: string;
   conditionPart?: string;
   effectPart?: string;
+  mainCosts: number[];
+  recallCosts: number[];
 }
 
 export interface PageParams {
@@ -91,7 +93,7 @@ export interface SearchResults {
 }
 
 export async function search(searchQuery: SearchQuery, pageParams: PageParams): Promise<SearchResults> {
-  const { faction, characterName, mainEffect, triggerPart, conditionPart, effectPart } = searchQuery
+  const { faction, characterName, mainEffect, triggerPart, conditionPart, effectPart, mainCosts, recallCosts } = searchQuery
   const { page, includePagination } = pageParams
 
   if (faction == null && characterName == null && mainEffect == null && triggerPart == null && conditionPart == null && effectPart == null) {
@@ -143,6 +145,22 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
         some: {
           AND: mainAbilitySearchParams
         }
+      }
+    })
+  }
+
+  if (mainCosts.length > 0) {
+    searchParams.push({
+      mainCost: {
+        in: mainCosts
+      }
+    })
+  }
+
+  if (recallCosts.length > 0) {
+    searchParams.push({
+      recallCost: {
+        in: recallCosts
       }
     })
   }

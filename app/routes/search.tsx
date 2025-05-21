@@ -6,7 +6,7 @@ import { FactionSelect } from "~/components/altered/FactionSelect";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { nullifyParseInt, nullifyTrim } from "~/lib/utils";
+import { nullifyParseInt, nullifyTrim, parseRange } from "~/lib/utils";
 import { ResultGrid } from "~/components/altered/ResultGrid";
 import { ResultsPagination } from "~/components/common/pagination";
 
@@ -19,18 +19,23 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const triggerPart = nullifyTrim(url.searchParams.get("tr"));
   const conditionPart = nullifyTrim(url.searchParams.get("cond"));
   const effectPart = nullifyTrim(url.searchParams.get("eff"));
+  const mainCostRange = nullifyTrim(url.searchParams.get("mc"));
+  const recallCostRange = nullifyTrim(url.searchParams.get("rc"));
 
   const currentPage = nullifyParseInt(url.searchParams.get("p")) ?? 1;
 
+  const mainCosts = parseRange(mainCostRange)
+  const recallCosts = parseRange(recallCostRange)
+
   const { results, pagination } = await search(
-    { faction, characterName, mainEffect, triggerPart, conditionPart, effectPart },
+    { faction, characterName, mainEffect, triggerPart, conditionPart, effectPart, mainCosts, recallCosts },
     { page: currentPage, includePagination: true }
   );
 
   return {
     results,
     pagination: { ...pagination, currentPage },
-    query: { faction, characterName, mainEffect, triggerPart, conditionPart, effectPart },
+    query: { faction, characterName, mainEffect, triggerPart, conditionPart, effectPart, mainCostRange, recallCostRange },
   };
 }
 
@@ -41,7 +46,7 @@ export default function SearchPage() {
   const now = useMemo(() => new Date(), []);
 
   // Safely destructure with default values
-  const { faction, characterName, mainEffect, triggerPart, conditionPart, effectPart } = loaderData?.query ?? {};
+  const { faction, characterName, mainEffect, triggerPart, conditionPart, effectPart, mainCostRange, recallCostRange } = loaderData?.query ?? {};
   const results = loaderData.results
   const pagination = loaderData.pagination
 
@@ -75,6 +80,24 @@ export default function SearchPage() {
                 name="cname"
                 defaultValue={characterName ?? ""}
                 placeholder="Character name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="mc">Hand cost</Label>
+              <Input
+                type="text"
+                name="mc"
+                defaultValue={mainCostRange ?? ""}
+                placeholder="1-3"
+              />
+            </div>
+            <div>
+              <Label htmlFor="rc">Reserve cost</Label>
+              <Input
+                type="text"
+                name="rc"
+                defaultValue={recallCostRange ?? ""}
+                placeholder="4,6"
               />
             </div>
           </div>
