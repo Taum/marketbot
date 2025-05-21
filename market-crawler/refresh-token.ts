@@ -1,5 +1,5 @@
 import prisma from "@common/utils/prisma.server";
-import { addHours, addMinutes, differenceInMinutes } from "date-fns";
+import { addHours, addMinutes, differenceInMinutes, isAfter } from "date-fns";
 
 export interface AuthToken {
   token: string;
@@ -15,7 +15,7 @@ export class AuthTokenService {
   }
 
   async getToken({ forceRefresh = false }: { forceRefresh?: boolean } = {}): Promise<AuthToken> {
-    if (this._token && !this.expiredSoon(this._token.expiresAt)) {
+    if (this._token && !this.isExpired(this._token.expiresAt)) {
       return this._token;
     }
 
@@ -40,7 +40,7 @@ export class AuthTokenService {
       if (!session) {
         throw new Error(`Session ${this.sessionName} not found`);
       }
-      if (session.accessToken != null && session.expiresAt != null && this.expiredSoon(session.expiresAt)) {
+      if (session.accessToken != null && session.expiresAt != null && this.isExpired(session.expiresAt)) {
         const token = {
           token: session.accessToken,
           expiresAt: session.expiresAt,
@@ -67,10 +67,8 @@ export class AuthTokenService {
     }
   }
 
-  // Try to refresh token 10 min before it expires
-  private expiredSoon(expiresAt: Date, now: Date = new Date()): boolean {
-    const timeDiff = differenceInMinutes(expiresAt, now);
-    return timeDiff < 10;
+  private isExpired(expiresAt: Date, now: Date = new Date()): boolean {
+    return isAfter(now, expiresAt);
   }
 
 }
@@ -145,9 +143,9 @@ export async function refreshAccessToken(name: string, inCookies: RefreshCookies
       }
     }).filter((c) => c.name.startsWith("__Secure-next-auth.session-token."));
     
-    // We enforce the Expiry at max 1 hour, to refresh the token earlier
+    // We enforce the Expiry at max 20 minutes, to try to work around JWT expired errors
     let expiresAtDate = new Date(sessionResponse.expires)
-    const maxExpiry = addHours(new Date(), 1)
+    const maxExpiry = addMinutes(new Date(), 20)
     if (expiresAtDate > maxExpiry) {
       console.log(`Original expires at ${expiresAtDate}, clamping to ${maxExpiry}`)
       expiresAtDate = maxExpiry
