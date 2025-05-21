@@ -1,5 +1,5 @@
 import prisma from "@common/utils/prisma.server.js";
-import { DisplayUniqueCard, Faction } from "~/models/cards";
+import { CardSet, DisplayUniqueCard, Faction } from "~/models/cards";
 import { AbilityPartType, Prisma } from '@prisma/client';
 
 // Add the type from Prisma namespace
@@ -8,6 +8,7 @@ type MainUniqueAbilityWhereInput = Prisma.MainUniqueAbilityWhereInput;
 
 export interface SearchQuery {
   faction?: string;
+  set?: string;
   characterName?: string;
   mainEffect?: string;
   triggerPart?: string;
@@ -93,10 +94,31 @@ export interface SearchResults {
 }
 
 export async function search(searchQuery: SearchQuery, pageParams: PageParams): Promise<SearchResults> {
-  const { faction, characterName, mainEffect, triggerPart, conditionPart, effectPart, mainCosts, recallCosts } = searchQuery
-  const { page, includePagination } = pageParams
+  const {
+    faction,
+    set,
+    characterName,
+    mainEffect,
+    triggerPart,
+    conditionPart,
+    effectPart,
+    mainCosts,
+    recallCosts,
+  } = searchQuery
+  const {
+    page,
+    includePagination,
+  } = pageParams
 
-  if (faction == null && characterName == null && mainEffect == null && triggerPart == null && conditionPart == null && effectPart == null) {
+  if (
+    faction == null &&
+    set == null &&
+    characterName == null &&
+    mainEffect == null &&
+    triggerPart == null &&
+    conditionPart == null &&
+    effectPart == null
+  ) {
     return { results: [], pagination: undefined }
   }
 
@@ -176,6 +198,22 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
       searchParams.push({
         recallCost: {
           in: recallCosts
+        }
+      })
+    }
+  }
+
+  if (set != null) {
+    if (set == CardSet.Core) {
+      searchParams.push({
+        cardSet: {
+          in: [CardSet.Core, "COREKS"]
+        }
+      })
+    } else {
+      searchParams.push({
+        cardSet: {
+          equals: set
         }
       })
     }

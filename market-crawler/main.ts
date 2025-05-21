@@ -26,10 +26,17 @@ const token = await authTokenService.getToken({ forceRefresh: true });
 
 console.log(`Token refreshed: ${token.token.slice(0, 20)}...[redacted] - Expires: ${token.expiresAt}`);
 
+if (debugCrawler) {
+  await exhaustiveInSaleCrawler.addSpecialQuery(fetchGenerationId, {
+    "cardSet": "BISE",
+  })
+}
+
 await exhaustiveInSaleCrawler.addAllWithFilter(fetchGenerationId, (c) => {
   // We can implement filters here to exclude certain families
   if (debugCrawler) {
-    return c.name.en == "Sun Wukong" && c.mainFaction == "MU";
+    return c.name.en == "Persephone" && c.mainFaction == "MU";
+    // return false;
   }
   return true;
 })

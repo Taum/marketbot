@@ -15,11 +15,16 @@ import { throttlingConfig } from "./config.js";
 
 // Add the type from Prisma namespace
 type UniqueInfoCreateInput = Prisma.UniqueInfoCreateInput;
-export interface CardFamilyRequest {
+
+export type CardFamilyRequest = {
   fetchGenerationId: number;
   name: string;
   faction: string;
   cardFamilyId: string;
+  nextPage?: string;
+} | {
+  fetchGenerationId: number;
+  queryParams: { [key: string]: string };
   nextPage?: string;
 }
 
@@ -122,9 +127,17 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
       try {
         const pageNumber = data["hydra:view"]["@id"].match(/page=\d+$/)?.[0];
         // const pageNumber = data["hydra:view"]["@id"].match(/page=\d+$/)?.[0];
-        console.log(`Family=${request.name} Faction=${request.faction} : ${pageNumber} -> ${data["hydra:member"].length} items`)
+        if ("queryParams" in request) {
+          console.log(`Query=${JSON.stringify(request.queryParams)} : ${pageNumber} -> ${data["hydra:member"].length} items`)
+        } else {
+          console.log(`Family=${request.name} Faction=${request.faction} : ${pageNumber} -> ${data["hydra:member"].length} items`)
+        }
       } catch (e) {
-        console.error(`Error parsing hydra:view for Family=${request.name} Faction=${request.faction}`, e)
+        if ("queryParams" in request) {
+          console.error(`Error parsing hydra:view for Query=${JSON.stringify(request.queryParams)}`, e)
+        } else {
+          console.error(`Error parsing hydra:view for Family=${request.name} Faction=${request.faction}`, e)
+        }
         console.log("Raw response:", data)
         throw e;
       }
@@ -155,6 +168,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
           addedCount += 1;
         }
       }
+      this.statsPagesLoadedIncrement(1);
       this.statsCardAddedIncrement(addedCount);
       this.statsOffersUpdatedIncrement(cardBlobs.length);
 
@@ -162,10 +176,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
       if (nextPath) {
         await this.addRequests([
           {
-            fetchGenerationId: request.fetchGenerationId,
-            name: request.name,
-            faction: request.faction,
-            cardFamilyId: request.cardFamilyId,
+            ...request,
             nextPage: nextPath,
           }
         ], true)
@@ -205,6 +216,10 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
     // Remove duplicates
     const requestsArray = unique(requests, (r) => `${r.cardFamilyId}-${r.faction}`);
     this.addRequests(requestsArray)
+  }
+
+  public async addSpecialQuery(fetchGenerationId: number, queryParams: { [key: string]: string }) {
+    this.addRequests([{ fetchGenerationId: fetchGenerationId, queryParams }])
   }
 
   private statsCardAddedIncrement(by: number) {
@@ -284,6 +299,9 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
   }
 
   private async cardFamilyStatsRecordFetchComplete(request: CardFamilyRequest, totalItems: number) {
+    if ("queryParams" in request) {
+      return;
+    }
     try {
       // This throw is caught within this method, so we don't interrupt the crawler for stats errors
       const cardFamilyStats = await prisma.cardFamilyStats.findUniqueOrThrow({
