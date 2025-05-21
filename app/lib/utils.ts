@@ -39,8 +39,8 @@ export function nullifyParseInt(value: string | null | undefined): number | unde
   return v;
 }
 
-export function parseRange(input: string | undefined): number[] {
-  if (!input) return [];
+export function parseRange(input: string | undefined): number[] | undefined {
+  if (!input) return undefined;
 
   const result: number[] = [];
 

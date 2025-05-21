@@ -13,8 +13,8 @@ export interface SearchQuery {
   triggerPart?: string;
   conditionPart?: string;
   effectPart?: string;
-  mainCosts: number[];
-  recallCosts: number[];
+  mainCosts?: number[];
+  recallCosts?: number[];
 }
 
 export interface PageParams {
@@ -149,7 +149,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     })
   }
 
-  if (mainCosts.length > 0) {
+  if (mainCosts) {
     searchParams.push({
       mainCost: {
         in: mainCosts
@@ -157,7 +157,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     })
   }
 
-  if (recallCosts.length > 0) {
+  if (recallCosts) {
     searchParams.push({
       recallCost: {
         in: recallCosts
