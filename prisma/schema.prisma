@@ -97,8 +97,9 @@ model MarketUpdateStats {
   updateStartedAt   DateTime
   updateCompletedAt DateTime?
 
-  totalOffersUpdated Int?
   newCardsAdded      Int?
+  totalOffersUpdated Int?
+  totalPagesLoaded   Int?
 
   @@unique([generationId])
   @@index([generationId])

@@ -66,8 +66,9 @@ export interface CardFamilyStatsData extends HydraResponse {
 }
 
 export interface MarketUpdateCrawlerStats {
-  totalOffersUpdated: number;
   newCardsAdded: number;
+  totalOffersUpdated: number;
+  totalPagesLoaded: number;
 }
 
 const bannedWords = [
@@ -175,15 +176,16 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
     }
 
     const initialCrawlerStats: MarketUpdateCrawlerStats = {
-      totalOffersUpdated: 0,
       newCardsAdded: 0,
+      totalPagesLoaded: 0,
+      totalOffersUpdated: 0,
     }
 
     // Call super with the fetch and persist functions, plus any options
     super(fetchPage, persistPage, initialCrawlerStats, throttlingConfig["market"]);
   }
 
-  public async addAllWithFilter(fetchGenerationId: number, filter: ((card: CardDbEntry) => boolean) | null = null) {
+  public async addAllWithFilter(fetchGenerationId: number, filter: ((card: CardDbEntry) => boolean) | undefined = undefined) {
     const cardsDb = cardsJson as unknown as Record<string, CardDbEntry>
 
     let requests: CardFamilyRequest[] = []
@@ -217,21 +219,49 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
       totalOffersUpdated: this.completionValue.totalOffersUpdated + by,
     }
   }
+  private statsPagesLoadedIncrement(by: number) {
+    this.completionValue = {
+      ...this.completionValue,
+      totalPagesLoaded: this.completionValue.totalPagesLoaded + by,
+    }
+  }
 
   private buildUrl(request: CardFamilyRequest) {
-    let strippedName = request.name.toLowerCase();
-    for (const word of bannedWords) {
-      strippedName = strippedName.replace(new RegExp(`\\b${word}\\b`, "i"), '');
-    }
-    if (strippedName != request.name.toLowerCase()) {
-      console.debug(`Stripped name from ${request.name} -> ${strippedName}`)
-    }
-    const urlSafeName = encodeURIComponent(strippedName.trim());
+    if ("queryParams" in request) {
+      const url = new URL("https://api.altered.gg/cards/stats")
+      for (const [key, value] of Object.entries(request.queryParams)) {
+        url.searchParams.set(key, value)
+      }
+      url.searchParams.set("inSale", "true")
+      url.searchParams.set("itemsPerPage", "36")
+      url.searchParams.set("locale", "en-us")
+      url.searchParams.set("rarity[]", "UNIQUE")
+      return url.toString()
+    } else {
+      let strippedName = request.name.toLowerCase();
+      for (const word of bannedWords) {
+        strippedName = strippedName.replace(new RegExp(`\\b${word}\\b`, "i"), '');
+      }
+      if (strippedName != request.name.toLowerCase()) {
+        console.debug(`Stripped name from ${request.name} -> ${strippedName}`)
+      }
+      const urlSafeName = encodeURIComponent(strippedName.trim());
 
-    return `https://api.altered.gg/cards/stats?factions%5B%5D=${request.faction}&inSale=true&translations.name=${urlSafeName}&rarity%5B%5D=UNIQUE&itemsPerPage=36&locale=en-us`;
+      const url = new URL("https://api.altered.gg/cards/stats")
+      url.searchParams.set("factions[]", request.faction)
+      url.searchParams.set("translations.name", urlSafeName)
+      url.searchParams.set("inSale", "true")
+      url.searchParams.set("rarity[]", "UNIQUE")
+      url.searchParams.set("itemsPerPage", "36")
+      url.searchParams.set("locale", "en-us")
+      return url.toString()
+    }
   }
 
   private async cardFamilyStatsRecordFetchStart(request: CardFamilyRequest) {
+    if ("queryParams" in request) {
+      return;
+    }
     const blob = {
       fetchStartedAt: new Date(),
       fetchStartGeneration: request.fetchGenerationId,
