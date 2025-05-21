@@ -150,19 +150,35 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
   }
 
   if (mainCosts) {
-    searchParams.push({
-      mainCost: {
-        in: mainCosts
-      }
-    })
+    if (mainCosts.length == 1) {
+      searchParams.push({
+        mainCost: {
+          equals: mainCosts[0]
+        }
+      })
+    } else {
+      searchParams.push({
+        mainCost: {
+          in: mainCosts
+        }
+      })
+    }
   }
 
   if (recallCosts) {
-    searchParams.push({
-      recallCost: {
-        in: recallCosts
-      }
-    })
+    if (recallCosts.length == 1) {
+      searchParams.push({
+        recallCost: {
+          equals: recallCosts[0]
+        }
+      })
+    } else {
+      searchParams.push({
+        recallCost: {
+          in: recallCosts
+        }
+      })
+    }
   }
 
   const whereClause: UniqueInfoWhereInput = {
