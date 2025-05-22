@@ -1,6 +1,6 @@
 import { getEnv } from './helpers.js';
 import { UniquesCrawler } from './uniques.js';
-import { ExhaustiveInSaleCrawler, getNextFetchGenerationId, MarketUpdateCrawlerStats, marketUpdateStatsComplete, marketUpdateStatsStart, marketUpdateStatsStartAndGetGenerationId } from './market.js';
+import { ExhaustiveInSaleCrawler, MarketUpdateCrawlerStats, marketUpdateStatsComplete, marketUpdateStatsStartAndGetGenerationId } from './market.js';
 import prisma from '@common/utils/prisma.server.js';
 import { AuthTokenService } from './refresh-token.js';
 
@@ -26,11 +26,9 @@ const token = await authTokenService.getToken({ forceRefresh: true });
 
 console.log(`Token refreshed: ${token.token.slice(0, 20)}...[redacted] - Expires: ${token.expiresAt}`);
 
-if (debugCrawler) {
-  await exhaustiveInSaleCrawler.addSpecialQuery(fetchGenerationId, {
-    "cardSet": "BISE",
-  })
-}
+await exhaustiveInSaleCrawler.addSpecialQuery(fetchGenerationId, {
+  "cardSet": "BISE",
+})
 
 await exhaustiveInSaleCrawler.addAllWithFilter(fetchGenerationId, (c) => {
   // We can implement filters here to exclude certain families

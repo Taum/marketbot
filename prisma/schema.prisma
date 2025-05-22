@@ -26,7 +26,7 @@ model UniqueInfo {
   mainEffectEn  String?
   echoEffectEn  String?
 
-  fetchedDetails Boolean @default(false)
+  fetchedDetails   Boolean   @default(false)
   fetchedDetailsAt DateTime?
 
   firstSeenGenerationId Int?
@@ -54,6 +54,7 @@ model MainUniqueAbility {
   uniqueInfoId Int
   uniqueInfo   UniqueInfo @relation(fields: [uniqueInfoId], references: [id])
   lineNumber   Int
+  isSupport    Boolean    @default(false)
 
   textEn String
 
