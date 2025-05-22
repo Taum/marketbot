@@ -8,6 +8,26 @@ export interface DisplayUniqueCard {
   echoEffect: string | null;
   lastSeenInSaleAt?: string;
   lastSeenInSalePrice?: string;
+  mainAbilities?: DisplayAbilityOnCard[];
+}
+export interface DisplayAbilityOnCard {
+  index: number;
+  text: string;
+  parts: DisplayAbilityPartOnCard[];
+}
+
+export interface DisplayAbilityPartOnCard {
+  id: number;
+  partType: string;
+  isSupport: boolean;
+  startIndex: number;
+  endIndex: number;
+}
+
+export enum AbilityPartType {
+  Trigger = "Trigger",
+  Condition = "Condition",
+  Effect = "Effect",
 }
 
 export enum Faction {

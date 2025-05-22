@@ -1,15 +1,7 @@
-import { LoaderFunctionArgs, json } from "@remix-run/node";
+import { LoaderFunctionArgs } from "@remix-run/node";
 import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
-import { AbilityPartType, MainUniqueAbility, MainUniqueAbilityPart, UniqueInfo } from "@prisma/client";
+import { AbilityPartType, MainUniqueAbility, MainUniqueAbilityPart } from "@prisma/client";
 import prisma from "@common/utils/prisma.server";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "~/components/ui/table";
 import { DisplayUniqueCard, Faction } from "~/models/cards";
 import { ResultGrid } from "~/components/altered/ResultGrid";
 import { ResultsPagination } from "~/components/common/pagination";
@@ -19,7 +11,6 @@ interface DisplayAbility {
   textEn: string
   parts: {
     trigger: { id: number, textEn: string } | null
-    triggerCondition: { id: number, textEn: string } | null
     condition: { id: number, textEn: string } | null
     effect: { id: number, textEn: string } | null
   }
@@ -59,14 +50,12 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     where: {
       OR: [
         { triggerId: partId },
-        { triggerConditionId: partId },
         { conditionId: partId },
         { effectId: partId },
       ],
     },
     include: {
       trigger: true,
-      triggerCondition: true,
       condition: true,
       effect: true,
       uniqueInfo: {
@@ -97,7 +86,6 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     where: {
       OR: [
         { triggerId: partId },
-        { triggerConditionId: partId },
         { conditionId: partId },
         { effectId: partId },
       ],
@@ -128,8 +116,6 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     generalSearchLink = `/search?eff=${part.textEn}`;
   } else if (part.partType == AbilityPartType.Trigger) {
     generalSearchLink = `/search?tr=${part.textEn}`;
-  } else if (part.partType == AbilityPartType.TriggerCondition) {
-    generalSearchLink = null;
   }
 
   return {

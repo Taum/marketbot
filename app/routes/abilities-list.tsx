@@ -1,12 +1,10 @@
 import { useLoaderData } from "@remix-run/react";
 import { Link } from "@remix-run/react";
 import prisma from "@common/utils/prisma.server";
-import { groupBy } from "~/lib/utils";
-import { MainUniqueAbility, MainUniqueAbilityPart } from "@prisma/client";
+import { cn, groupBy } from "~/lib/utils";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -18,12 +16,13 @@ interface DisplayAbilityPart {
   id: number;
   name: string;
   partType: string;
+  count: number;
+  isSupport: boolean;
 }
 
 type LoaderData = {
   abilityParts: {
     trigger: DisplayAbilityPart[];
-    triggerCondition: DisplayAbilityPart[];
     condition: DisplayAbilityPart[];
     effect: DisplayAbilityPart[];
   }
@@ -32,13 +31,37 @@ type LoaderData = {
 export async function loader() {
   // TODO: include count of MainUniqueAbility that include this part
   const abilities = await prisma.mainUniqueAbilityPart.findMany({
+    orderBy: [
+      {
+        isSupport: "asc",
+      },
+      {
+        textEn: "asc",
+      },
+    ],
+    include: {
+      triggerFor: true,
+      conditionFor: true,
+      effectFor: true,
+      _count: {
+        select: {
+          triggerFor: true,
+          conditionFor: true,
+          effectFor: true,
+        },
+      },
+    },
   });
   
-  const exportAbilities: DisplayAbilityPart[] = abilities.map((a) => ({
-    id: a.id,
-    name: a.textEn,
-    partType: a.partType.toString(),
-  }));
+  const exportAbilities: DisplayAbilityPart[] = abilities.map((a) => {
+    return {
+      id: a.id,
+      name: a.textEn,
+      partType: a.partType.toString(),
+      count: a._count.triggerFor + a._count.conditionFor + a._count.effectFor,
+      isSupport: a.isSupport,
+    }
+  });
   const groups = groupBy(exportAbilities, (a) => a.partType);
   const abilityParts = {
     trigger: groups.Trigger,
@@ -59,7 +82,6 @@ export default function AbilitiesList() {
       
       <div className="grid gap-8">
         <AbilityPartSection title="Trigger" abilityParts={abilityParts.trigger} />
-        <AbilityPartSection title="Trigger Condition" abilityParts={abilityParts.triggerCondition} />
         <AbilityPartSection title="Condition" abilityParts={abilityParts.condition} />
         <AbilityPartSection title="Effect" abilityParts={abilityParts.effect} />
       </div>
@@ -80,14 +102,18 @@ function AbilityPartSection({ title, abilityParts }: { title: string; abilityPar
           <TableRow>
             <TableHead>ID</TableHead>
             <TableHead>Name</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>Main / Support</TableHead>
+            <TableHead>Count</TableHead>
+            <TableHead></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {abilityParts.map((part) => (
-            <TableRow key={part.id}>
-              <TableCell className="font-medium">{part.id}</TableCell>
-              <TableCell>{part.name}</TableCell>
+            <TableRow className="font-medium" key={part.id}>
+              <TableCell className="text-muted-foreground">{part.id}</TableCell>
+              <TableCell className={cn(part.count == 0 && "line-through text-red-200")}>{part.name}</TableCell>
+              <TableCell>{part.isSupport ? "Support" : "Main"}</TableCell>
+              <TableCell className="text-right pr-12 w-1">{part.count}</TableCell>
               <TableCell>
                 <Link 
                   to={`/by-ability/${part.id}`} 

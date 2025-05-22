@@ -2,7 +2,7 @@ import { Link } from "@remix-run/react";
 import { formatDistance } from "date-fns";
 import { FC } from "react";
 import { CardImage } from "~/components/altered/CardImage";
-import { DisplayUniqueCard } from "~/models/cards";
+import { AbilityPartType, DisplayAbilityOnCard, DisplayAbilityPartOnCard, DisplayUniqueCard } from "~/models/cards";
 
 export interface ResultGridProps {
   results: DisplayUniqueCard[]
@@ -44,7 +44,7 @@ export const Result: FC<{ result: DisplayUniqueCard, now: Date }> = ({ result, n
           </div>
         </div>
         <div className="flex flex-col gap-4">
-          {result.mainEffect && <div className="text-sm">{result.mainEffect}</div>}
+          {result.mainEffect && <div className="text-sm">{result.mainAbilities ? formatMainEffect(result.mainEffect, result.mainAbilities) : result.mainEffect}</div>}
           {result.mainEffect && result.echoEffect && (
             <hr className="border-subtle-foreground border-b-1" />
           )}
@@ -63,3 +63,44 @@ function formatLastSeen(lastSeenInSaleAt: string | undefined, now: Date): string
   return fmtDiff
 }
 
+function formatMainEffect(mainEffect: string, abilities: DisplayAbilityOnCard[]): JSX.Element {
+  return <div className="flex flex-col gap-2 text-sm/4">
+    {abilities.map((ability, index) => {
+      return <div key={index}>
+        {formatAbility(ability)}
+      </div>
+    })}
+  </div>
+}
+
+function formatAbility({ text, parts }: DisplayAbilityOnCard): JSX.Element {
+  let res: JSX.Element[] = []
+  let k = 0;
+  res.push(<span key={k++}>{text.slice(0, parts[0].startIndex)}</span>);
+  for (let i = 0; i < parts.length; i++) {
+    if (i > 0 && parts[i].startIndex != parts[i - 1].endIndex) {
+      res.push(<span key={k++}>{text.slice(parts[i - 1].endIndex, parts[i].startIndex)}</span>);
+    }
+    let classes: string
+    let textSlice = text.slice(parts[i].startIndex, parts[i].endIndex)
+    switch (parts[i].partType) {
+      case AbilityPartType.Trigger:
+        classes = "text-cyan-300"
+        break
+      case AbilityPartType.Condition:
+        classes = "text-green-300"
+        break
+      case AbilityPartType.Effect:
+        classes = "text-red-300"
+        break
+      default:
+        classes = ""
+    }
+    if (textSlice == "[]") {
+      textSlice = ""
+    }
+    res.push(<span key={k++} className={classes} title={"@" + parts[i].id}>{textSlice}</span>);
+  }
+  res.push(<span key={k++}>{text.slice(parts[parts.length - 1].endIndex)}</span>);
+  return <>{res}</>
+}

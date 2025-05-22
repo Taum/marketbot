@@ -1,6 +1,6 @@
 import prisma from "@common/utils/prisma.server.js";
-import { CardSet, DisplayUniqueCard, Faction } from "~/models/cards";
-import { AbilityPartType, Prisma } from '@prisma/client';
+import { CardSet, DisplayAbilityOnCard, DisplayAbilityPartOnCard, DisplayUniqueCard, Faction } from "~/models/cards";
+import { AbilityPartType, MainUniqueAbility, Prisma, UniqueInfo } from '@prisma/client';
 
 // Add the type from Prisma namespace
 type UniqueInfoWhereInput = Prisma.UniqueInfoWhereInput;
@@ -233,6 +233,15 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     orderBy: {
       lastSeenInSalePrice: 'asc'
     },
+    include: {
+      mainAbilities: {
+        include: {
+          trigger: true,
+          condition: true,
+          effect: true,
+        }
+      }
+    },
     skip: PAGE_SIZE * (page - 1), // Page is 1-indexed
     take: PAGE_SIZE,
   });
@@ -252,6 +261,34 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     if (!result.nameEn || !result.faction || !result.mainEffectEn) {
       return null;
     }
+
+    const lines = result.mainEffectEn.split(/  (?!•)/);
+    let displayAbilities: DisplayAbilityOnCard[] = result.mainAbilities.map((ability) => {
+      if (ability.isSupport) {
+        return null;
+      }
+      const parts = [ability.trigger, ability.condition, ability.effect].filter((part) => part != null)
+      const line = lines[ability.lineNumber - 1]
+      let displayParts: Array<DisplayAbilityPartOnCard> = parts.map((part) => {
+        const textToSearch = (part.textEn == "$static" ? "[]" : part.textEn)
+        const startIndex = line.indexOf(textToSearch)
+        const endIndex = startIndex + textToSearch.length
+        return {
+          id: part.id,
+          textEn: part.textEn,
+          partType: part.partType,
+          isSupport: part.isSupport,
+          startIndex: startIndex,
+          endIndex: endIndex,
+        }
+      })
+      return {
+        index: ability.lineNumber,
+        text: line,
+        parts: displayParts.sort((a, b) => a.startIndex - b.startIndex)
+      }
+    }).filter((x) => x != null)  
+
     return {
       ref: result.ref,
       name: result.nameEn,
@@ -262,6 +299,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
       echoEffect: result.echoEffectEn,
       lastSeenInSaleAt: result.lastSeenInSaleAt?.toISOString(),
       lastSeenInSalePrice: result.lastSeenInSalePrice?.toString(),
+      mainAbilities: displayAbilities.sort((a, b) => a.index - b.index),
     }
   }).filter((result) => result !== null);
 

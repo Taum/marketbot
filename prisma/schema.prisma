@@ -54,24 +54,21 @@ model MainUniqueAbility {
   uniqueInfoId Int
   uniqueInfo   UniqueInfo @relation(fields: [uniqueInfoId], references: [id])
   lineNumber   Int
-  isSupport    Boolean    @default(false)
+  isSupport    Boolean
 
   textEn String
 
-  genericTrigger     GenericTriggerType?
   triggerId          Int?
   trigger            MainUniqueAbilityPart? @relation("trigger", fields: [triggerId], references: [id])
-  triggerConditionId Int?
-  triggerCondition   MainUniqueAbilityPart? @relation("triggerCondition", fields: [triggerConditionId], references: [id])
   conditionId        Int?
   condition          MainUniqueAbilityPart? @relation("condition", fields: [conditionId], references: [id])
   effectId           Int?
   effect             MainUniqueAbilityPart? @relation("effect", fields: [effectId], references: [id])
 
   @@unique([id])
-  @@unique([uniqueInfoId, lineNumber])
+  @@unique([uniqueInfoId, lineNumber, isSupport])
   @@index([id])
-  @@index([uniqueInfoId, lineNumber])
+  @@index([uniqueInfoId, lineNumber, isSupport])
 }
 
 model MainUniqueAbilityPart {
@@ -79,14 +76,14 @@ model MainUniqueAbilityPart {
   textEn String
 
   partType AbilityPartType
+  isSupport Boolean
 
   triggerFor          MainUniqueAbility[] @relation("trigger")
-  triggerConditionFor MainUniqueAbility[] @relation("triggerCondition")
   conditionFor        MainUniqueAbility[] @relation("condition")
   effectFor           MainUniqueAbility[] @relation("effect")
 
   @@unique([id])
-  @@unique([textEn, partType])
+  @@unique([textEn, partType, isSupport])
   @@index([id])
   @@index([textEn])
 }
@@ -136,15 +133,8 @@ model AltggSession {
   @@index([id])
 }
 
-enum GenericTriggerType {
-  FromHand
-  FromReserve
-  FromAnwhere
-}
-
 enum AbilityPartType {
   Trigger
-  TriggerCondition
   Condition
   Effect
 }

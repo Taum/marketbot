@@ -1,7 +1,8 @@
 import prisma from "@common/utils/prisma.server"
-import { AbilityPartType, GenericTriggerType, MainUniqueAbilityPart, UniqueInfo } from "@prisma/client"
+import { AbilityPartType, MainUniqueAbilityPart, PrismaClient, UniqueInfo } from "@prisma/client"
 import { pick } from "radash"
 import { getEnv } from "./helpers";
+import { ITXClientDenyList } from "@prisma/client/runtime/library";
 
 
 const verboseLevel = parseInt(getEnv("VERBOSE_LEVEL") ?? "1");
@@ -10,9 +11,7 @@ interface ProcessedCard {
   uniqueInfo: UniqueInfo
   mainAbilities: {
     textEn: string
-    genericTrigger: GenericTriggerType | undefined
     triggerText: string | undefined
-    triggerConditionText: string | undefined
     conditionText: string | undefined
     effectText: string | undefined
   }[]
@@ -24,16 +23,10 @@ interface ProcessedCard {
   }[]
 }
 
-function genericTriggerFromSymbol(symbol: string): GenericTriggerType | undefined {
-  if (symbol == "{H}") {
-    return GenericTriggerType.FromHand;
-  } else if (symbol == "{R}") {
-    return GenericTriggerType.FromReserve;
-  } else if (symbol == "{J}") {
-    return GenericTriggerType.FromAnwhere;
-  }
-  return undefined;
-}
+/*
+---
+// {H} []Target a Character in play or in Reserve other than me. Then, roll a die:  • On a 4+, we both gain 1 boost.  • On a 1-3, it gains 1 boost.  When a Character in your Reserve gains 1 or more boosts — []Target Character gains 2 boosts.
+*/
 
 function processOneCard(card: UniqueInfo): ProcessedCard | null {
 
@@ -41,32 +34,36 @@ function processOneCard(card: UniqueInfo): ProcessedCard | null {
     return null;
   }
 
-  let mainLines = card.mainEffectEn.split("  ");
+  let mainLines = card.mainEffectEn.split(/  (?!•)/);
   // Support abilities only have a single line right now
   let echoLines = card.echoEffectEn ? [card.echoEffectEn] : [];
 
   let mainAbilities: ProcessedCard["mainAbilities"] = mainLines.map(line => {
 
-    let genericTrigger: GenericTriggerType | undefined = undefined;
     let triggerText: string | undefined = undefined;
-    let triggerConditionText: string | undefined = undefined;
     let conditionText: string | undefined = undefined;
     let effectText: string | undefined = undefined;
 
     if (line.startsWith("When")) {
-      const matches = line.match(/^((?:When .*?)|{H}|{R}|{J})\s+((?:if|unless).*)?—\s+(\[\]|.*:)(.*)$/i);
+      const matches = line.match(/^((?:When .*?)|{H}|{R}|{J})\s+—\s+(\[\]|.*:)(.*)$/i);
       if (matches) {
         triggerText = matches[1];
-        triggerConditionText = matches[2];
-        conditionText = matches[3];
-        effectText = matches[4];
+        conditionText = matches[2];
+        effectText = matches[3];
       } else {
-        console.error("Line did not match 'When' pattern: " + line)
+        // Some cards are missing the [] for empty condition, use this other pattern:
+        const matches = line.match(/^((?:When .*?)|{H}|{R}|{J})\s+—\s+(.*)$/i);
+        if (matches) {
+          triggerText = matches[1];
+          conditionText = undefined;
+          effectText = matches[2];
+        } else {
+          console.error("Line did not match 'When' pattern: " + line)
+        }
       }
     } else if (line.startsWith("{H}") || line.startsWith("{R}") || line.startsWith("{J}")) {
       const matches = line.match(/^({H}|{R}|{J})\s+(\[\]|.*:)(.*)$/i)
       if (matches) {
-        genericTrigger = genericTriggerFromSymbol(matches[1]);
         triggerText = matches[1];
         conditionText = matches[2];
         effectText = matches[3];
@@ -80,7 +77,15 @@ function processOneCard(card: UniqueInfo): ProcessedCard | null {
         conditionText = matches[2];
         effectText = matches[3];
       } else {
-        console.error("Line did not match 'At (Phase)' pattern: " + line)
+        // At Night is missing []. Maybe it does not support a condition?  use this other pattern:
+        const matches = line.match(/^(At Night)\s+—\s+(.*)$/i)
+        if (matches) {
+          triggerText = matches[1];
+          conditionText = undefined;
+          effectText = matches[2];
+        } else {
+          console.error("Line did not match 'At (Phase)' pattern: " + line)
+        }
       }
     } else if (line.startsWith("[]")) {
       // These are actually Static abilities, not triggered
@@ -97,15 +102,12 @@ function processOneCard(card: UniqueInfo): ProcessedCard | null {
     }
 
     triggerText = triggerText?.trim();
-    triggerConditionText = triggerConditionText?.trim();
     conditionText = conditionText?.trim();
     effectText = effectText?.trim();
 
     return {
       textEn: line,
-      genericTrigger,
       triggerText,
-      triggerConditionText,
       conditionText,
       effectText,
       uniqueInfoId: card.id,
@@ -167,33 +169,41 @@ function processOneCard(card: UniqueInfo): ProcessedCard | null {
 
 let mainAbilityPartsCache: Record<string, MainUniqueAbilityPart> = {};
 
-async function upsertAbilityPart(partType: AbilityPartType, text?: string): Promise<MainUniqueAbilityPart | undefined> {
+async function upsertAbilityPart(partType: AbilityPartType, isSupport: boolean, text?: string, tx?: Omit<PrismaClient, ITXClientDenyList>): Promise<MainUniqueAbilityPart | undefined> {
   if (!text) {
     return undefined;
   }
-  if (mainAbilityPartsCache[text]) {
-    return mainAbilityPartsCache[text];
+
+  const key = `${partType}-${isSupport}__${text}`;
+
+  if (mainAbilityPartsCache[key]) {
+    return mainAbilityPartsCache[key];
   }
-  let part = await prisma.mainUniqueAbilityPart.upsert({
+
+  const db = tx ?? prisma;
+
+  let part = await db.mainUniqueAbilityPart.upsert({
     where: {
-      textEn_partType: {
+      textEn_partType_isSupport: {
         textEn: text,
         partType: partType,
+        isSupport: isSupport,
       }
     },
     update: {},
     create: {
       textEn: text,
       partType: partType,
+      isSupport: isSupport,
     }
   })
-  mainAbilityPartsCache[text] = part;
+  mainAbilityPartsCache[key] = part;
   return part;
 }
 
 let totalProcessed = 0;
 
-export async function processOneUnique(unique: UniqueInfo) {
+export async function processOneUnique(unique: UniqueInfo, tx: Omit<PrismaClient, ITXClientDenyList>) {
   let processedCard = processOneCard(unique);
   if (processedCard && (processedCard.mainAbilities.length > 0 || processedCard.echoAbilities.length > 0)) {
     if (verboseLevel >= 2) {
@@ -209,25 +219,23 @@ export async function processOneUnique(unique: UniqueInfo) {
 
     let i = 1;
     for (let ability of processedCard.mainAbilities) {
-      let triggerPart = await upsertAbilityPart(AbilityPartType.Trigger, ability.triggerText);
-      let triggerConditionPart = await upsertAbilityPart(AbilityPartType.TriggerCondition, ability.triggerConditionText);
-      let conditionPart = await upsertAbilityPart(AbilityPartType.Condition, ability.conditionText);
-      let effectPart = await upsertAbilityPart(AbilityPartType.Effect, ability.effectText);
+      let triggerPart = await upsertAbilityPart(AbilityPartType.Trigger, false, ability.triggerText, tx);
+      let conditionPart = await upsertAbilityPart(AbilityPartType.Condition, false, ability.conditionText, tx);
+      let effectPart = await upsertAbilityPart(AbilityPartType.Effect, false, ability.effectText, tx);
 
       let blob = {
         textEn: ability.textEn,
-        genericTrigger: ability.genericTrigger,
         triggerId: triggerPart?.id,
-        triggerConditionId: triggerConditionPart?.id,
         conditionId: conditionPart?.id,
         effectId: effectPart?.id,
         isSupport: false,
       }
-      let dbAbility = await prisma.mainUniqueAbility.upsert({
+      let dbAbility = await tx.mainUniqueAbility.upsert({
         where: {
-          uniqueInfoId_lineNumber: {
+          uniqueInfoId_lineNumber_isSupport: {
             uniqueInfoId: unique.id,
             lineNumber: i,
+            isSupport: false,
           }
         },
         update: blob,
@@ -238,37 +246,38 @@ export async function processOneUnique(unique: UniqueInfo) {
         }
       })
       
-      // if (verboseLevel >= 3) {
-      //   console.log(` - ${ability.textEn}`)
-      //   console.dir(pick(ability, ["genericTrigger", "triggerText", "triggerConditionText", "conditionText", "effectText"]))
-      //   console.log(`  --> Ability #${dbAbility.id} (trigger=${triggerPart?.id}, trigCond=${triggerConditionPart?.id} condition=${conditionPart?.id}, effect=${effectPart?.id})`)
-      // }
+      if (verboseLevel >= 3) {
+        console.log(` - ${ability.textEn}`)
+        console.dir(pick(ability, ["triggerText", "conditionText", "effectText"]))
+        console.log(`  --> Ability #${dbAbility.id} (trigger=${triggerPart?.id}, condition=${conditionPart?.id}, effect=${effectPart?.id})`)
+      }
       i += 1;
     }
 
     for (let ability of processedCard.echoAbilities) {
-      let triggerPart = await upsertAbilityPart(AbilityPartType.Trigger, ability.triggerText);
-      let conditionPart = await upsertAbilityPart(AbilityPartType.Condition, ability.conditionText);
-      let effectPart = await upsertAbilityPart(AbilityPartType.Effect, ability.effectText);
+      let triggerPart = await upsertAbilityPart(AbilityPartType.Trigger, true, ability.triggerText, tx);
+      let conditionPart = await upsertAbilityPart(AbilityPartType.Condition, true, ability.conditionText, tx);
+      let effectPart = await upsertAbilityPart(AbilityPartType.Effect, true, ability.effectText, tx);
       
       let blob = {
         textEn: ability.textEn,
         triggerId: triggerPart?.id,
         conditionId: conditionPart?.id,
         effectId: effectPart?.id,
+        lineNumber: 0,
         isSupport: true,
       }
-      let dbAbility = await prisma.mainUniqueAbility.upsert({
+      let dbAbility = await tx.mainUniqueAbility.upsert({
         where: {
-          uniqueInfoId_lineNumber: {
+          uniqueInfoId_lineNumber_isSupport: {
             uniqueInfoId: unique.id,
-            lineNumber: i,
+            lineNumber: 0,
+            isSupport: true,
           }
         },
         update: blob,
         create: {
           uniqueInfoId: unique.id,
-          lineNumber: i,
           ...blob,
         }
       })
@@ -283,15 +292,23 @@ export async function processOneUnique(unique: UniqueInfo) {
   }
 }
 
-export async function processUniquesBatch(fromPage: number = 0, toPage: number | undefined = undefined, batchSize = 100) {
+export async function processUniquesBatch(fromPage: number = 0, toPage: number | undefined = undefined, batchSize = 5000) {
   let page = fromPage;
+  console.log(`Starting batch from ${fromPage} to ${toPage}`)
   while (toPage && page < toPage) {
+
+    const startTs = Date.now();
+
     let batchUniques = await prisma.uniqueInfo.findMany({
       where: {
-        AND: [
-          // { mainEffectEn: { not: null } }
-          { echoEffectEn: { not: null } }
-        ]
+        fetchedDetails: true,
+        // AND: [
+        //   { mainEffectEn: { not: null } }
+        //   { echoEffectEn: { not: null } }
+        // ]
+      },
+      orderBy: {
+        id: "asc",
       },
       take: batchSize,
       skip: batchSize * page,
@@ -302,12 +319,17 @@ export async function processUniquesBatch(fromPage: number = 0, toPage: number |
       break;
     }
 
-    for (let unique of batchUniques) {
-      await processOneUnique(unique);
-      totalProcessed += 1;
-    }
-    
-    console.log(`Done with page ${page} (${totalProcessed} cards processed)`)
+    await prisma.$transaction(async (tx) => {
+      for (let unique of batchUniques) {
+        await processOneUnique(unique, tx);
+        totalProcessed += 1;
+      }
+    }, { timeout: 30000 })
+
+    const endTs = Date.now();
+    const processingTime = endTs - startTs;
+    const cardsPerSecond = (batchUniques.length * 1000) / processingTime;
+    console.log(`Done with page ${page} (${totalProcessed} cards processed in ${processingTime}ms (${Math.round(cardsPerSecond)} cards/s))`)
     page += 1;
   }
 }
