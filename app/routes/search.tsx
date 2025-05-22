@@ -1,8 +1,9 @@
 import { type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useLoaderData, useSearchParams } from "@remix-run/react";
 import { search } from "~/loaders/search.js";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { FactionSelect } from "~/components/altered/FactionSelect";
+import { SetSelect } from "~/components/altered/SetSelect";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -16,6 +17,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const mainEffect = nullifyTrim(url.searchParams.get("m"));
   const characterName = nullifyTrim(url.searchParams.get("cname"));
   const faction = nullifyTrim(url.searchParams.get("f"));
+  const set = nullifyTrim(url.searchParams.get("s"));
   const triggerPart = nullifyTrim(url.searchParams.get("tr"));
   const conditionPart = nullifyTrim(url.searchParams.get("cond"));
   const effectPart = nullifyTrim(url.searchParams.get("eff"));
@@ -28,14 +30,37 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const recallCosts = parseRange(recallCostRange)
 
   const { results, pagination } = await search(
-    { faction, characterName, mainEffect, triggerPart, conditionPart, effectPart, mainCosts, recallCosts },
-    { page: currentPage, includePagination: true }
+    {
+      faction,
+      set,
+      characterName,
+      mainEffect,
+      triggerPart,
+      conditionPart,
+      effectPart,
+      mainCosts,
+      recallCosts
+    },
+    {
+      page: currentPage,
+      includePagination: true
+    }
   );
 
   return {
     results,
     pagination: { ...pagination, currentPage },
-    query: { faction, characterName, mainEffect, triggerPart, conditionPart, effectPart, mainCostRange, recallCostRange },
+    query: {
+      faction,
+      set,
+      characterName,
+      mainEffect,
+      triggerPart,
+      conditionPart,
+      effectPart,
+      mainCostRange,
+      recallCostRange
+    },
   };
 }
 
@@ -43,17 +68,27 @@ export default function SearchPage() {
   const loaderData = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
 
-  const now = useMemo(() => new Date(), []);
+  const now = new Date();
 
   // Safely destructure with default values
-  const { faction, characterName, mainEffect, triggerPart, conditionPart, effectPart, mainCostRange, recallCostRange } = loaderData?.query ?? {};
+  const {
+    faction,
+    set,
+    characterName,
+    mainEffect,
+    triggerPart,
+    conditionPart,
+    effectPart,
+    mainCostRange,
+    recallCostRange,
+  } = loaderData?.query ?? {};
   const results = loaderData.results
   const pagination = loaderData.pagination
 
   const [selectedFaction, setSelectedFaction] = useState(faction ?? undefined);
+  const [selectedSet, setSelectedSet] = useState(set ?? undefined);
 
   const currentPage = parseInt(searchParams.get("p") ?? "1");
-  const totalPages = pagination;
 
   const handlePageChange = (page: number) => {
     searchParams.set("p", page.toString());
@@ -72,6 +107,13 @@ export default function SearchPage() {
                 value={selectedFaction ?? "any"}
                 onValueChange={(newVal) => setSelectedFaction(newVal == "any" ? undefined : newVal)} />
               <input type="hidden" name="f" value={selectedFaction} />
+            </div>
+            <div>
+              <Label htmlFor="cname">Set</Label>
+              <SetSelect
+                value={selectedSet ?? "any"}
+                onValueChange={(newVal) => setSelectedSet(newVal == "any" ? undefined : newVal)} />
+              <input type="hidden" name="s" value={selectedSet} />
             </div>
             <div>
               <Label htmlFor="cname">Character name</Label>

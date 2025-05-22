@@ -19,3 +19,9 @@ export enum Faction {
   Yzmir = "YZ",
   Neutral = "NE",
 }
+
+export enum CardSet {
+  Core = "CORE",
+  Alize = "ALIZE",
+  Bise = "BISE",
+}
