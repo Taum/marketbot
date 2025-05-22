@@ -1,6 +1,6 @@
 import { LoaderFunctionArgs, json } from "@remix-run/node";
 import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
-import { MainUniqueAbility, MainUniqueAbilityPart, UniqueInfo } from "@prisma/client";
+import { AbilityPartType, MainUniqueAbility, MainUniqueAbilityPart, UniqueInfo } from "@prisma/client";
 import prisma from "@common/utils/prisma.server";
 import {
   Table,
@@ -27,6 +27,7 @@ interface DisplayAbility {
 
 type LoaderData = {
   part: MainUniqueAbilityPart | null;
+  generalSearchLink: string | null;
   abilities: MainUniqueAbility[]
   results: DisplayUniqueCard[]
   pagination: { totalCount: number, pageCount: number, currentPage: number }
@@ -120,11 +121,30 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     };
   }).filter((unique) => unique !== null);
 
-  return { part, results, pagination: { totalCount, pageCount: Math.ceil(totalCount / PAGE_SIZE), currentPage: currentPage } };
+  let generalSearchLink: string | null = null;
+  if (part.partType == AbilityPartType.Condition) {
+    generalSearchLink = `/search?cond=${part.textEn}`;
+  } else if (part.partType == AbilityPartType.Effect) {
+    generalSearchLink = `/search?eff=${part.textEn}`;
+  } else if (part.partType == AbilityPartType.Trigger) {
+    generalSearchLink = `/search?tr=${part.textEn}`;
+  } else if (part.partType == AbilityPartType.TriggerCondition) {
+    generalSearchLink = null;
+  }
+
+  return {
+    part,
+    results,
+    generalSearchLink,
+    pagination: {
+      totalCount, pageCount: Math.ceil(totalCount / PAGE_SIZE),
+      currentPage: currentPage
+    }
+  };
 }
 
 export default function ByAbilityPartRoute() {
-  const { part, results, pagination } = useLoaderData<LoaderData>();
+  const { part, results, pagination, generalSearchLink } = useLoaderData<LoaderData>();
   const { currentPage, totalCount, pageCount } = pagination;
   const [searchParams] = useSearchParams();
 
@@ -150,7 +170,9 @@ export default function ByAbilityPartRoute() {
         <span className="text text-muted-foreground">Ability ({part.partType}):</span>
         <h1 className="text-xl font-bold mb-2">{part.textEn}</h1>
         <div className="text-sm text-muted-foreground">
-          <p>Found in {pagination.totalCount} cards</p>
+          <span>Found in {pagination.totalCount} cards</span>
+          <span className="px-2">&middot;</span>
+          <span>{generalSearchLink ? <Link to={generalSearchLink} className="text-link">Search with other filters</Link> : null}</span>
         </div>
       </div>
 
