@@ -17,7 +17,7 @@ export const ResultsPagination: FC<ResultsPaginationProps> = ({ currentPage, tot
 
   const pageItems = useMemo(() => {
     let pagesToShow: number[] = (totalPages <= 7) ?
-      Array.from(range(1, totalPages + 1)) :
+      Array.from(range(1, totalPages)) :
       [1, ...Array.from(range(Math.max(2, currentPage - 2), Math.min(totalPages - 1, currentPage + 2))), totalPages];
 
     let pageItems: React.ReactNode[] = [];

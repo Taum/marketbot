@@ -3,24 +3,81 @@ import { AbilityPartType, MainUniqueAbilityPart, PrismaClient, UniqueInfo } from
 import { pick } from "radash"
 import { getEnv } from "./helpers";
 import { ITXClientDenyList } from "@prisma/client/runtime/library";
+import { PartCharacterData } from "@common/models/postprocess";
 
 
 const verboseLevel = parseInt(getEnv("VERBOSE_LEVEL") ?? "1");
+
+type ProcessedAbility = Omit<PartCharacterData, "partId"> & { partText: string, partId?: number }
 
 interface ProcessedCard {
   uniqueInfo: UniqueInfo
   mainAbilities: {
     textEn: string
-    triggerText: string | undefined
-    conditionText: string | undefined
-    effectText: string | undefined
+    lineStartIndex: number
+    lineEndIndex: number
+    triggerText: ProcessedAbility | undefined
+    conditionText: ProcessedAbility | undefined
+    effectText: ProcessedAbility | undefined
+    extraEffectParts: ProcessedAbility[]
   }[]
   echoAbilities: {
     textEn: string
-    triggerText: string | undefined
-    conditionText: string | undefined
-    effectText: string | undefined
+    triggerText: ProcessedAbility | undefined
+    conditionText: ProcessedAbility | undefined
+    effectText: ProcessedAbility | undefined
   }[]
+}
+
+
+function buildProcessedAbility(
+  fullText: string,
+  match: RegExpMatchArray,
+  index: number,
+  { subIfEmpty }: { subIfEmpty?: string } = {}
+): ProcessedAbility {
+  // Typescript compiler doesn't seem to know about the indices property on RegExpMatchArray
+  const enhancedMatch = match as RegExpMatchArray & { indices: [number, number][] };
+
+  let [startIndex, endIndex] = enhancedMatch.indices[index];
+  let partText = fullText.slice(startIndex, endIndex);
+  
+  // We remove leading and trailing spaces and update the start/end indices
+  let m: RegExpMatchArray | null = null;
+  if (m = partText.match(/^(\s+)/)) {
+    startIndex += m[0].length;
+    partText = partText.slice(m[0].length);
+  }
+  if (m = partText.match(/(\s+)$/)) {
+    endIndex -= m[0].length;
+    partText = partText.slice(0, -m[0].length);
+  }
+
+  return {
+    startIndex,
+    endIndex,
+    substituteText: partText == "[]" ? subIfEmpty : undefined,
+    partText,
+  }
+}
+
+function buildEmptyProcessedAbility(
+  _fullText: string,
+  previousMatch: RegExpMatchArray,
+  previousIndex: number,
+  substituteText: string,
+): ProcessedAbility {
+  const enhancedMatch = previousMatch as RegExpMatchArray & { indices: [number, number][] };
+
+  const [_, prevEndIndex] = enhancedMatch.indices[previousIndex];
+  const startIndex = prevEndIndex+1;
+  const endIndex = startIndex;
+  return {
+    startIndex,
+    endIndex,
+    substituteText,
+    partText: "[]",
+  }
 }
 
 /*
@@ -28,72 +85,112 @@ interface ProcessedCard {
 // {H} []Target a Character in play or in Reserve other than me. Then, roll a die:  • On a 4+, we both gain 1 boost.  • On a 1-3, it gains 1 boost.  When a Character in your Reserve gains 1 or more boosts — []Target Character gains 2 boosts.
 */
 
+function splitLinesWithIndices(text: string): { line: string, startIndex: number, endIndex: number }[] {
+  const splits = Array.from(text.matchAll(/  (?!•)/gid));
+  if (splits.length == 0) {
+    return [{ line: text, startIndex: 0, endIndex: text.length }];
+  }
+  let j = 0;
+  let out: { line: string, startIndex: number, endIndex: number }[] = [];
+  for (let i = 0; i < splits.length; i++) {
+    let [splitStart, splitEnd] = (splits[i] as any).indices[0] as [number, number];
+    out.push({ line: text.slice(j, splitStart), startIndex: j, endIndex: splitStart });
+    j = splitEnd;
+  }
+  out.push({ line: text.slice(j), startIndex: j, endIndex: text.length });
+  return out;
+}
+
+
 function processOneCard(card: UniqueInfo): ProcessedCard | null {
 
   if (!card.mainEffectEn) {
     return null;
   }
 
-  let mainLines = card.mainEffectEn.split(/  (?!•)/);
+  let mainLines = splitLinesWithIndices(card.mainEffectEn);
   // Support abilities only have a single line right now
   let echoLines = card.echoEffectEn ? [card.echoEffectEn] : [];
 
-  let mainAbilities: ProcessedCard["mainAbilities"] = mainLines.map(line => {
+  let mainAbilities: ProcessedCard["mainAbilities"] = mainLines.map(lineData => {
+    const { line, startIndex, endIndex } = lineData;
 
-    let triggerText: string | undefined = undefined;
-    let conditionText: string | undefined = undefined;
-    let effectText: string | undefined = undefined;
+    let triggerText: ProcessedAbility | undefined = undefined;
+    let conditionText: ProcessedAbility | undefined = undefined;
+    let effectText: ProcessedAbility | undefined = undefined;
+    let extraEffectParts: ProcessedAbility[] = [];
 
-    if (line.startsWith("When")) {
-      const matches = line.match(/^((?:When .*?)|{H}|{R}|{J})\s+—\s+(\[\]|.*:)(.*)$/i);
+    // Search for a few exceptions first
+    if (line.indexOf("Then, depending on the number of boosts removed this way") != -1) {
+      // This is a "Man in the Maze" ability, try to find the sub effects
+      const matches = line.match(/({H}|{R}|{J})\s+(.*?)\s+(• \d+\+:)(.*?)(• \d+\+:)(.*?)(• \d+\+:)(.*?)$/id)
       if (matches) {
-        triggerText = matches[1];
-        conditionText = matches[2];
-        effectText = matches[3];
+        triggerText = buildProcessedAbility(line, matches, 1);
+        conditionText = buildEmptyProcessedAbility(line, matches, 1, "$noCondition"); //
+        effectText = buildProcessedAbility(line, matches, 2);
+        if (verboseLevel >= 2) {
+          console.log("Extra effects:")
+          console.log(matches[3], " ==> ", matches[4])
+          console.log(matches[5], " ==> ", matches[6])
+          console.log(matches[7], " ==> ", matches[8])
+        }
+        extraEffectParts.push(buildProcessedAbility(line, matches, 4))
+        extraEffectParts.push(buildProcessedAbility(line, matches, 6))
+        extraEffectParts.push(buildProcessedAbility(line, matches, 8))
+      }
+    }
+    // else if (line.indexOf("Then, depending on the number of boosts removed this way") != -1) {
+    // }
+    else if (line.startsWith("When")) {
+      const matches = line.match(/^((?:When .*?)|{H}|{R}|{J})\s+—\s+(\[\]|.*:)(.*)$/id);
+      if (matches) {
+        triggerText = buildProcessedAbility(line, matches, 1);
+        conditionText = buildProcessedAbility(line, matches, 2, { subIfEmpty: "$noCondition" });
+        effectText = buildProcessedAbility(line, matches, 3);
       } else {
         // Some cards are missing the [] for empty condition, use this other pattern:
-        const matches = line.match(/^((?:When .*?)|{H}|{R}|{J})\s+—\s+(.*)$/i);
+        const matches = line.match(/^((?:When .*?)|{H}|{R}|{J})\s+—\s+(.*)$/id);
         if (matches) {
-          triggerText = matches[1];
-          conditionText = undefined;
-          effectText = matches[2];
+          triggerText = buildProcessedAbility(line, matches, 1);
+          conditionText = buildEmptyProcessedAbility(line, matches, 1, "$noCondition"); //
+          effectText = buildProcessedAbility(line, matches, 2);
         } else {
           console.error("Line did not match 'When' pattern: " + line)
         }
       }
     } else if (line.startsWith("{H}") || line.startsWith("{R}") || line.startsWith("{J}")) {
-      const matches = line.match(/^({H}|{R}|{J})\s+(\[\]|.*:)(.*)$/i)
+      const matches = line.match(/^({H}|{R}|{J})\s+(\[\]|.*:)(.*)$/id)
       if (matches) {
-        triggerText = matches[1];
-        conditionText = matches[2];
-        effectText = matches[3];
+        triggerText = buildProcessedAbility(line, matches, 1);
+        conditionText = buildProcessedAbility(line, matches, 2, { subIfEmpty: "$noCondition" });
+        effectText = buildProcessedAbility(line, matches, 3);
       } else {
         console.error("Line did not match 'H/R/J' pattern: " + line)
       }
     } else if (line.startsWith("At")) {
-      const matches = line.match(/^(.*)—\s+(\[\]|.*:)(.*)$/i)
+      const matches = line.match(/^(.*)—\s+(\[\]|.*:)(.*)$/id)
       if (matches) {
-        triggerText = matches[1];
-        conditionText = matches[2];
-        effectText = matches[3];
+        triggerText = buildProcessedAbility(line, matches, 1);
+        conditionText = buildProcessedAbility(line, matches, 2, { subIfEmpty: "$noCondition" });
+        effectText = buildProcessedAbility(line, matches, 3);
       } else {
         // At Night is missing []. Maybe it does not support a condition?  use this other pattern:
-        const matches = line.match(/^(At Night)\s+—\s+(.*)$/i)
+        const matches = line.match(/^(At Night)\s+—\s+(.*)$/id)
         if (matches) {
-          triggerText = matches[1];
-          conditionText = undefined;
-          effectText = matches[2];
+          triggerText = buildProcessedAbility(line, matches, 1);
+          conditionText = buildEmptyProcessedAbility(line, matches, 1, "$noCondition"); //
+          effectText = buildProcessedAbility(line, matches, 2);
         } else {
           console.error("Line did not match 'At (Phase)' pattern: " + line)
         }
       }
     } else if (line.startsWith("[]")) {
       // These are actually Static abilities, not triggered
-      const matches = line.match(/^\[\]\s*(\[\]|.*:)(.*)$/i)
+      const matches = line.match(/^(\[\])\s*(\[\]|.*:)(.*)$/id)
       if (matches) {
-        triggerText = "$static";
-        conditionText = matches[1];
-        effectText = matches[2];
+        triggerText = buildProcessedAbility(line, matches, 1, { subIfEmpty: "$static" });
+        conditionText = buildProcessedAbility(line, matches, 2, { subIfEmpty: "$noCondition" });
+        effectText = buildProcessedAbility(line, matches, 3);
       } else {
         console.error("Line did not match Static pattern: " + line)
       }
@@ -101,50 +198,49 @@ function processOneCard(card: UniqueInfo): ProcessedCard | null {
       console.error("Line does not match any known pattern: " + line)
     }
 
-    triggerText = triggerText?.trim();
-    conditionText = conditionText?.trim();
-    effectText = effectText?.trim();
-
     return {
       textEn: line,
+      lineStartIndex: startIndex,
+      lineEndIndex: endIndex,
       triggerText,
       conditionText,
       effectText,
       uniqueInfoId: card.id,
+      extraEffectParts: extraEffectParts,
     }
   })
-
+  
   let echoAbilities: ProcessedCard["echoAbilities"] = echoLines.map(line => {
 
-    let triggerText: string | undefined = undefined;
-    let conditionText: string | undefined = undefined;
-    let effectText: string | undefined = undefined;
+    let triggerText: ProcessedAbility | undefined = undefined;
+    let conditionText: ProcessedAbility | undefined = undefined;
+    let effectText: ProcessedAbility | undefined = undefined;
 
     if (line.startsWith("{D}")) {
-      const matches = line.match(/^({D})\s+:\s+\[\](.*)$/i)
+      const matches = line.match(/^({D})\s+:\s+\[\](.*)$/id)
       if (matches) {
-        triggerText = matches[1];
-        effectText = matches[2];
+        triggerText = buildProcessedAbility(line, matches, 1);
+        effectText = buildProcessedAbility(line, matches, 2);
       } else {
         console.error("Line did not match '{D}' pattern: " + line)
       }
     } else if (line.startsWith("{I}") && line.match(/—/) == null) {
       // This is a passive support
-      const matches = line.match(/^{I}\s+(\[\]|.*:)(.*)$/i)
+      const matches = line.match(/^({I})\s+(\[\]|.*:)(.*)$/id)
       if (matches) {
-        triggerText = '$passive';
-        conditionText = matches[1];
-        effectText = matches[2];
+        triggerText = buildProcessedAbility(line, matches, 1);
+        conditionText = buildProcessedAbility(line, matches, 2, { subIfEmpty: "$noCondition" });
+        effectText = buildProcessedAbility(line, matches, 3);
       } else {
         console.error("Line did not match passive support pattern: " + line)
       }
     } else if (line.startsWith("{I} When") || line.startsWith("{I} At")) {
       // This is a triggered support
-      const matches = line.match(/^(.*)—\s+(\[\]|.*:)(.*)$/i)
+      const matches = line.match(/^(.*)—\s+(\[\]|.*:)(.*)$/id)
       if (matches) {
-        triggerText = matches[1];
-        conditionText = matches[2];
-        effectText = matches[3];
+        triggerText = buildProcessedAbility(line, matches, 1);
+        conditionText = buildProcessedAbility(line, matches, 2, { subIfEmpty: "$noCondition" });
+        effectText = buildProcessedAbility(line, matches, 3);
       } else {
         console.error("Line did not match triggered support pattern: " + line)
       }
@@ -169,10 +265,11 @@ function processOneCard(card: UniqueInfo): ProcessedCard | null {
 
 let mainAbilityPartsCache: Record<string, MainUniqueAbilityPart> = {};
 
-async function upsertAbilityPart(partType: AbilityPartType, isSupport: boolean, text?: string, tx?: Omit<PrismaClient, ITXClientDenyList>): Promise<MainUniqueAbilityPart | undefined> {
-  if (!text) {
+async function upsertAbilityPart(partType: AbilityPartType, isSupport: boolean, ability: ProcessedAbility | undefined, tx?: Omit<PrismaClient, ITXClientDenyList>): Promise<MainUniqueAbilityPart | undefined> {
+  if (!ability) {
     return undefined;
   }
+  const text = ability.partText;
 
   const key = `${partType}-${isSupport}__${text}`;
 
@@ -222,13 +319,55 @@ export async function processOneUnique(unique: UniqueInfo, tx: Omit<PrismaClient
       let triggerPart = await upsertAbilityPart(AbilityPartType.Trigger, false, ability.triggerText, tx);
       let conditionPart = await upsertAbilityPart(AbilityPartType.Condition, false, ability.conditionText, tx);
       let effectPart = await upsertAbilityPart(AbilityPartType.Effect, false, ability.effectText, tx);
+      let extraEffectParts: MainUniqueAbilityPart[] = [];
+      for (let extraEffectPart of ability.extraEffectParts) {
+        let part = await upsertAbilityPart(AbilityPartType.Effect, false, extraEffectPart, tx);
+        if (part) {
+          extraEffectPart.partId = part.id;
+          extraEffectParts.push(part);
+        }
+      }
+
+      const characterData = {
+        version: 1,
+        lineStartIndex: ability.lineStartIndex,
+        lineEndIndex: ability.lineEndIndex,
+        parts: [
+          ability.triggerText ? {
+            partId: triggerPart?.id,
+            startIndex: ability.triggerText.startIndex,
+            endIndex: ability.triggerText.endIndex,
+            substituteText: ability.triggerText.substituteText,
+          } : null,
+          ability.conditionText ? {
+            partId: conditionPart?.id,
+            startIndex: ability.conditionText.startIndex,
+            endIndex: ability.conditionText.endIndex,
+            substituteText: ability.conditionText.substituteText,
+          } : null,
+          ability.effectText ? {  
+            partId: effectPart?.id,
+            startIndex: ability.effectText.startIndex,
+            endIndex: ability.effectText.endIndex,
+            substituteText: ability.effectText.substituteText,
+          } : null,
+          ...(ability.extraEffectParts.map(part => ({
+            partId: part.partId,
+            startIndex: part.startIndex,
+            endIndex: part.endIndex,
+            substituteText: part.substituteText,
+          })))
+        ].filter(part => part != null)
+      }
 
       let blob = {
         textEn: ability.textEn,
+        isSupport: false,
         triggerId: triggerPart?.id,
         conditionId: conditionPart?.id,
         effectId: effectPart?.id,
-        isSupport: false,
+        extraEffectParts: { connect: extraEffectParts.map(part => ({ id: part.id })) },
+        characterData: characterData,
       }
       let dbAbility = await tx.mainUniqueAbility.upsert({
         where: {
@@ -255,17 +394,42 @@ export async function processOneUnique(unique: UniqueInfo, tx: Omit<PrismaClient
     }
 
     for (let ability of processedCard.echoAbilities) {
-      let triggerPart = await upsertAbilityPart(AbilityPartType.Trigger, true, ability.triggerText, tx);
-      let conditionPart = await upsertAbilityPart(AbilityPartType.Condition, true, ability.conditionText, tx);
-      let effectPart = await upsertAbilityPart(AbilityPartType.Effect, true, ability.effectText, tx);
-      
+      let triggerPart = await upsertAbilityPart(AbilityPartType.Trigger, false, ability.triggerText, tx);
+      let conditionPart = await upsertAbilityPart(AbilityPartType.Condition, false, ability.conditionText, tx);
+      let effectPart = await upsertAbilityPart(AbilityPartType.Effect, false, ability.effectText, tx);
+
+      const characterData = {
+        version: 1,
+        parts: [
+          ability.triggerText ? {
+            partId: triggerPart?.id,
+            startIndex: ability.triggerText.startIndex,
+            endIndex: ability.triggerText.endIndex,
+            substituteText: ability.triggerText.substituteText,
+          } : null,
+          ability.conditionText ? {
+            partId: conditionPart?.id,
+            startIndex: ability.conditionText.startIndex,
+            endIndex: ability.conditionText.endIndex,
+            substituteText: ability.conditionText.substituteText,
+          } : null,
+          ability.effectText ? {  
+            partId: effectPart?.id,
+            startIndex: ability.effectText.startIndex,
+            endIndex: ability.effectText.endIndex,
+            substituteText: ability.effectText.substituteText,
+          } : null,
+        ].filter(part => part != null)
+      }
+
       let blob = {
         textEn: ability.textEn,
+        isSupport: true,
+        lineNumber: 0,
         triggerId: triggerPart?.id,
         conditionId: conditionPart?.id,
         effectId: effectPart?.id,
-        lineNumber: 0,
-        isSupport: true,
+        characterData: characterData,
       }
       let dbAbility = await tx.mainUniqueAbility.upsert({
         where: {
@@ -302,6 +466,9 @@ export async function processUniquesBatch(fromPage: number = 0, toPage: number |
     let batchUniques = await prisma.uniqueInfo.findMany({
       where: {
         fetchedDetails: true,
+        // nameEn: {
+        //   equals: "Man in the Maze",
+        // }
         // AND: [
         //   { mainEffectEn: { not: null } }
         //   { echoEffectEn: { not: null } }

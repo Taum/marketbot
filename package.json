@@ -12,7 +12,8 @@
     "crawler-refresh-token": "tsx --env-file=.env market-crawler/main-refresh-token.ts",
     "crawler-all-uniques": "tsx --env-file=.env market-crawler/main-get-all-uniques.ts",
     "crawler-post-process": "tsx --env-file=.env market-crawler/main-post-process.ts",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "dev:side-load-uniques": "tsx --env-file=.env dev-utils/side-load-uniques.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",

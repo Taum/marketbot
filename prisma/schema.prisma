@@ -50,37 +50,45 @@ model UniqueInfo {
 }
 
 model MainUniqueAbility {
-  id           Int        @id @default(autoincrement())
-  uniqueInfoId Int
-  uniqueInfo   UniqueInfo @relation(fields: [uniqueInfoId], references: [id])
-  lineNumber   Int
-  isSupport    Boolean
+  id            Int        @id @default(autoincrement())
+  uniqueInfoId  Int
+  uniqueInfo    UniqueInfo @relation(fields: [uniqueInfoId], references: [id])
+  lineNumber    Int
+  isSupport     Boolean
+  characterData Json?
 
   textEn String
 
-  triggerId          Int?
-  trigger            MainUniqueAbilityPart? @relation("trigger", fields: [triggerId], references: [id])
-  conditionId        Int?
-  condition          MainUniqueAbilityPart? @relation("condition", fields: [conditionId], references: [id])
-  effectId           Int?
-  effect             MainUniqueAbilityPart? @relation("effect", fields: [effectId], references: [id])
+  triggerId        Int?
+  trigger          MainUniqueAbilityPart?  @relation("trigger", fields: [triggerId], references: [id])
+  conditionId      Int?
+  condition        MainUniqueAbilityPart?  @relation("condition", fields: [conditionId], references: [id])
+  effectId         Int?
+  effect           MainUniqueAbilityPart?  @relation("effect", fields: [effectId], references: [id])
+  extraEffectParts MainUniqueAbilityPart[] @relation("extraEffect")
 
   @@unique([id])
   @@unique([uniqueInfoId, lineNumber, isSupport])
   @@index([id])
   @@index([uniqueInfoId, lineNumber, isSupport])
+  // @@index([isSupport])
+  @@index([triggerId])
+  @@index([conditionId])
+  @@index([effectId])
 }
 
 model MainUniqueAbilityPart {
   id     Int    @id @default(autoincrement())
   textEn String
 
-  partType AbilityPartType
+  partType  AbilityPartType
   isSupport Boolean
 
-  triggerFor          MainUniqueAbility[] @relation("trigger")
-  conditionFor        MainUniqueAbility[] @relation("condition")
-  effectFor           MainUniqueAbility[] @relation("effect")
+  triggerFor   MainUniqueAbility[] @relation("trigger")
+  conditionFor MainUniqueAbility[] @relation("condition")
+  effectFor    MainUniqueAbility[] @relation("effect")
+
+  extraEffectFor MainUniqueAbility[] @relation("extraEffect")
 
   @@unique([id])
   @@unique([textEn, partType, isSupport])

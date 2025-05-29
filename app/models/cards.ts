@@ -19,7 +19,7 @@ export interface DisplayAbilityOnCard {
 export interface DisplayAbilityPartOnCard {
   id: number;
   partType: string;
-  isSupport: boolean;
+  // isSupport: boolean;
   startIndex: number;
   endIndex: number;
 }

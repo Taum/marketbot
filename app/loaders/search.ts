@@ -1,10 +1,12 @@
 import prisma from "@common/utils/prisma.server.js";
 import { CardSet, DisplayAbilityOnCard, DisplayAbilityPartOnCard, DisplayUniqueCard, Faction } from "~/models/cards";
 import { AbilityPartType, MainUniqueAbility, Prisma, UniqueInfo } from '@prisma/client';
+import { AbilityCharacterDataV1 } from "@common/models/postprocess";
 
 // Add the type from Prisma namespace
 type UniqueInfoWhereInput = Prisma.UniqueInfoWhereInput;
 type MainUniqueAbilityWhereInput = Prisma.MainUniqueAbilityWhereInput;
+type MainUniqueAbilityPartWhereInput = Prisma.MainUniqueAbilityPartWhereInput;
 
 export interface SearchQuery {
   faction?: string;
@@ -55,15 +57,33 @@ function searchInPart(partType: AbilityPartType, query?: string): MainUniqueAbil
     case AbilityPartType.Trigger:
       partTypeKey = "trigger"
       break
-    case AbilityPartType.TriggerCondition:
-      partTypeKey = "triggerCondition"
-      break
     case AbilityPartType.Condition:
       partTypeKey = "condition"
       break
     case AbilityPartType.Effect:
-      partTypeKey = "effect"
-      break
+      const andGroup: MainUniqueAbilityPartWhereInput = {
+        AND:
+          tokens.map((token) => (
+            token.negated ?
+              {
+                NOT: { textEn: { contains: token.text, mode: "insensitive" } }
+              } :
+              {
+                textEn: { contains: token.text, mode: "insensitive" }
+              }
+          ))
+      }
+      return [{
+        OR: [
+          {
+            effect: andGroup
+          },
+          {
+            extraEffectParts: {
+              some: andGroup
+            }
+          }]
+      }]
     default:
       throw new Error(`Unknown part type: ${partType}`)
   }
@@ -133,12 +153,33 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
   }
 
   if (characterName != null) {
-    searchParams.push({
-      nameEn: {
-        contains: characterName,
-        mode: "insensitive"
-      }
-    })
+    const tokens = tokenize(characterName);
+    // Character name should default to a OR, not AND
+    // but negation of OR is NAND, so we need to handle that
+    const [negatedTokens, normalTokens] = tokens.reduce<[typeof tokens, typeof tokens]>(
+      ([neg, norm], token) => {
+        return token.negated 
+          ? [[...neg, token], norm]
+          : [neg, [...norm, token]];
+      },
+      [[], []]
+    );
+
+    // Add negated tokens (AND)
+    searchParams = searchParams.concat(
+      negatedTokens.map(token => ({
+        NOT: { nameEn: { contains: token.text, mode: "insensitive" } }
+      }))
+    );
+
+    // Add normal tokens (OR)
+    if (normalTokens.length > 0) {
+      searchParams.push({
+        OR: normalTokens.map(token => ({
+          nameEn: { contains: token.text, mode: "insensitive" }
+        }))
+      });
+    }
   }
 
   if (mainEffect != null) {
@@ -239,6 +280,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
           trigger: true,
           condition: true,
           effect: true,
+          extraEffectParts: true,
         }
       }
     },
@@ -251,6 +293,9 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     const totalCount = await prisma.uniqueInfo.count({
       where: whereClause,
     })
+
+    console.log('Total count: ' + totalCount)
+
     pagination = {
       totalCount: totalCount,
       pageCount: Math.ceil(totalCount / PAGE_SIZE)
@@ -262,32 +307,35 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
       return null;
     }
 
-    const lines = result.mainEffectEn.split(/  (?!•)/);
+    
     let displayAbilities: DisplayAbilityOnCard[] = result.mainAbilities.map((ability) => {
       if (ability.isSupport) {
         return null;
       }
-      const parts = [ability.trigger, ability.condition, ability.effect].filter((part) => part != null)
-      const line = lines[ability.lineNumber - 1]
-      let displayParts: Array<DisplayAbilityPartOnCard> = parts.map((part) => {
-        const textToSearch = (part.textEn == "$static" ? "[]" : part.textEn)
-        const startIndex = line.indexOf(textToSearch)
-        const endIndex = startIndex + textToSearch.length
-        return {
-          id: part.id,
-          textEn: part.textEn,
-          partType: part.partType,
-          isSupport: part.isSupport,
-          startIndex: startIndex,
-          endIndex: endIndex,
+      if (ability.characterData == null) {
+        return null;
+      }
+      const charData = ability.characterData as unknown as AbilityCharacterDataV1;
+      const line = ability.textEn
+      const displayParts = charData.parts.map((part) => {
+        const matchingPart = [ability.trigger, ability.condition, ability.effect, ...ability.extraEffectParts]
+          .find((p) => p?.id == part.partId)
+        if (matchingPart == null) {
+          return null;
         }
-      })
+        return {
+          id: part.partId,
+          startIndex: part.startIndex,
+          endIndex: part.endIndex,
+          partType: matchingPart.partType,
+        }
+      }).filter((x) => x != null)
       return {
         index: ability.lineNumber,
         text: line,
         parts: displayParts.sort((a, b) => a.startIndex - b.startIndex)
       }
-    }).filter((x) => x != null)  
+    }).filter((x) => x != null)
 
     return {
       ref: result.ref,

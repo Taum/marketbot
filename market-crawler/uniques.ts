@@ -5,6 +5,7 @@ import { delay } from "@common/utils/promise.js";
 import { processOneUnique } from "./post-process.js";
 import { throttlingConfig } from "./config.js";
 import { getEnv } from "./helpers.js";
+import { PrismaClient, UniqueInfo } from "@prisma/client";
 
 export interface UniqueRequest {
   id: string;
@@ -15,6 +16,40 @@ export interface UniqueData {
 }
 
 const debugCrawler = getEnv("DEBUG_CRAWLER") == "true";
+
+export const recordOneUnique = async (cardData: AlteredggCard, prisma: PrismaClient) => {
+  const blob = {
+    ref: cardData.reference,
+    faction: cardData.mainFaction.reference,
+    mainCost: parseInt(cardData!.elements.MAIN_COST || "0", 10),
+    recallCost: parseInt(cardData!.elements.RECALL_COST || "0", 10),
+    oceanPower: parseInt(cardData!.elements.OCEAN_POWER || "0", 10),
+    mountainPower: parseInt(cardData!.elements.MOUNTAIN_POWER || "0", 10),
+    forestPower: parseInt(cardData!.elements.FOREST_POWER || "0", 10),
+    nameEn: cardData!.name,
+    imageUrlEn: cardData!.imagePath,
+    mainEffectEn: cardData!.elements.MAIN_EFFECT,
+    echoEffectEn: cardData!.elements.ECHO_EFFECT,
+    cardSet: cardData!.cardSet.reference,
+    fetchedDetails: true,
+    fetchedDetailsAt: new Date(),
+  }
+
+  try {
+    const uniqueInfo = await prisma.uniqueInfo.upsert({
+      where: { ref: blob.ref },
+      update: blob,
+      create: blob,
+    });
+    console.debug(`Recorded unique ${blob.ref} (${blob.nameEn})`);
+
+    // Post-process the unique -- breakdown abilities and upsert them
+    await processOneUnique(uniqueInfo, prisma);
+
+  } catch (error) {
+    console.error(`Error recording unique ${blob.ref} (${blob.nameEn}): ${error}`);
+  }
+}
 
 export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
   constructor() {
@@ -27,38 +62,7 @@ export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
 
     const persistUnique = async (data: UniqueData, _request: UniqueRequest) => {
       const cardData = data.card;
-      const blob = {
-        ref: cardData.reference,
-        faction: cardData.mainFaction.reference,
-        mainCost: parseInt(cardData!.elements.MAIN_COST || "0", 10),
-        recallCost: parseInt(cardData!.elements.RECALL_COST || "0", 10),
-        oceanPower: parseInt(cardData!.elements.OCEAN_POWER || "0", 10),
-        mountainPower: parseInt(cardData!.elements.MOUNTAIN_POWER || "0", 10),
-        forestPower: parseInt(cardData!.elements.FOREST_POWER || "0", 10),
-        nameEn: cardData!.name,
-        imageUrlEn: cardData!.imagePath,
-        mainEffectEn: cardData!.elements.MAIN_EFFECT,
-        echoEffectEn: cardData!.elements.ECHO_EFFECT,
-        cardSet: cardData!.cardSet.reference,
-        fetchedDetails: true,
-        fetchedDetailsAt: new Date(),
-      }
-
-      try {
-        const uniqueInfo = await prisma.uniqueInfo.upsert({
-          where: { ref: blob.ref },
-          update: blob,
-          create: blob,
-        });
-        console.debug(`Recorded unique ${blob.ref} (${blob.nameEn})`);
-
-        // Post-process the unique -- breakdown abilities and upsert them
-        await processOneUnique(uniqueInfo);
-
-      } catch (error) {
-        console.error(`Error recording unique ${blob.ref} (${blob.nameEn}): ${error}`);
-      }
-
+      await recordOneUnique(cardData, prisma);
     };
 
     // Call super with the fetch and persist functions, plus any options
@@ -72,7 +76,7 @@ export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
         fetchedDetails: false,
       },
       orderBy: {
-        lastSeenInSaleAt: 'desc', 
+        lastSeenInSaleAt: 'desc',
       },
       take: limit,
     });
