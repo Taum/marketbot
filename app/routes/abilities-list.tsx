@@ -29,43 +29,33 @@ type LoaderData = {
 };
 
 export async function loader() {
-  // TODO: include count of MainUniqueAbility that include this part
-  const abilities = await prisma.mainUniqueAbilityPart.findMany({
+  // TODO: include count of UniqueAbilityLine that include this part
+  const abilities = await prisma.uniqueAbilityPart.findMany({
     orderBy: [
-      {
-        isSupport: "asc",
-      },
-      {
-        textEn: "asc",
-      },
+      { isSupport: "asc" },
+      { textEn: "asc" },
     ],
     include: {
-      triggerFor: true,
-      conditionFor: true,
-      effectFor: true,
       _count: {
         select: {
-          triggerFor: true,
-          conditionFor: true,
-          effectFor: true,
-        },
+          allAbilities: true,
+        }
       },
     },
   });
-  
+
   const exportAbilities: DisplayAbilityPart[] = abilities.map((a) => {
     return {
       id: a.id,
       name: a.textEn,
       partType: a.partType.toString(),
-      count: a._count.triggerFor + a._count.conditionFor + a._count.effectFor,
+      count: a._count.allAbilities,
       isSupport: a.isSupport,
     }
   });
-  const groups = groupBy(exportAbilities, (a) => a.partType);
+  const groups = groupBy(exportAbilities, (a) => a.partType)
   const abilityParts = {
     trigger: groups.Trigger,
-    triggerCondition: groups.TriggerCondition,
     condition: groups.Condition,
     effect: groups.Effect,
   }
@@ -75,11 +65,11 @@ export async function loader() {
 
 export default function AbilitiesList() {
   const { abilityParts } = useLoaderData<LoaderData>();
-  
+
   return (
     <div className="global-page">
       <h1 className="text-2xl font-bold mb-6">Unique Ability Parts List</h1>
-      
+
       <div className="grid gap-8">
         <AbilityPartSection title="Trigger" abilityParts={abilityParts.trigger} />
         <AbilityPartSection title="Condition" abilityParts={abilityParts.condition} />
@@ -102,7 +92,7 @@ function AbilityPartSection({ title, abilityParts }: { title: string; abilityPar
           <TableRow>
             <TableHead>ID</TableHead>
             <TableHead>Name</TableHead>
-            <TableHead>Main / Support</TableHead>
+            <TableHead></TableHead>
             <TableHead>Count</TableHead>
             <TableHead></TableHead>
           </TableRow>
@@ -115,11 +105,11 @@ function AbilityPartSection({ title, abilityParts }: { title: string; abilityPar
               <TableCell>{part.isSupport ? "Support" : "Main"}</TableCell>
               <TableCell className="text-right pr-12 w-1">{part.count}</TableCell>
               <TableCell>
-                <Link 
-                  to={`/by-ability/${part.id}`} 
+                <Link
+                  to={`/by-ability/${part.id}`}
                   className="text-primary hover:underline"
                 >
-                  View cards
+                  {"View\u00A0cards"}
                 </Link>
               </TableCell>
             </TableRow>

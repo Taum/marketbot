@@ -28,6 +28,7 @@ export enum AbilityPartType {
   Trigger = "Trigger",
   Condition = "Condition",
   Effect = "Effect",
+  ExtraEffect = "ExtraEffect",
 }
 
 export enum Faction {

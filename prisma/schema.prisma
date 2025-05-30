@@ -38,7 +38,7 @@ model UniqueInfo {
   // Note that Out-of-faction uniques will have the same family ID as the in-faction
   cardFamilyId String?
 
-  mainAbilities MainUniqueAbility[]
+  mainAbilities UniqueAbilityLine[]
 
   @@unique([id])
   @@unique([ref])
@@ -49,7 +49,7 @@ model UniqueInfo {
   @@index([nameEn])
 }
 
-model MainUniqueAbility {
+model UniqueAbilityLine {
   id            Int        @id @default(autoincrement())
   uniqueInfoId  Int
   uniqueInfo    UniqueInfo @relation(fields: [uniqueInfoId], references: [id])
@@ -59,36 +59,40 @@ model MainUniqueAbility {
 
   textEn String
 
-  triggerId        Int?
-  trigger          MainUniqueAbilityPart?  @relation("trigger", fields: [triggerId], references: [id])
-  conditionId      Int?
-  condition        MainUniqueAbilityPart?  @relation("condition", fields: [conditionId], references: [id])
-  effectId         Int?
-  effect           MainUniqueAbilityPart?  @relation("effect", fields: [effectId], references: [id])
-  extraEffectParts MainUniqueAbilityPart[] @relation("extraEffect")
+  allParts AbilityPartLink[]
 
   @@unique([id])
   @@unique([uniqueInfoId, lineNumber, isSupport])
   @@index([id])
   @@index([uniqueInfoId, lineNumber, isSupport])
   // @@index([isSupport])
-  @@index([triggerId])
-  @@index([conditionId])
-  @@index([effectId])
 }
 
-model MainUniqueAbilityPart {
+model AbilityPartLink {
+  id Int @id @default(autoincrement())
+
+  partId Int
+  part UniqueAbilityPart @relation(fields: [partId], references: [id])
+  abilityId Int
+  ability UniqueAbilityLine @relation(fields: [abilityId], references: [id])
+
+  partType AbilityPartType
+
+  @@unique([id])
+  @@unique([partId, abilityId])
+
+  @@index([partId])
+  @@index([abilityId])
+}
+
+model UniqueAbilityPart {
   id     Int    @id @default(autoincrement())
   textEn String
 
   partType  AbilityPartType
   isSupport Boolean
 
-  triggerFor   MainUniqueAbility[] @relation("trigger")
-  conditionFor MainUniqueAbility[] @relation("condition")
-  effectFor    MainUniqueAbility[] @relation("effect")
-
-  extraEffectFor MainUniqueAbility[] @relation("extraEffect")
+  allAbilities AbilityPartLink[]
 
   @@unique([id])
   @@unique([textEn, partType, isSupport])
@@ -145,4 +149,5 @@ enum AbilityPartType {
   Trigger
   Condition
   Effect
+  ExtraEffect
 }

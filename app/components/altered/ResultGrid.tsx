@@ -93,6 +93,9 @@ function formatAbility({ text, parts }: DisplayAbilityOnCard): JSX.Element {
       case AbilityPartType.Effect:
         classes = "text-red-300"
         break
+      case AbilityPartType.ExtraEffect:
+        classes = "text-amber-300"
+        break
       default:
         classes = ""
     }

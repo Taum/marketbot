@@ -1,12 +1,12 @@
 import prisma from "@common/utils/prisma.server.js";
 import { CardSet, DisplayAbilityOnCard, DisplayAbilityPartOnCard, DisplayUniqueCard, Faction } from "~/models/cards";
-import { AbilityPartType, MainUniqueAbility, Prisma, UniqueInfo } from '@prisma/client';
+import { AbilityPartType, UniqueAbilityLine, Prisma, UniqueInfo, UniqueAbilityPart, AbilityPartLink } from '@prisma/client';
 import { AbilityCharacterDataV1 } from "@common/models/postprocess";
 
 // Add the type from Prisma namespace
 type UniqueInfoWhereInput = Prisma.UniqueInfoWhereInput;
-type MainUniqueAbilityWhereInput = Prisma.MainUniqueAbilityWhereInput;
-type MainUniqueAbilityPartWhereInput = Prisma.MainUniqueAbilityPartWhereInput;
+type UniqueAbilityLineWhereInput = Prisma.UniqueAbilityLineWhereInput;
+type UniqueAbilityPartWhereInput = Prisma.UniqueAbilityPartWhereInput;
 
 export interface SearchQuery {
   faction?: string;
@@ -43,62 +43,37 @@ function tokenize(text: string): Token[] {
   return tokens;
 }
 
-function searchInPart(partType: AbilityPartType, query?: string): MainUniqueAbilityWhereInput[] {
+function searchInPart(partType: AbilityPartType, query?: string): Prisma.AbilityPartLinkWhereInput[] {
   if (!query) {
     return []
   }
 
-  const tokens = tokenize(query);
+  const tokens = tokenize(query)
   console.log(`Tokens for ${partType}`)
   console.dir(tokens);
-
-  let partTypeKey: keyof MainUniqueAbilityWhereInput
-  switch (partType) {
-    case AbilityPartType.Trigger:
-      partTypeKey = "trigger"
-      break
-    case AbilityPartType.Condition:
-      partTypeKey = "condition"
-      break
-    case AbilityPartType.Effect:
-      const andGroup: MainUniqueAbilityPartWhereInput = {
-        AND:
-          tokens.map((token) => (
-            token.negated ?
-              {
-                NOT: { textEn: { contains: token.text, mode: "insensitive" } }
-              } :
-              {
-                textEn: { contains: token.text, mode: "insensitive" }
-              }
-          ))
-      }
-      return [{
-        OR: [
-          {
-            effect: andGroup
-          },
-          {
-            extraEffectParts: {
-              some: andGroup
-            }
-          }]
-      }]
-    default:
-      throw new Error(`Unknown part type: ${partType}`)
+  if (tokens.length == 0) {
+    return []
   }
 
   return [{
-    [partTypeKey]: {
-      AND: tokens.map((token) => (
-        token.negated ?
-          {
-            NOT: { textEn: { contains: token.text, mode: "insensitive" } }
-          } :
-          {
-            textEn: { contains: token.text, mode: "insensitive" }
+    part: {
+      partType: partType,
+      AND: tokens.map((token) => {
+        if (token.negated) {
+          return {
+            NOT: {
+              textEn: {
+                contains: token.text, mode: "insensitive"
+              }
+            }
           }
-      ))
+        }
+        return {
+          textEn: {
+            contains: token.text, mode: "insensitive"
+          }
+        }
+      })
     }
   }]
 }
@@ -158,7 +133,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     // but negation of OR is NAND, so we need to handle that
     const [negatedTokens, normalTokens] = tokens.reduce<[typeof tokens, typeof tokens]>(
       ([neg, norm], token) => {
-        return token.negated 
+        return token.negated
           ? [[...neg, token], norm]
           : [neg, [...norm, token]];
       },
@@ -202,11 +177,18 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     ...searchInPart(AbilityPartType.Condition, conditionPart),
     ...searchInPart(AbilityPartType.Effect, effectPart),
   ]
+
   if (mainAbilitySearchParams.length > 0) {
     searchParams.push({
       mainAbilities: {
         some: {
-          AND: mainAbilitySearchParams
+          AND: mainAbilitySearchParams.map((sp) => ({
+            allParts: {
+              some: {
+                AND: sp
+              }
+            },
+          }))
         }
       }
     })
@@ -267,6 +249,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     ]
   }
 
+  console.log("Where clause:")
   console.dir(whereClause, { depth: null });
 
   const results = await prisma.uniqueInfo.findMany({
@@ -277,12 +260,9 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     include: {
       mainAbilities: {
         include: {
-          trigger: true,
-          condition: true,
-          effect: true,
-          extraEffectParts: true,
-        }
-      }
+          allParts: true,
+        },
+      },
     },
     skip: PAGE_SIZE * (page - 1), // Page is 1-indexed
     take: PAGE_SIZE,
@@ -307,35 +287,9 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
       return null;
     }
 
-    
-    let displayAbilities: DisplayAbilityOnCard[] = result.mainAbilities.map((ability) => {
-      if (ability.isSupport) {
-        return null;
-      }
-      if (ability.characterData == null) {
-        return null;
-      }
-      const charData = ability.characterData as unknown as AbilityCharacterDataV1;
-      const line = ability.textEn
-      const displayParts = charData.parts.map((part) => {
-        const matchingPart = [ability.trigger, ability.condition, ability.effect, ...ability.extraEffectParts]
-          .find((p) => p?.id == part.partId)
-        if (matchingPart == null) {
-          return null;
-        }
-        return {
-          id: part.partId,
-          startIndex: part.startIndex,
-          endIndex: part.endIndex,
-          partType: matchingPart.partType,
-        }
-      }).filter((x) => x != null)
-      return {
-        index: ability.lineNumber,
-        text: line,
-        parts: displayParts.sort((a, b) => a.startIndex - b.startIndex)
-      }
-    }).filter((x) => x != null)
+    let displayAbilities: DisplayAbilityOnCard[] = result.mainAbilities
+      .map((a) => buildDisplayAbility(a))
+      .filter((x) => x != null)
 
     return {
       ref: result.ref,
@@ -352,5 +306,35 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
   }).filter((result) => result !== null);
 
   return { results: outResults, pagination };
+}
+
+export function buildDisplayAbility(ability: UniqueAbilityLine & { allParts: AbilityPartLink[] }): DisplayAbilityOnCard | undefined {
+  if (ability.isSupport) {
+    return undefined;
+  }
+  if (ability.characterData == null) {
+    return undefined;
+  }
+  const charData = ability.characterData as unknown as AbilityCharacterDataV1;
+  const line = ability.textEn
+  const displayParts = charData.parts.map((part) => {
+    const matchingPart = ability.allParts
+      .find((p) => p?.partId == part.partId)
+    if (matchingPart == null) {
+      console.error(`Part ${part.partId} not found in ability ${ability.id}`)
+      return null;
+    }
+    return {
+      id: part.partId,
+      startIndex: part.startIndex,
+      endIndex: part.endIndex,
+      partType: matchingPart.partType,
+    }
+  }).filter((x) => x != null)
+  return {
+    index: ability.lineNumber,
+    text: line,
+    parts: displayParts.sort((a, b) => a.startIndex - b.startIndex)
+  }
 }
 

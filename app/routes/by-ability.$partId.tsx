@@ -1,10 +1,11 @@
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
-import { AbilityPartType, MainUniqueAbility, MainUniqueAbilityPart } from "@prisma/client";
+import { AbilityPartType, UniqueAbilityLine, UniqueAbilityPart } from "@prisma/client";
 import prisma from "@common/utils/prisma.server";
-import { DisplayUniqueCard, Faction } from "~/models/cards";
+import { DisplayAbilityOnCard, DisplayUniqueCard, Faction } from "~/models/cards";
 import { ResultGrid } from "~/components/altered/ResultGrid";
 import { ResultsPagination } from "~/components/common/pagination";
+import { buildDisplayAbility } from "~/loaders/search";
 
 interface DisplayAbility {
   id: number
@@ -17,9 +18,9 @@ interface DisplayAbility {
 }
 
 type LoaderData = {
-  part: MainUniqueAbilityPart | null;
+  part: UniqueAbilityPart | null;
   generalSearchLink: string | null;
-  abilities: MainUniqueAbility[]
+  abilities: UniqueAbilityLine[]
   results: DisplayUniqueCard[]
   pagination: { totalCount: number, pageCount: number, currentPage: number }
 };
@@ -37,7 +38,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
   }
 
   // Find the ability part
-  const part = await prisma.mainUniqueAbilityPart.findUnique({
+  const part = await prisma.uniqueAbilityPart.findUnique({
     where: { id: partId },
   });
 
@@ -45,77 +46,81 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     throw new Response("Part not found", { status: 404 });
   }
 
+  const dbAbilityPart = await prisma.uniqueAbilityPart.findUnique({
+    where: { id: partId },
+  });
+
   // Find all unique cards that have this ability part in any of the part types
-  const dbAbilities = await prisma.mainUniqueAbility.findMany({
+  const dbCards = await prisma.uniqueInfo.findMany({
     where: {
-      OR: [
-        { triggerId: partId },
-        { conditionId: partId },
-        { effectId: partId },
-      ],
-    },
-    include: {
-      trigger: true,
-      condition: true,
-      effect: true,
-      uniqueInfo: {
-        select: {
-          id: true,
-          ref: true,
-          nameEn: true,
-          faction: true,
-          cardSet: true,
-          mainEffectEn: true,
-          echoEffectEn: true,
-          imageUrlEn: true,
-          lastSeenInSaleAt: true,
-          lastSeenInSalePrice: true,
+      mainAbilities: {
+        some: {
+          allParts: {
+            some: {
+              partId: partId,
+            },
+          },
         },
       },
     },
+    include: {
+      mainAbilities: {
+        include: {
+          allParts: true,
+        },
+      }
+    },
     orderBy: {
-      uniqueInfo: {
-        lastSeenInSalePrice: "asc",
-      },
+      lastSeenInSalePrice: "asc",
     },
     take: PAGE_SIZE,
     skip: (currentPage - 1) * PAGE_SIZE,
   });
 
-  const totalCount = await prisma.mainUniqueAbility.count({
+  const totalCount = await prisma.uniqueInfo.count({
     where: {
-      OR: [
-        { triggerId: partId },
-        { conditionId: partId },
-        { effectId: partId },
-      ],
-    }
+      mainAbilities: {
+        some: {
+          allParts: {
+            some: {
+              partId: partId,
+            },
+          },
+        },
+      },
+    },
   });
 
-  const results: DisplayUniqueCard[] = dbAbilities.map((ability) => {
-    if (!ability.uniqueInfo.ref || !ability.uniqueInfo.nameEn || !ability.uniqueInfo.faction) {
+  const results: DisplayUniqueCard[] = dbCards.map((card) => {
+    if (!card.nameEn) {
       return null;
     }
+
+    let displayAbilities: DisplayAbilityOnCard[] = card.mainAbilities
+      .map((a) => buildDisplayAbility(a))
+      .filter((x) => x != null)
+
     return {
-      ref: ability.uniqueInfo.ref,
-      name: ability.uniqueInfo.nameEn,
-      faction: ability.uniqueInfo.faction as Faction,
-      cardSet: ability.uniqueInfo.cardSet ?? "",
-      mainEffect: ability.uniqueInfo.mainEffectEn ?? "",
-      echoEffect: ability.uniqueInfo.echoEffectEn ?? "",
-      imageUrl: ability.uniqueInfo.imageUrlEn ?? "",
-      lastSeenInSaleAt: ability.uniqueInfo.lastSeenInSaleAt?.toISOString(),
-      lastSeenInSalePrice: ability.uniqueInfo.lastSeenInSalePrice?.toString(),
+      ref: card.ref,
+      name: card.nameEn,
+      faction: card.faction as Faction,
+      cardSet: card.cardSet ?? "",
+      mainEffect: card.mainEffectEn ?? "",
+      echoEffect: card.echoEffectEn ?? "",
+      imageUrl: card.imageUrlEn ?? "",
+      lastSeenInSaleAt: card.lastSeenInSaleAt?.toISOString(),
+      lastSeenInSalePrice: card.lastSeenInSalePrice?.toString(),
+      mainAbilities: displayAbilities.sort((a, b) => a.index - b.index),
     };
   }).filter((unique) => unique !== null);
 
   let generalSearchLink: string | null = null;
   if (part.partType == AbilityPartType.Condition) {
-    generalSearchLink = `/search?cond=${part.textEn}`;
+    generalSearchLink = `/search?cond="${part.textEn}"`;
   } else if (part.partType == AbilityPartType.Effect) {
-    generalSearchLink = `/search?eff=${part.textEn}`;
+    generalSearchLink = `/search?eff="${part.textEn}"`;
   } else if (part.partType == AbilityPartType.Trigger) {
-    generalSearchLink = `/search?tr=${part.textEn}`;
+    generalSearchLink = `/search?tr="${part.textEn}"`;
   }
 
   return {
