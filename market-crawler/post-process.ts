@@ -467,9 +467,9 @@ export async function processUniquesBatch(fromPage: number = 0, toPage: number |
     let batchUniques = await prisma.uniqueInfo.findMany({
       where: {
         fetchedDetails: true,
-        nameEn: {
-          equals: "Man in the Maze",
-        }
+        // nameEn: {
+        //   equals: "Man in the Maze",
+        // }
         // AND: [
         //   { mainEffectEn: { not: null } }
         //   { echoEffectEn: { not: null } }

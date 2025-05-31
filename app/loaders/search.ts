@@ -1,12 +1,10 @@
 import prisma from "@common/utils/prisma.server.js";
-import { CardSet, DisplayAbilityOnCard, DisplayAbilityPartOnCard, DisplayUniqueCard, Faction } from "~/models/cards";
-import { AbilityPartType, UniqueAbilityLine, Prisma, UniqueInfo, UniqueAbilityPart, AbilityPartLink } from '@prisma/client';
+import { CardSet, DisplayAbilityOnCard, DisplayPartOnCard, DisplayUniqueCard, AbilityPartType, Faction } from "~/models/cards";
+import { UniqueAbilityLine, Prisma, UniqueInfo, UniqueAbilityPart, AbilityPartType as DbAbilityPartType, AbilityPartLink } from '@prisma/client';
 import { AbilityCharacterDataV1 } from "@common/models/postprocess";
 
 // Add the type from Prisma namespace
 type UniqueInfoWhereInput = Prisma.UniqueInfoWhereInput;
-type UniqueAbilityLineWhereInput = Prisma.UniqueAbilityLineWhereInput;
-type UniqueAbilityPartWhereInput = Prisma.UniqueAbilityPartWhereInput;
 
 export interface SearchQuery {
   faction?: string;
@@ -43,7 +41,7 @@ function tokenize(text: string): Token[] {
   return tokens;
 }
 
-function searchInPart(partType: AbilityPartType, query?: string): Prisma.AbilityPartLinkWhereInput[] {
+function searchInPart(partType: DbAbilityPartType, query?: string): Prisma.AbilityPartLinkWhereInput[] {
   if (!query) {
     return []
   }
@@ -301,7 +299,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
       echoEffect: result.echoEffectEn,
       lastSeenInSaleAt: result.lastSeenInSaleAt?.toISOString(),
       lastSeenInSalePrice: result.lastSeenInSalePrice?.toString(),
-      mainAbilities: displayAbilities.sort((a, b) => a.index - b.index),
+      mainAbilities: displayAbilities.sort((a, b) => a.lineNumber - b.lineNumber),
     }
   }).filter((result) => result !== null);
 
@@ -309,15 +307,12 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
 }
 
 export function buildDisplayAbility(ability: UniqueAbilityLine & { allParts: AbilityPartLink[] }): DisplayAbilityOnCard | undefined {
-  if (ability.isSupport) {
-    return undefined;
-  }
   if (ability.characterData == null) {
     return undefined;
   }
   const charData = ability.characterData as unknown as AbilityCharacterDataV1;
   const line = ability.textEn
-  const displayParts = charData.parts.map((part) => {
+  const displayParts: DisplayPartOnCard[] = charData.parts.map((part) => {
     const matchingPart = ability.allParts
       .find((p) => p?.partId == part.partId)
     if (matchingPart == null) {
@@ -325,14 +320,16 @@ export function buildDisplayAbility(ability: UniqueAbilityLine & { allParts: Abi
       return null;
     }
     return {
-      id: part.partId,
+      partId: part.partId,
       startIndex: part.startIndex,
       endIndex: part.endIndex,
-      partType: matchingPart.partType,
+      partType: matchingPart.partType.toString() as AbilityPartType,
+      substituteText: part.substituteText,
     }
   }).filter((x) => x != null)
   return {
-    index: ability.lineNumber,
+    lineNumber: ability.lineNumber,
+    isSupport: ability.isSupport,
     text: line,
     parts: displayParts.sort((a, b) => a.startIndex - b.startIndex)
   }

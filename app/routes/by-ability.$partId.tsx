@@ -110,7 +110,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
       imageUrl: card.imageUrlEn ?? "",
       lastSeenInSaleAt: card.lastSeenInSaleAt?.toISOString(),
       lastSeenInSalePrice: card.lastSeenInSalePrice?.toString(),
-      mainAbilities: displayAbilities.sort((a, b) => a.index - b.index),
+      mainAbilities: displayAbilities.sort((a, b) => a.lineNumber - b.lineNumber),
     };
   }).filter((unique) => unique !== null);
 

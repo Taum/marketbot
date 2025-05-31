@@ -11,6 +11,11 @@ services:
     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
       - 5411:5432
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 512M
   pgAdmin:
     image: dpage/pgadmin4:latest
     environment:

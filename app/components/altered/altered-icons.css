@@ -1,0 +1,132 @@
+@font-face {
+  font-family: 'AlteredIcons';
+  src: url(/assets/altered-icons-extd.woff2) format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: 'AlteredIconBaseSet';
+  src: url('/assets/altered-icons-basic.eot#iefix') format('embedded-opentype'),
+    url('/assets/altered-icons-basic.ttf') format('truetype'),
+    url('/assets/altered-icons-basic.woff') format('woff'),
+    url('/assets/altered-icons-basic.svg#AlteredIcons') format('svg');
+}
+
+i.altered-icon {
+  font-family: 'AlteredIcons' !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+i.altered-icon-basic {
+  font-family: 'AlteredIconBaseSet' !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.--color-ax {
+  color: hsl(var(--axiom)) !important;
+}
+.--color-br {
+  color: hsl(var(--bravos)) !important;
+}
+.--color-ly {
+  color: hsl(var(--lyra)) !important;
+}
+.--color-mu {
+  color: hsl(var(--muna)) !important;
+}
+.--color-or {
+  color: hsl(var(--ordis)) !important;
+}
+.--color-yz {
+  color: hsl(var(--yzmir)) !important;
+}
+.--color-mana-hand {
+  color: #5095c9 !important;
+}
+
+.altered-icon.cost-0:before{content:""}
+.altered-icon.cost-1:before{content:""}
+.altered-icon.cost-2:before{content:""}
+.altered-icon.cost-3:before{content:""}
+.altered-icon.cost-4:before{content:""}
+.altered-icon.cost-5:before{content:""}
+.altered-icon.cost-6:before{content:""}
+.altered-icon.cost-7:before{content:""}
+.altered-icon.cost-8:before{content:""}
+.altered-icon.cost-9:before{content:""}
+
+.altered-icon.brush:before{content:""}
+.altered-icon.tumult:before{content:""}
+.altered-icon.support:before{content:""}
+.altered-icon.fleeting:before{content:""}
+.altered-icon.btg:before{content:""}
+.altered-icon.hand:before{content:""}
+.altered-icon.infinite:before{content:""}
+.altered-icon.etb:before{content:""}
+.altered-icon.anchored:before{content:""}
+.altered-icon.separator:before{content:""}
+.altered-icon.forest:before{content:""}
+.altered-icon.mountain:before{content:""}
+.altered-icon.ocean:before{content:""}
+.altered-icon.card:before{content:""}
+.altered-icon.reserve:before{content:""}
+.altered-icon.swirl:before{content:""}
+.altered-icon.exhaust:before{content:""}
+.altered-icon.x:before{content:""}
+.altered-icon.sleeping:before{content:""}
+
+.altered-icon.bga:before{content:""}
+.altered-icon.bgg:before{content:""}
+.altered-icon.booster-pack:before{content:""}
+.altered-icon.collection:before{content:""}
+.altered-icon.display-box:before{content:""}
+.altered-icon.btg-2:before{content:""}
+.altered-icon.kickstarter:before{content:""}
+.altered-icon.gamegenic:before{content:""}
+.altered-icon.ks-set:before{content:""}
+.altered-icon.mobile:before{content:""}
+.altered-icon.deck:before{content:""}
+
+.altered-icon.ax:before{content:"\e007"}
+.altered-icon.br:before{content:"\e008"}
+.altered-icon.ly:before{content:"\e009"}
+.altered-icon.mu:before{content:"\e00a"}
+.altered-icon.or:before{content:"\e00b"}
+.altered-icon.yz:before{content:"\e00c"}
+
+
+.altered-icon-basic.mana-1:before {content: "\e900";}
+.altered-icon-basic.mana-2:before {content: "\e901";}
+.altered-icon-basic.mana-3:before {content: "\e902";}
+.altered-icon-basic.mana-4:before {content: "\e903";}
+.altered-icon-basic.mana-5:before {content: "\e904";}
+.altered-icon-basic.mana-6:before {content: "\e905";}
+.altered-icon-basic.mana-7:before {content: "\e906";}
+.altered-icon-basic.mana-8:before {content: "\e907";}
+.altered-icon-basic.mana-9:before {content: "\e908";}
+
+.altered-icon-basic.etb:before {content: "\e909";}
+.altered-icon-basic.exhaust:before {content: "\e90a";}
+.altered-icon-basic.forest:before {content: "\e90b";}
+.altered-icon-basic.hand:before {content: "\e90c";}
+.altered-icon-basic.mountain:before {content: "\e90d";}
+.altered-icon-basic.reserve:before {content: "\e90e";}
+.altered-icon-basic.support:before {content: "\e90f";}
+.altered-icon-basic.water:before {content: "\e910";}
+.altered-icon-basic.x:before {content: "\e911";}

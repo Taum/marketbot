@@ -10,11 +10,12 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
+import { findReplaceSymbols } from "~/components/altered/ResultGrid";
 
 
 interface DisplayAbilityPart {
   id: number;
-  name: string;
+  text: string;
   partType: string;
   count: number;
   isSupport: boolean;
@@ -47,7 +48,7 @@ export async function loader() {
   const exportAbilities: DisplayAbilityPart[] = abilities.map((a) => {
     return {
       id: a.id,
-      name: a.textEn,
+      text: a.textEn,
       partType: a.partType.toString(),
       count: a._count.allAbilities,
       isSupport: a.isSupport,
@@ -79,6 +80,14 @@ export default function AbilitiesList() {
   );
 }
 
+
+function replaceSymbolsForTables(text: string): JSX.Element {
+  if (text == "[]") {
+    return <span className="">[]</span>
+  }
+  return findReplaceSymbols(text)
+}
+
 function AbilityPartSection({ title, abilityParts }: { title: string; abilityParts: DisplayAbilityPart[] }) {
   if (!abilityParts || abilityParts.length === 0) {
     return null;
@@ -101,7 +110,7 @@ function AbilityPartSection({ title, abilityParts }: { title: string; abilityPar
           {abilityParts.map((part) => (
             <TableRow className="font-medium" key={part.id}>
               <TableCell className="text-muted-foreground">{part.id}</TableCell>
-              <TableCell className={cn(part.count == 0 && "line-through text-red-200")}>{part.name}</TableCell>
+              <TableCell className={cn(part.count == 0 && "line-through text-red-200")}>{replaceSymbolsForTables(part.text)}</TableCell>
               <TableCell>{part.isSupport ? "Support" : "Main"}</TableCell>
               <TableCell className="text-right pr-12 w-1">{part.count}</TableCell>
               <TableCell>

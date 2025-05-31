@@ -52,6 +52,15 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+
+    --palette-red: 359 94% 62%;
+    --palette-orange: 21 89% 56%;
+    --palette-carrot: 33 94% 55%;
+    --palette-gold: 42 93% 64%;
+    --palette-fern: 94 38% 59%;
+    --palette-teal: 162 43% 46%;
+    --palette-charcoal: 208 25% 45%;
+
     
     @media (prefers-color-scheme: dark) {
       --background: 224 71.4% 4.1%;
@@ -78,6 +87,22 @@ body {
       --chart-3: 30 80% 55%;
       --chart-4: 280 65% 60%;
       --chart-5: 340 75% 55%;
+
+      /* --palette-red: 353 73% 40%;
+      --palette-orange: 16 68% 38%;
+      --palette-carrot: 30 70% 37%;
+      --palette-gold: 40 70% 44%;
+      --palette-fern: 98 29% 40%;
+      --palette-teal: 167 37% 31%;
+      --palette-charcoal: 212 23% 31%; */
+      --palette-red: 359 94% 62%;
+      --palette-orange: 21 89% 56%;
+      --palette-carrot: 33 94% 55%;
+      --palette-gold: 42 93% 64%;
+      --palette-fern: 94 38% 59%;
+      --palette-teal: 162 43% 46%;
+      --palette-charcoal: 208 25% 45%;
+
     }
   }
 }

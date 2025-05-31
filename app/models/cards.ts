@@ -9,19 +9,22 @@ export interface DisplayUniqueCard {
   lastSeenInSaleAt?: string;
   lastSeenInSalePrice?: string;
   mainAbilities?: DisplayAbilityOnCard[];
+  echoAbilities?: DisplayAbilityOnCard[];
 }
 export interface DisplayAbilityOnCard {
-  index: number;
+  lineNumber: number;
+  isSupport: boolean;
   text: string;
-  parts: DisplayAbilityPartOnCard[];
+  parts: DisplayPartOnCard[];
 }
 
-export interface DisplayAbilityPartOnCard {
-  id: number;
-  partType: string;
+export interface DisplayPartOnCard {
+  partId: number;
+  partType: AbilityPartType;
   // isSupport: boolean;
   startIndex: number;
   endIndex: number;
+  substituteText?: string;
 }
 
 export enum AbilityPartType {
@@ -45,4 +48,20 @@ export enum CardSet {
   Core = "CORE",
   Alize = "ALIZE",
   Bise = "BISE",
+}
+
+export const titleForCardSet = (set: CardSet, locale: string) => {
+  if (locale === "en") {
+    switch (set) {
+      case CardSet.Core: return "Beyond the Gates";
+      case CardSet.Alize: return "Trial by Frost";
+      case CardSet.Bise: return "Whispers from the Maze";
+    }
+  } else if (locale === "fr") {
+    switch (set) {
+      case CardSet.Core: return "Au-delà des portes";
+      case CardSet.Alize: return "L'Épreuve du froid";
+      case CardSet.Bise: return "Murmures du Labyrinthe";
+    }
+  }
 }

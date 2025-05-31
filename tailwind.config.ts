@@ -52,6 +52,17 @@ export default {
   				DEFAULT: 'hsl(var(--destructive))',
   				foreground: 'hsl(var(--destructive-foreground))'
   			},
+				
+				palette: {
+					red: 'hsl(var(--palette-red))',
+					orange: 'hsl(var(--palette-orange))',
+					carrot: 'hsl(var(--palette-carrot))',
+					gold: 'hsl(var(--palette-gold))',
+					fern: 'hsl(var(--palette-fern))',
+					teal: 'hsl(var(--palette-teal))',
+					charcoal: 'hsl(var(--palette-charcoal))',
+				},
+
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
