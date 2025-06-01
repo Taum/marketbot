@@ -70,6 +70,13 @@ export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
   }
 
 
+  public async enqueueUniquesWithId(ids: string[]) {
+    console.log(`Enqueuing by ID ${ids.length} uniques...`)
+    for (const id of ids) {
+      await this.addRequests([{ id }]);
+    }
+  }
+
   public async enqueueUniquesWithMissingEffects({ limit = 1000 }: { limit?: number } = {}) {
     const uniques = await prisma.uniqueInfo.findMany({
       where: {

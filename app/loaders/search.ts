@@ -17,6 +17,8 @@ export interface SearchQuery {
   mainCosts?: number[];
   recallCosts?: number[];
   includeExpiredCards?: boolean;
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 export interface PageParams {
@@ -99,6 +101,8 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     mainCosts,
     recallCosts,
     includeExpiredCards,
+    minPrice,
+    maxPrice,
   } = searchQuery
   const {
     page,
@@ -242,17 +246,30 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     }
   }
 
-  let expiredClause: UniqueInfoWhereInput[] = []
   if (!includeExpiredCards) {
-    expiredClause = [{
+    searchParams.push({
       seenInLastGeneration: true
-    }]
+    })
+  }
+
+  if (minPrice != null) {
+    searchParams.push({
+      lastSeenInSalePrice: {
+        gte: minPrice
+      }
+    })
+  }
+  if (maxPrice != null) {
+    searchParams.push({
+      lastSeenInSalePrice: {
+        lte: maxPrice
+      }
+    })
   }
 
   const whereClause: UniqueInfoWhereInput = {
     AND: [
       { fetchedDetails: true },
-      ...expiredClause,
       ...searchParams,
     ]
   }

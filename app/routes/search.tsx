@@ -25,6 +25,8 @@ interface SearchQuery {
   mainCostRange?: string;
   recallCostRange?: string;
   includeExpiredCards?: boolean;
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 interface LoaderData {
@@ -51,6 +53,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const mainCostRange = nullifyTrim(url.searchParams.get("mc"));
   const recallCostRange = nullifyTrim(url.searchParams.get("rc"));
   const includeExpiredCards = nullifyTrim(url.searchParams.get("exp")) == "1";
+  const minPrice = nullifyParseInt(url.searchParams.get("minpr"));
+  const maxPrice = nullifyParseInt(url.searchParams.get("maxpr"));
 
   const currentPage = nullifyParseInt(url.searchParams.get("p")) ?? 1;
 
@@ -70,6 +74,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
         mainCosts,
         recallCosts,
         includeExpiredCards,
+        minPrice,
+        maxPrice,
       },
       {
         page: currentPage,
@@ -91,6 +97,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
         mainCostRange,
         recallCostRange,
         includeExpiredCards,
+        minPrice,
+        maxPrice,
       },
     };
   } catch (e) {
@@ -110,6 +118,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
         mainCostRange,
         recallCostRange,
         includeExpiredCards,
+        minPrice,
+        maxPrice,
       },
     }
   }
@@ -178,6 +188,8 @@ const SearchForm: FC<SearchQuery> = ({
   mainCostRange,
   recallCostRange,
   includeExpiredCards,
+  minPrice,
+  maxPrice,
 }: SearchQuery) => {
   const [selectedFaction, setSelectedFaction] = useState(faction ?? undefined);
   const [selectedSet, setSelectedSet] = useState(set ?? undefined);
@@ -245,7 +257,7 @@ const SearchForm: FC<SearchQuery> = ({
               type="search"
               name="m"
               defaultValue={mainEffect ?? ""}
-              placeholder="Search..."
+              placeholder="Card text..."
             />
           </div>
         </div>
@@ -256,7 +268,7 @@ const SearchForm: FC<SearchQuery> = ({
               type="search"
               name="tr"
               defaultValue={triggerPart ?? ""}
-              placeholder="Search..."
+              placeholder="Trigger text..."
             />
           </div>
           <div className="grow-1 flex-[60%]">
@@ -265,7 +277,7 @@ const SearchForm: FC<SearchQuery> = ({
               type="search"
               name="cond"
               defaultValue={conditionPart ?? ""}
-              placeholder="Search..."
+              placeholder="Condition text..."
             />
           </div>
           <div className="grow-1 flex-[60%]">
@@ -274,26 +286,47 @@ const SearchForm: FC<SearchQuery> = ({
               type="search"
               name="eff"
               defaultValue={effectPart ?? ""}
-              placeholder="Search..."
+              placeholder="Effect text..."
             />
           </div>
         </div>
-        <div className="flex flex-row gap-8 align-self-start">
+        <div className="flex flex-row gap-8 align-self-start justify-between items-end">
           <Button
             type="submit"
             className="bg-accent/80 text-foreground hover:bg-accent"
           >
             Search
           </Button>
-          
-          <div className="flex flex-row gap-2 items-center my-2">
-            <Checkbox
-              value="1"
-              name="exp"
-              defaultChecked={includeExpiredCards ?? false}
-              onCheckedChange={handleExpiredCardsChange}
-            />
-            <Label htmlFor="exp">Include unavailable cards</Label>
+          <div className="flex flex-row gap-2">
+            <div className="flex flex-row gap-2 items-center mt-6 mr-2">
+              <Checkbox
+                value="1"
+                name="exp"
+                defaultChecked={includeExpiredCards ?? false}
+                onCheckedChange={handleExpiredCardsChange}
+              />
+              <Label htmlFor="exp">Include unavailable cards</Label>
+            </div>
+            <div className="">
+              <Label htmlFor="minpr">Min price</Label>
+              <Input
+                type="search"
+                name="minpr"
+                className="w-20"
+                defaultValue={minPrice ?? ""}
+                placeholder="..."
+              />
+            </div>
+            <div className="">
+              <Label htmlFor="maxpr">Max price</Label>
+              <Input
+                type="search"
+                name="maxpr"
+                className="w-20"
+                defaultValue={maxPrice ?? ""}
+                placeholder="..."
+              />
+            </div>
           </div>
         </div>
       </div>
