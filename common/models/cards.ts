@@ -93,5 +93,6 @@ export interface CardDbEntry {
   assets: CardAssets
   rarity: Rarity
   type: CardType
+  subTypes: string[]
   _meta: CardMeta
 }

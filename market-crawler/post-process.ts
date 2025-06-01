@@ -112,7 +112,7 @@ function normalizeAbilityText(text: string | null | undefined): string | undefin
     .replace(/\{(\w)\}/g, (m) => `{${m[1].toUpperCase()}}`)
 }
 
-function processOneCard(cardIn: UniqueInfo): ProcessedCard | null {
+function processOneCard(cardIn: UniqueInfo): ProcessedCard {
 
   // start by making a copy, with the ability texts normalized
   const card = {
@@ -457,7 +457,7 @@ export async function upsertOneAbilityLine(uniqueInfoId: number, ability: Proces
   }
 }
 
-export async function processOneUnique(unique: UniqueInfo, tx: Omit<PrismaClient, ITXClientDenyList>) {
+export async function processAndWriteOneUnique(unique: UniqueInfo, tx: Omit<PrismaClient, ITXClientDenyList>) {
   let processedCard = processOneCard(unique);
   if (processedCard && (processedCard.mainAbilities.length > 0 || processedCard.echoAbilities.length > 0)) {
 
@@ -471,29 +471,36 @@ export async function processOneUnique(unique: UniqueInfo, tx: Omit<PrismaClient
         console.log(`echo: ${processedCard.uniqueInfo.echoEffectEn}`)
       }
     }
+    await writeProcessedCard(processedCard, unique, tx);
+  }
+}
 
+let textUpdatedCount = 0;
+async function writeProcessedCard(processedCard: ProcessedCard, originalUnique: UniqueInfo, tx: Omit<PrismaClient, ITXClientDenyList>) {
+  if (originalUnique.mainEffectEn != processedCard.uniqueInfo.mainEffectEn || originalUnique.echoEffectEn != processedCard.uniqueInfo.echoEffectEn) {
     // We might have modified the mainEffectEn/echoEffectEn strings to fix some typos
     // so we update the UniqueInfo record with the new strings
+    textUpdatedCount += 1;
     await tx.uniqueInfo.update({
-      where: { id: unique.id },
+      where: { id: processedCard.uniqueInfo.id },
       data: {
         mainEffectEn: processedCard.uniqueInfo.mainEffectEn,
         echoEffectEn: processedCard.uniqueInfo.echoEffectEn,
       }
     })
+  }
 
-    for (let ability of processedCard.mainAbilities) {
-      await upsertOneAbilityLine(processedCard.uniqueInfo.id, ability, tx);
-    }
-    for (let ability of processedCard.echoAbilities) {
-      await upsertOneAbilityLine(processedCard.uniqueInfo.id, ability, tx);
-    }
+  for (let ability of processedCard.mainAbilities) {
+    await upsertOneAbilityLine(processedCard.uniqueInfo.id, ability, tx);
+  }
+  for (let ability of processedCard.echoAbilities) {
+    await upsertOneAbilityLine(processedCard.uniqueInfo.id, ability, tx);
   }
 }
 
-export async function processUniquesBatch(fromPage: number = 0, toPage: number | undefined = undefined, batchSize = 500) {
+export async function processUniquesBatch(fromPage: number = 0, toPage: number | undefined = undefined, batchSize = 100) {
   let page = fromPage;
-  console.log(`Starting batch from ${fromPage} to ${toPage}`)
+  console.log(`Starting batch from ${fromPage} to ${toPage} (batchSize=${batchSize})`)
   while (toPage && page < toPage) {
 
     const startTs = Date.now();
@@ -501,9 +508,9 @@ export async function processUniquesBatch(fromPage: number = 0, toPage: number |
     let batchUniques = await prisma.uniqueInfo.findMany({
       where: {
         fetchedDetails: true,
-        cardSet: {
-          in: [CardSet.BISE]
-        },
+        // cardSet: {
+        //   in: [CardSet.BISE]
+        // },
         // nameEn: {
         //   equals: "Thoth",
         // }
@@ -524,17 +531,28 @@ export async function processUniquesBatch(fromPage: number = 0, toPage: number |
       break;
     }
 
+    const readTs = Date.now();
+    const readTime = readTs - startTs;
+
+    const processedCards: { original: UniqueInfo, processed: ProcessedCard }[] = batchUniques
+      .map(u => ({ original: u, processed: processOneCard(u) }))
+      .filter(pc => pc.processed.mainAbilities.length > 0 || pc.processed.echoAbilities.length > 0)
+
+    const processTs = Date.now();
+    const processTime = processTs - readTs;
+
     await prisma.$transaction(async (tx) => {
-      for (let unique of batchUniques) {
-        await processOneUnique(unique, tx);
+      for (let { original, processed } of processedCards) {
+        await writeProcessedCard(processed, original, tx);
         totalProcessed += 1;
       }
-    }, { timeout: 30000 })
+    }, { timeout: 60000 })
 
     const endTs = Date.now();
-    const processingTime = endTs - startTs;
-    const cardsPerSecond = (batchUniques.length * 1000) / processingTime;
-    console.log(`Done with page ${page} (${totalProcessed} cards processed in ${processingTime}ms (${Math.round(cardsPerSecond)} cards/s))`)
+    const writeTime = endTs - processTs;
+    const totalTime = endTs - startTs;
+    const cardsPerSecond = (batchUniques.length * 1000) / totalTime;
+    console.log(`Done with page ${page} (${totalProcessed} cards processed - ${textUpdatedCount} txt updated) - cards/s=${Math.round(cardsPerSecond)} - read=${readTime}ms, process=${processTime}ms, write=${writeTime}ms, total=${totalTime}ms`)
     page += 1;
   }
 }

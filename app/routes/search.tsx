@@ -152,7 +152,7 @@ export default function SearchPage() {
           {pagination ? (
             <div className="flex flex-row justify-between gap-8">
               <h2 className="grow-1 text-xl font-semibold">
-                Showing {pagination.totalCount} matching
+                Found {pagination.totalCount} cards
             </h2>
             {pagination.pageCount && pagination.pageCount > 1 ? (
               <div>

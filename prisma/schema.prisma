@@ -25,6 +25,7 @@ model UniqueInfo {
   imageUrlIt    String?
   mainEffectEn  String?
   echoEffectEn  String?
+  cardSubTypes  String[]
 
   fetchedDetails   Boolean   @default(false)
   fetchedDetailsAt DateTime?

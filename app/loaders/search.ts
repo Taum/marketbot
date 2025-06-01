@@ -6,6 +6,8 @@ import { AbilityCharacterDataV1 } from "@common/models/postprocess";
 // Add the type from Prisma namespace
 type UniqueInfoWhereInput = Prisma.UniqueInfoWhereInput;
 
+const debug = process.env.DEBUG_WEB == "true"
+
 export interface SearchQuery {
   faction?: string;
   set?: string;
@@ -50,8 +52,10 @@ function searchInPart(partType: DbAbilityPartType, query?: string): Prisma.Abili
   }
 
   const tokens = tokenize(query)
-  console.log(`Tokens for ${partType}`)
-  console.dir(tokens);
+  if (debug) {
+    console.log(`Tokens for ${partType}`)
+    console.dir(tokens);
+  }
   if (tokens.length == 0) {
     return []
   }
@@ -163,7 +167,6 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
 
   if (mainEffect != null) {
     const tokens = tokenize(mainEffect);
-    console.log("Main effect Tokens: ", tokens);
     searchParams = searchParams.concat(tokens.map((token) => {
       if (token.negated) {
         return {
@@ -274,8 +277,10 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     ]
   }
 
-  console.log("Where clause:")
-  console.dir(whereClause, { depth: null });
+  if (debug) {
+    console.log("Where clause:")
+    console.dir(whereClause, { depth: null });
+  }
 
   const results = await prisma.uniqueInfo.findMany({
     where: whereClause,
@@ -299,7 +304,9 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
       where: whereClause,
     })
 
-    console.log('Total count: ' + totalCount)
+    if (debug) {
+      console.log('Total count: ' + totalCount)
+    }
 
     pagination = {
       totalCount: totalCount,
