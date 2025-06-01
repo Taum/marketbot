@@ -36,6 +36,9 @@ interface LoaderData {
     totalCount: number;
     pageCount: number;
   } | undefined;
+  metrics: {
+    duration: number;
+  } | undefined;
   query: SearchQuery;
   error: string | undefined;
 }
@@ -62,6 +65,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const recallCosts = parseRange(recallCostRange)
 
   try {
+    const startTs = new Date()
+
     const { results, pagination } = await search(
       {
         faction,
@@ -82,10 +87,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
         includePagination: true
       }
     );
+
+    const endTs = new Date()
+    const duration = endTs.getTime() - startTs.getTime()
     
     return {
       results,
       pagination: { ...pagination, currentPage },
+      metrics: {
+        duration,
+      },
       query: {
         faction,
         set,
@@ -107,6 +118,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       error: e.message,
       results: [],
       pagination: undefined,
+      metrics: undefined,
       query: {
         faction,
         set,
@@ -151,9 +163,16 @@ export default function SearchPage() {
         <div className="space-y-6">
           {pagination ? (
             <div className="flex flex-row justify-between gap-8">
-              <h2 className="grow-1 text-xl font-semibold">
-                Found {pagination.totalCount} cards
-            </h2>
+              <div>
+                <h2 className="grow-1 text-xl font-semibold inline-block">
+                  Found {pagination.totalCount} cards
+                </h2>
+                {loaderData.metrics?.duration && (
+                  <span className="ml-2 text-xs text-muted-foreground/50">
+                    in {(loaderData.metrics.duration / 1000).toFixed(1)} seconds
+                  </span>
+                )}
+              </div>
             {pagination.pageCount && pagination.pageCount > 1 ? (
               <div>
                 <ResultsPagination
