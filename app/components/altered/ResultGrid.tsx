@@ -86,7 +86,8 @@ function formatSupport(abilities: DisplayAbilityOnCard[]): JSX.Element {
   </div>
 }
 
-function formatAbility({ text, parts }: DisplayAbilityOnCard): JSX.Element {
+function formatAbility(ability: DisplayAbilityOnCard): JSX.Element {
+  const { text, parts } = ability
   let res: JSX.Element[] = []
   let k = 0;
   res.push(<span key={k++}>{text.slice(0, parts[0].startIndex)}</span>);
@@ -95,7 +96,7 @@ function formatAbility({ text, parts }: DisplayAbilityOnCard): JSX.Element {
       res.push(<span key={k++}>{findReplaceSymbols(text.slice(parts[i - 1].endIndex, parts[i].startIndex))}</span>);
     }
     let textSlice = text.slice(parts[i].startIndex, parts[i].endIndex)
-    res.push(<AbilityLink key={k++} part={parts[i]}>{textSlice}</AbilityLink>);
+    res.push(<AbilityLink key={k++} part={parts[i]} ability={ability}>{textSlice}</AbilityLink>);
   }
   res.push(<span key={k++}>{findReplaceSymbols(text.slice(parts[parts.length - 1].endIndex))}</span>);
   return <>{res}</>
@@ -107,16 +108,21 @@ export function findReplaceSymbols(text: string): JSX.Element {
   const keywordClasses = "font-extrabold"
 
   const rules = [
-    { regExp: /\{R\}/gd, iconType: AlteredIconType.Reserve },
-    { regExp: /\{H\}/gd, iconType: AlteredIconType.Hand },
-    { regExp: /\{J\}/gd, iconType: AlteredIconType.ETB },
+    { regExp: /\{R\}/gdi, iconType: AlteredIconType.Reserve },
+    { regExp: /\{H\}/gdi, iconType: AlteredIconType.Hand },
+    { regExp: /\{J\}/gdi, iconType: AlteredIconType.ETB },
     { regExp: /\{D\}/gd, iconType: AlteredIconType.Support },
-    { regExp: /\{I\}/gd, iconType: AlteredIconType.Infinite },
     { regExp: /\{X\}/gd, iconType: AlteredIconType.X },
     { regExp: /\{O\}/gd, iconType: AlteredIconType.Ocean },
     { regExp: /\{M\}/gd, iconType: AlteredIconType.Mountain },
     { regExp: /\{V\}/gd, iconType: AlteredIconType.Forest },
     { regExp: /\{T\}/gd, iconType: AlteredIconType.Exhaust },
+    {
+      regExp: /\{I\}/gd,
+      substituteElement: (_, key) => {
+        return <AlteredIcon key={key} icon={AlteredIconType.Infinite} className="text-[75%]" />
+      }
+    },
     {
       regExp: /\{(\d)\}/gd,
       substituteElement: (matches, key) => {
@@ -162,6 +168,9 @@ export function findReplaceSymbols(text: string): JSX.Element {
       })
     }
   }
+  // Make sure we process the matches in order of appearance
+  // so that the `lastIndex` progresses monotonically
+  replacements.sort((a, b) => a.startIndex - b.startIndex)
 
   let elements: JSX.Element[] = []
   let lastIndex = 0
@@ -179,15 +188,25 @@ export function findReplaceSymbols(text: string): JSX.Element {
   return <>{elements}</>
 }
 
-const AbilityLink: FC<{ part: DisplayPartOnCard, children: string }> = ({ part, children }) => {
+const AbilityLink: FC<{ part: DisplayPartOnCard, children: string, ability: DisplayAbilityOnCard }> = ({ part, children, ability }) => {
 
   let linkText = children
   let addedText: string | undefined = undefined
   let title: string | undefined = undefined
   let classes: string = ""
 
+  const showNullNoConditionSymbol = (ability: DisplayAbilityOnCard) => {
+    if (ability.isSupport) {
+      return false
+    }
+    if (ability.parts.find((p) => p.partType == AbilityPartType.Trigger && p.substituteText != null)) {
+      return false
+    }
+    return true
+  }
+
   if (children == "[]") {
-    if (part.substituteText == "$noCondition") {
+    if (part.substituteText == "$noCondition" && showNullNoConditionSymbol(ability)) {
       // We should a null-set symbol for no-condition, to make it easy to search for
       // other abilities that don't have a condition
       classes = "font-light"

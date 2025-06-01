@@ -34,9 +34,12 @@ model UniqueInfo {
   lastSeenInSaleAt      DateTime?
   lastSeenInSalePrice   Decimal?
 
+  seenInLastGeneration Boolean @default(false)
+
   // This is the short unique ID of the "family" e.g. LY_14
   // Note that Out-of-faction uniques will have the same family ID as the in-faction
   cardFamilyId String?
+  cardFamilyStats CardFamilyStats? @relation(fields: [cardFamilyId, faction], references: [cardFamilyId, faction])
 
   mainAbilities UniqueAbilityLine[]
 
@@ -47,6 +50,7 @@ model UniqueInfo {
   @@index([cardFamilyId])
   @@index([lastSeenInSaleAt])
   @@index([nameEn])
+  @@index([seenInLastGeneration])
 }
 
 model UniqueAbilityLine {
@@ -126,6 +130,8 @@ model CardFamilyStats {
   fetchStartGeneration     Int
   fetchCompletedGeneration Int?
   totalItems               Int?
+
+  uniques UniqueInfo[]
 
   @@unique([id])
   @@unique([cardFamilyId, faction])

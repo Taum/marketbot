@@ -94,7 +94,7 @@ export const CardSetSymbol: FC<CardSetSymbolProps> = ({ set, className, size = "
   // return <img src={`/assets/set-icons/${lcase}.svg`} alt={set} className={cn(baseStyles, sizeClass, className)} style={style} />;
   return <svg className={cn(baseStyles, sizeClass, className)} style={style}>
     <title>{title}</title>
-    <use href={`/assets/set-icons/group_v3.svg#${lcase}`} />
+    <use href={`/assets/set-icons-v3.svg#${lcase}`} />
   </svg>
 }
 

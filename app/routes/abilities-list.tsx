@@ -110,7 +110,11 @@ function AbilityPartSection({ title, abilityParts }: { title: string; abilityPar
           {abilityParts.map((part) => (
             <TableRow className="font-medium" key={part.id}>
               <TableCell className="text-muted-foreground">{part.id}</TableCell>
-              <TableCell className={cn(part.count == 0 && "line-through text-red-200")}>{replaceSymbolsForTables(part.text)}</TableCell>
+              <TableCell className={cn(part.count == 0 && "line-through text-red-200")}>
+                <div title={part.text}>
+                  {replaceSymbolsForTables(part.text)}
+                </div>
+              </TableCell>
               <TableCell>{part.isSupport ? "Support" : "Main"}</TableCell>
               <TableCell className="text-right pr-12 w-1">{part.count}</TableCell>
               <TableCell>

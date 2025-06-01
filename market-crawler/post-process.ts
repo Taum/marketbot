@@ -4,6 +4,7 @@ import { unique } from "radash"
 import { getEnv } from "./helpers";
 import { ITXClientDenyList } from "@prisma/client/runtime/library";
 import { PartCharacterData } from "@common/models/postprocess";
+import { CardSet } from "@common/models/cards";
 
 
 const verboseLevel = parseInt(getEnv("VERBOSE_LEVEL") ?? "1");
@@ -79,11 +80,9 @@ function buildEmptyProcessedAbility(
   }
 }
 
-/*
----
-// {H} []Target a Character in play or in Reserve other than me. Then, roll a die:  • On a 4+, we both gain 1 boost.  • On a 1-3, it gains 1 boost.  When a Character in your Reserve gains 1 or more boosts — []Target Character gains 2 boosts.
-*/
-
+// This splits each ability of the abilities text box, usually separated by two consecutive spaces.
+// The exception is when there is a "•" character, which is used to separate the modes. We keep that as
+// a single ability line.
 function splitLinesWithIndices(text: string): { line: string, startIndex: number, endIndex: number }[] {
   const splits = Array.from(text.matchAll(/  (?!•)/gid));
   if (splits.length == 0) {
@@ -100,14 +99,29 @@ function splitLinesWithIndices(text: string): { line: string, startIndex: number
   return out;
 }
 
-
-function processOneCard(card: UniqueInfo): ProcessedCard | null {
-
-  if (!card.mainEffectEn) {
-    return null;
+function normalizeAbilityText(text: string | null | undefined): string | undefined {
+  if (!text) {
+    return undefined;
   }
+  return text
+    // Convert any non-breaking spaces to normal spaces
+    .replace(/\s/g, "\u0020")
+    // .replace("\u00a0", "\u0020")
+    // Convert any {*} symbols to uppercase.
+    // Meant to fix some cards that have {r}, {j}, {j} instead of {R}, {H}, {J}
+    .replace(/\{(\w)\}/g, (m) => `{${m[1].toUpperCase()}}`)
+}
 
-  let mainLines = splitLinesWithIndices(card.mainEffectEn);
+function processOneCard(cardIn: UniqueInfo): ProcessedCard | null {
+
+  // start by making a copy, with the ability texts normalized
+  const card = {
+    ...cardIn,
+    mainEffectEn: normalizeAbilityText(cardIn.mainEffectEn) ?? null,
+    echoEffectEn: normalizeAbilityText(cardIn.echoEffectEn) ?? null,
+  };
+
+  let mainLines = card.mainEffectEn ? splitLinesWithIndices(card.mainEffectEn) : [];
   // Support abilities only have a single line right now
   let echoLines = card.echoEffectEn ? [card.echoEffectEn] : [];
 
@@ -138,10 +152,19 @@ function processOneCard(card: UniqueInfo): ProcessedCard | null {
         extraEffectParts.push(buildProcessedAbility(line, matches, 8))
       }
     }
-    // else if (line.indexOf("Then, depending on the number of boosts removed this way") != -1) {
-    // }
+    else if (line.startsWith("When my Expedition fails to move forward during Dusk — After Rest")) {
+      // The Bureaucrats ability always uses After Rest after the long-dash, but that should really be part
+      // of the trigger. Note that there doesn't seem to be any card that use this trigger and a condition, but the
+      // empty-condition [] marker is still there, so we handle it here, assuming a condition would end with a colon.
+      const matches = line.match(/^(When my Expedition fails to move forward during Dusk — After Rest:)\s+(\[\]|.+?:)(.*)$/id);
+      if (matches) {
+        trigger = buildProcessedAbility(line, matches, 1);
+        condition = buildProcessedAbility(line, matches, 2, { subIfEmpty: "$noCondition" });
+        effect = buildProcessedAbility(line, matches, 2);
+      }
+    }
     else if (line.startsWith("When")) {
-      const matches = line.match(/^((?:When .*?)|{H}|{R}|{J})\s+—\s+(\[\]|.*:)(.*)$/id);
+      const matches = line.match(/^((?:When .*?)|{H}|{R}|{J})\s+—\s+(\[\]|.+?:)(.*)$/id);
       if (matches) {
         trigger = buildProcessedAbility(line, matches, 1);
         condition = buildProcessedAbility(line, matches, 2, { subIfEmpty: "$noCondition" });
@@ -151,14 +174,14 @@ function processOneCard(card: UniqueInfo): ProcessedCard | null {
         const matches = line.match(/^((?:When .*?)|{H}|{R}|{J})\s+—\s+(.*)$/id);
         if (matches) {
           trigger = buildProcessedAbility(line, matches, 1);
-          condition = buildEmptyProcessedAbility(line, matches, 1, "$noCondition"); //
+          condition = buildEmptyProcessedAbility(line, matches, 1, "$noCondition");
           effect = buildProcessedAbility(line, matches, 2);
         } else {
           console.error("Line did not match 'When' pattern: " + line)
         }
       }
     } else if (line.startsWith("{H}") || line.startsWith("{R}") || line.startsWith("{J}")) {
-      const matches = line.match(/^({H}|{R}|{J})\s+(\[\]|.*:)(.*)$/id)
+      const matches = line.match(/^({H}|{R}|{J})\s+(\[\]|.+?:)(.*)$/id)
       if (matches) {
         trigger = buildProcessedAbility(line, matches, 1);
         condition = buildProcessedAbility(line, matches, 2, { subIfEmpty: "$noCondition" });
@@ -167,7 +190,7 @@ function processOneCard(card: UniqueInfo): ProcessedCard | null {
         console.error("Line did not match 'H/R/J' pattern: " + line)
       }
     } else if (line.startsWith("At")) {
-      const matches = line.match(/^(.*)—\s+(\[\]|.*:)(.*)$/id)
+      const matches = line.match(/^(.*)—\s+(\[\]|.+?:)(.*)$/id)
       if (matches) {
         trigger = buildProcessedAbility(line, matches, 1);
         condition = buildProcessedAbility(line, matches, 2, { subIfEmpty: "$noCondition" });
@@ -185,7 +208,7 @@ function processOneCard(card: UniqueInfo): ProcessedCard | null {
       }
     } else if (line.startsWith("[]")) {
       // These are actually Static abilities, not triggered
-      const matches = line.match(/^(\[\])\s*(\[\]|.*:)(.*)$/id)
+      const matches = line.match(/^(\[\])\s*(\[\]|.+?:)(.*)$/id)
       if (matches) {
         trigger = buildProcessedAbility(line, matches, 1, { subIfEmpty: "$static" });
         condition = buildProcessedAbility(line, matches, 2, { subIfEmpty: "$noCondition" });
@@ -316,7 +339,7 @@ async function upsertAbilityPart(
 
 let totalProcessed = 0;
 
-export async function upsertOneAbilityLine(uniqueInfo: UniqueInfo, ability: ProcessedAbilityLine, tx: Omit<PrismaClient, ITXClientDenyList>) {
+export async function upsertOneAbilityLine(uniqueInfoId: number, ability: ProcessedAbilityLine, tx: Omit<PrismaClient, ITXClientDenyList>) {
   let allParts: ((UniqueAbilityPart & PartCharacterData) | undefined)[] = [];
   let extraEffectParts: (UniqueAbilityPart & PartCharacterData)[] = [];
 
@@ -385,7 +408,7 @@ export async function upsertOneAbilityLine(uniqueInfo: UniqueInfo, ability: Proc
   let dbAbility = await tx.uniqueAbilityLine.findUnique({
     where: {
       uniqueInfoId_lineNumber_isSupport: {
-        uniqueInfoId: uniqueInfo.id,
+        uniqueInfoId: uniqueInfoId,
         lineNumber: ability.lineNumber,
         isSupport: ability.isSupport,
       }
@@ -419,7 +442,7 @@ export async function upsertOneAbilityLine(uniqueInfo: UniqueInfo, ability: Proc
   } else {
     const res = await tx.uniqueAbilityLine.create({
       data: {
-        uniqueInfoId: uniqueInfo.id,
+        uniqueInfoId: uniqueInfoId,
         lineNumber: ability.lineNumber,
         ...blob,
       }
@@ -437,6 +460,7 @@ export async function upsertOneAbilityLine(uniqueInfo: UniqueInfo, ability: Proc
 export async function processOneUnique(unique: UniqueInfo, tx: Omit<PrismaClient, ITXClientDenyList>) {
   let processedCard = processOneCard(unique);
   if (processedCard && (processedCard.mainAbilities.length > 0 || processedCard.echoAbilities.length > 0)) {
+
     if (verboseLevel >= 2) {
       console.log(`---------------------`)
       console.log(`${processedCard.uniqueInfo.nameEn} (${processedCard.uniqueInfo.ref})`)
@@ -448,11 +472,21 @@ export async function processOneUnique(unique: UniqueInfo, tx: Omit<PrismaClient
       }
     }
 
+    // We might have modified the mainEffectEn/echoEffectEn strings to fix some typos
+    // so we update the UniqueInfo record with the new strings
+    await tx.uniqueInfo.update({
+      where: { id: unique.id },
+      data: {
+        mainEffectEn: processedCard.uniqueInfo.mainEffectEn,
+        echoEffectEn: processedCard.uniqueInfo.echoEffectEn,
+      }
+    })
+
     for (let ability of processedCard.mainAbilities) {
-      await upsertOneAbilityLine(unique, ability, tx);
+      await upsertOneAbilityLine(processedCard.uniqueInfo.id, ability, tx);
     }
     for (let ability of processedCard.echoAbilities) {
-      await upsertOneAbilityLine(unique, ability, tx);
+      await upsertOneAbilityLine(processedCard.uniqueInfo.id, ability, tx);
     }
   }
 }
@@ -467,8 +501,11 @@ export async function processUniquesBatch(fromPage: number = 0, toPage: number |
     let batchUniques = await prisma.uniqueInfo.findMany({
       where: {
         fetchedDetails: true,
+        cardSet: {
+          in: [CardSet.BISE]
+        },
         // nameEn: {
-        //   equals: "Man in the Maze",
+        //   equals: "Thoth",
         // }
         // AND: [
         //   { mainEffectEn: { not: null } }

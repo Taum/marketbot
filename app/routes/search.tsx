@@ -11,6 +11,7 @@ import { nullifyParseInt, nullifyTrim, parseRange } from "~/lib/utils";
 import { ResultGrid } from "~/components/altered/ResultGrid";
 import { ResultsPagination } from "~/components/common/pagination";
 import { DisplayUniqueCard } from "~/models/cards";
+import { Checkbox } from "~/components/ui/checkbox";
 
 
 interface SearchQuery {
@@ -23,6 +24,7 @@ interface SearchQuery {
   effectPart?: string;
   mainCostRange?: string;
   recallCostRange?: string;
+  includeExpiredCards?: boolean;
 }
 
 interface LoaderData {
@@ -48,6 +50,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const effectPart = nullifyTrim(url.searchParams.get("eff"));
   const mainCostRange = nullifyTrim(url.searchParams.get("mc"));
   const recallCostRange = nullifyTrim(url.searchParams.get("rc"));
+  const includeExpiredCards = nullifyTrim(url.searchParams.get("exp")) == "1";
 
   const currentPage = nullifyParseInt(url.searchParams.get("p")) ?? 1;
 
@@ -65,7 +68,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
         conditionPart,
         effectPart,
         mainCosts,
-        recallCosts
+        recallCosts,
+        includeExpiredCards,
       },
       {
         page: currentPage,
@@ -85,7 +89,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
         conditionPart,
         effectPart,
         mainCostRange,
-        recallCostRange
+        recallCostRange,
+        includeExpiredCards,
       },
     };
   } catch (e) {
@@ -103,7 +108,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
         conditionPart,
         effectPart,
         mainCostRange,
-        recallCostRange
+        recallCostRange,
+        includeExpiredCards,
       },
     }
   }
@@ -171,12 +177,23 @@ const SearchForm: FC<SearchQuery> = ({
   effectPart,
   mainCostRange,
   recallCostRange,
+  includeExpiredCards,
 }: SearchQuery) => {
   const [selectedFaction, setSelectedFaction] = useState(faction ?? undefined);
   const [selectedSet, setSelectedSet] = useState(set ?? undefined);
+
+  const [searchParams] = useSearchParams();
+  const handleExpiredCardsChange = (newValue: boolean) => {
+    if (newValue) {
+      searchParams.set("exp", "1");
+    } else {
+      searchParams.delete("exp");
+    }
+    window.location.search = searchParams.toString();
+  }
   
   return (
-    <Form method="get" className="mb-8">
+    <Form method="get" id="search-form"className="mb-8">
       <div className="flex flex-col gap-2">
         <div className="flex flex-row gap-8">
           <div>
@@ -234,7 +251,7 @@ const SearchForm: FC<SearchQuery> = ({
         </div>
         <div className="flex flex-row gap-4">
           <div className="grow-1 flex-[60%]">
-            <Label htmlFor="t">Trigger</Label>
+            <Label htmlFor="tr">Trigger</Label>
             <Input
               type="search"
               name="tr"
@@ -243,7 +260,7 @@ const SearchForm: FC<SearchQuery> = ({
             />
           </div>
           <div className="grow-1 flex-[60%]">
-            <Label htmlFor="t">Condition</Label>
+            <Label htmlFor="cond">Condition</Label>
             <Input
               type="search"
               name="cond"
@@ -252,7 +269,7 @@ const SearchForm: FC<SearchQuery> = ({
             />
           </div>
           <div className="grow-1 flex-[60%]">
-            <Label htmlFor="t">Effect</Label>
+            <Label htmlFor="eff">Effect</Label>
             <Input
               type="search"
               name="eff"
@@ -261,13 +278,23 @@ const SearchForm: FC<SearchQuery> = ({
             />
           </div>
         </div>
-        <div className="align-self-start">
+        <div className="flex flex-row gap-8 align-self-start">
           <Button
             type="submit"
             className="bg-accent/80 text-foreground hover:bg-accent"
           >
             Search
           </Button>
+          
+          <div className="flex flex-row gap-2 items-center my-2">
+            <Checkbox
+              value="1"
+              name="exp"
+              defaultChecked={includeExpiredCards ?? false}
+              onCheckedChange={handleExpiredCardsChange}
+            />
+            <Label htmlFor="exp">Include unavailable cards</Label>
+          </div>
         </div>
       </div>
     </Form>

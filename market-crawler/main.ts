@@ -1,6 +1,6 @@
 import { getEnv } from './helpers.js';
 import { UniquesCrawler } from './uniques.js';
-import { ExhaustiveInSaleCrawler, MarketUpdateCrawlerStats, marketUpdateStatsComplete, marketUpdateStatsStartAndGetGenerationId } from './market.js';
+import { ExhaustiveInSaleCrawler, MarketUpdateCrawlerStats, marketUpdateStatsComplete, marketUpdateStatsStartAndGetGenerationId, marketUpdateUniqueTableIsCurrent } from './market.js';
 import prisma from '@common/utils/prisma.server.js';
 import { AuthTokenService } from './refresh-token.js';
 
@@ -61,6 +61,7 @@ await (
 );
 
 await marketUpdateStatsComplete(fetchGenerationId, g_crawlerStats);
+await marketUpdateUniqueTableIsCurrent(fetchGenerationId);
 
 console.log(`Recorded crawler stats: ${JSON.stringify(g_crawlerStats)}`);
 

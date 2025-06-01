@@ -103,6 +103,41 @@ export async function marketUpdateStatsComplete(
   })
 }
 
+export async function marketUpdateUniqueTableIsCurrent(fetchGenerationId: number) {
+  
+  await prisma.uniqueInfo.updateMany({
+    where: {
+      lastSeenGenerationId: {
+        lt: fetchGenerationId,
+      },
+    },
+    data: {
+      seenInLastGeneration: false,
+    }
+  })
+
+  /*
+  Maybe we could be more fancy and use a custom SQL query here. Leaving this here for future improvements.
+  e.g. this could be useful if we didn't do a whole market update but updated in family batches instead, maybe
+
+  await prisma.$executeRaw(
+    Prisma.sql`
+      UPDATE "UniqueInfo" ui
+      SET "seenInLastGeneration" = COALESCE(
+        ui."lastSeenGenerationId" >= (
+          SELECT cfs."fetchCompletedGeneration"
+          FROM "CardFamilyStats" cfs
+          WHERE cfs."cardFamilyId" = ui."cardFamilyId"
+          AND cfs."faction" = ui."faction"
+          FOR SHARE
+        ),
+        -- Default to true if we didn't get this from a family -- currently because it's a card from BISE
+        true
+      );
+      `
+  )
+  */
+}
 
 export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, CardFamilyStatsData, Response, MarketUpdateCrawlerStats> {
 
@@ -148,6 +183,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
         const cardBlob = buildCardBlobWithStats(member, request);
         cardBlob.lastSeenInSaleAt = now;
         cardBlob.lastSeenGenerationId = request.fetchGenerationId;
+        cardBlob.seenInLastGeneration = true;
         return cardBlob;
       })
 
