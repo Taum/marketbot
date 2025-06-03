@@ -11,6 +11,7 @@ import Decimal from "decimal.js";
 import { AuthTokenService } from "./refresh-token.js";
 import { getFamilyIdFromRef } from "@common/utils/altered.js";
 import { throttlingConfig } from "./config.js";
+import { getEnv } from "./helpers.js";
 
 
 // Add the type from Prisma namespace
@@ -79,8 +80,11 @@ export interface MarketUpdateCrawlerStats {
 const bannedWords = [
   'Lyra', 'Ordis', 'Yzmir', 'Muna', 'Axiom', 'Bravos',
   'The', 'of',
-  'Haven', 'Foundry', 'BLISS'
+  'Haven', 'Foundry', 'Ouroboros', 'BLISS', 
 ]
+
+const verboseLevel = parseInt(getEnv("VERBOSE_LEVEL") ?? "0")
+const debugCrawler = getEnv("DEBUG_CRAWLER") == "true";
 
 export async function marketUpdateStatsStartAndGetGenerationId(): Promise<number> {
   const stats = await prisma.marketUpdateStats.create({
@@ -160,12 +164,12 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
     const persistPage = async (response: Response, request: CardFamilyRequest) => {
       const data = await response.json() as CardFamilyStatsData;
       try {
-        const pageNumber = data["hydra:view"]["@id"].match(/page=\d+$/)?.[0];
+        const pageNumber = data["hydra:view"]["@id"].match(/page=\d+$/)?.[0] ?? "page=1 (undefined)";
         // const pageNumber = data["hydra:view"]["@id"].match(/page=\d+$/)?.[0];
         if ("queryParams" in request) {
-          console.log(`Query=${JSON.stringify(request.queryParams)} : page=${pageNumber} -> ${data["hydra:member"].length} items`)
+          console.log(`Query=${JSON.stringify(request.queryParams)} : ${pageNumber} -> ${data["hydra:member"].length} items`)
         } else {
-          console.log(`Family=${request.name} (${request.cardFamilyId}) Faction=${request.faction} : page=${pageNumber} -> ${data["hydra:member"].length} items`)
+          console.log(`Family=${request.name} (${request.cardFamilyId}) Faction=${request.faction} : ${pageNumber} -> ${data["hydra:member"].length} items`)
         }
       } catch (e) {
         if ("queryParams" in request) {
@@ -289,23 +293,29 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
       url.searchParams.set("rarity[]", "UNIQUE")
       return url.toString()
     } else {
-      let strippedName = request.name.toLowerCase();
+      let strippedName = request.name.toLocaleLowerCase();
       for (const word of bannedWords) {
-        strippedName = strippedName.replace(new RegExp(`\\b${word}\\b`, "i"), '');
+        strippedName = strippedName.replace(new RegExp(`\\b${word}\\b`, "ig"), '');
       }
-      if (strippedName != request.name.toLowerCase()) {
+      if (strippedName != request.name.toLocaleLowerCase()) {
         console.debug(`Stripped name from ${request.name} -> ${strippedName}`)
       }
-      const urlSafeName = encodeURIComponent(strippedName.trim());
+      // const urlSafeName = strippedName.trim();
 
       const url = new URL("https://api.altered.gg/cards/stats")
       url.searchParams.set("factions[]", request.faction)
-      url.searchParams.set("translations.name", urlSafeName)
+      url.searchParams.set("translations.name", strippedName)
       url.searchParams.set("inSale", "true")
       url.searchParams.set("rarity[]", "UNIQUE")
       url.searchParams.set("itemsPerPage", "36")
       url.searchParams.set("locale", "en-us")
-      return url.toString()
+
+      const urlString = url.toString()
+      if (verboseLevel >= 3) {
+        console.log("Next URL=", urlString)
+      }
+
+      return urlString
     }
   }
 

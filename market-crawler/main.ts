@@ -35,7 +35,7 @@ console.log(`Token refreshed: ${token.token.slice(0, 20)}...[redacted] - Expires
 await exhaustiveInSaleCrawler.addAllWithFilter(fetchGenerationId, (c) => {
   // We can implement filters here to exclude certain families
   if (debugCrawler) {
-    return c.name.en == "Persephone" && c.mainFaction == "MU";
+    return c.name.en.startsWith("Copp") || c.name.en.startsWith("Efr");
   }
   return true;
 })
@@ -50,7 +50,11 @@ const inSaleCompletion = exhaustiveInSaleCrawler
   })
   .catch((e) => console.error("InSale task failed with error: ", e));
 
-await uniquesCrawler.enqueueUntil(inSaleCompletion)
+if (debugCrawler) {
+  await inSaleCompletion;
+} else {
+  await uniquesCrawler.enqueueUntil(inSaleCompletion)
+}
 
 // Enqueue large batch when market crawler is finished
 // this should ensure we get all the missing uniques -- we may have to even remove this limit
