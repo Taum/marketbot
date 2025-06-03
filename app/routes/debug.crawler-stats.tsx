@@ -21,18 +21,63 @@ export async function loader() {
     ],
   });
 
-  return { lastUpdates, familyStats };
+  const uniquesCount = await prisma.uniqueInfo.groupBy({
+    by: ["fetchedDetails"],
+    _count: true,
+  });
+  const activeUniques = await prisma.uniqueInfo.count({
+    where: {
+      seenInLastGeneration: true,
+    }
+  });
+
+
+  const uniquesTotal = uniquesCount.reduce((acc, curr) => acc + curr._count, 0);
+  const uniquesMissingEffectText = uniquesCount.find((r) => r.fetchedDetails === false)?._count ?? 0;
+
+  return {
+    lastUpdates,
+    familyStats,
+    uniques: {
+      total: uniquesTotal,
+      missingEffect: uniquesMissingEffectText,
+      active: activeUniques,
+    }
+  }
 }
 
 export default function CrawlerStats() {
-  const { lastUpdates, familyStats } = useLoaderData<typeof loader>();
+  const { lastUpdates, familyStats, uniques } = useLoaderData<typeof loader>();
 
   const familiesOver1000 = familyStats.filter((fam) => fam.totalItems && fam.totalItems >= 900);
 
   return <div className="global-page">
     <h1>Crawler Stats</h1>
+    <h2>Unique Info</h2>
+    <div className="mb-8">
+      <Table>
+        <TableBody>
+          <TableRow>
+            <TableHead className="w-48">Total</TableHead>
+            <TableCell className="font-mono">{uniques.total}</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableHead className="">With active offers</TableHead>
+            <TableCell className="font-mono">{uniques.active}</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableHead className="">Expired</TableHead>
+            <TableCell className="font-mono">{uniques.total - uniques.active}</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableHead className="">Missing effect text</TableHead>
+            <TableCell className="font-mono">{uniques.missingEffect}</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    </div>
     <h2>Last Updates</h2>
-    <div>
+    <div className="mb-8">
       <Table>
         <TableHeader>
           <TableRow>
