@@ -2,7 +2,7 @@ import { GenericIndexer } from "./generic-indexer.js";
 import { AlteredggCard } from "@common/models/cards.js";
 import prisma from "@common/utils/prisma.server.js";
 import { delay } from "@common/utils/promise.js";
-import { processOneUnique } from "./post-process.js";
+import { processAndWriteOneUnique } from "./post-process.js";
 import { throttlingConfig } from "./config.js";
 import { getEnv } from "./helpers.js";
 import { PrismaClient, UniqueInfo } from "@prisma/client";
@@ -44,7 +44,7 @@ export const recordOneUnique = async (cardData: AlteredggCard, prisma: PrismaCli
     console.debug(`Recorded unique ${blob.ref} (${blob.nameEn})`);
 
     // Post-process the unique -- breakdown abilities and upsert them
-    await processOneUnique(uniqueInfo, prisma);
+    await processAndWriteOneUnique(uniqueInfo, prisma);
 
   } catch (error) {
     console.error(`Error recording unique ${blob.ref} (${blob.nameEn}): ${error}`);

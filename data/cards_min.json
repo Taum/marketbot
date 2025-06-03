@@ -10791,6 +10791,2679 @@
       "set": "ALIZE"
     }
   },
+  "ALT_BISE_B_AX_59_R2": {
+    "id": "ALT_BISE_B_AX_59_R2",
+    "name": {
+      "en": "Sap Overflow"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_59/JPG/en_US/ebf1d34e55d315da0a5368fa5c57098f.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_59/JPG/fr_FR/dfd92638be5c22b5169ac557bc7c5c9a.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "4",
+      "RECALL_COST": "4",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_59/WEB_42ac8e81f796caec3ff2067581034441",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_59/WEB_c429cb2571f356f638d71df9a4711075"
+      ]
+    },
+    "mainFaction": "OR",
+    "rarity": "RARE",
+    "type": "SPELL",
+    "subTypes": [
+      "DISRUPTION"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_A_BR_58_C": {
+    "id": "ALT_BISE_A_BR_58_C",
+    "name": {
+      "en": "Theseus"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_BR_58/JPG/en_US/8f41b720b162f5e9f966bb7ac4aa21f7.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_BR_58/JPG/fr_FR/94d022fb3b39cfa643935228a6e49dcb.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "8",
+      "RECALL_COST": "8",
+      "OCEAN_POWER": "6",
+      "MOUNTAIN_POWER": "6",
+      "FOREST_POWER": "6",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_BR_58/WEB_7ac81c75f76a8d06c740f9aa025b1240",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_BR_58/WEB_e13a1b458419fc998aca91c2c2b492bf",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_BR_58/WEB_b61e9225995f059476ac0ac0a6051416"
+      ]
+    },
+    "mainFaction": "BR",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ADVENTURER"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_A_AX_56_C": {
+    "id": "ALT_BISE_A_AX_56_C",
+    "name": {
+      "en": "Icarus"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_AX_56/JPG/en_US/5d803e29601a5f4803d287d6eeab65fb.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_AX_56/JPG/fr_FR/a709548ecd9bc32028716b6d4a4d9578.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "4",
+      "RECALL_COST": "3",
+      "OCEAN_POWER": "2",
+      "MOUNTAIN_POWER": "4",
+      "FOREST_POWER": "4",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": [],
+    "mainFaction": "AX",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ADVENTURER"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_A_AX_56_R2": {
+    "id": "ALT_BISE_A_AX_56_R2",
+    "name": {
+      "en": "Icarus"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_AX_56/JPG/en_US/f55962255f261df70986d6b1100e4e16.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_AX_56/JPG/fr_FR/917de6b0099155e9ebe204422a011a83.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "4",
+      "RECALL_COST": "3",
+      "OCEAN_POWER": "2",
+      "MOUNTAIN_POWER": "4",
+      "FOREST_POWER": "4",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": [],
+    "mainFaction": "YZ",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ADVENTURER"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_AX_52_R2": {
+    "id": "ALT_BISE_B_AX_52_R2",
+    "name": {
+      "en": "Drillmole"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_52/JPG/en_US/614cd212e717cf3d159f6681f4ec6030.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_52/JPG/fr_FR/237d2c5a91cac0bf571dff22770cf549.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "3",
+      "OCEAN_POWER": "#1#",
+      "MOUNTAIN_POWER": "2",
+      "FOREST_POWER": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_52/WEB_8c071b1d59499ea72aa486c429121e54",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_52/WEB_a30c3831c2a37b0a8c82ffb1b24e1b8a",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_52/WEB_2e9184b93c46e667e40e6ad72621ed6e"
+      ]
+    },
+    "mainFaction": "OR",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ROBOT"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_BR_55_C": {
+    "id": "ALT_BISE_B_BR_55_C",
+    "name": {
+      "en": "Hestia"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_55/JPG/en_US/5bd46c4d13673ad1ff3a12de4ac36e68.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_55/JPG/fr_FR/bf4d72c13e90db68df234bf119d4bf74.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "4",
+      "RECALL_COST": "4",
+      "OCEAN_POWER": "4",
+      "MOUNTAIN_POWER": "2",
+      "FOREST_POWER": "4",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_55/WEB_095ea28fe5f007f67c129ecca1ce7d99",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_55/WEB_41cc4e1a3b5b81e2bdf1a19dbc05fb3a",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_55/WEB_3b080bfb1fa765fdc81d5030680a28e0"
+      ]
+    },
+    "mainFaction": "BR",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "DEITY"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_MU_53_C": {
+    "id": "ALT_BISE_B_MU_53_C",
+    "name": {
+      "en": "The Little Mouse"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_53/JPG/en_US/8fe4f21de8f2a6344a3f0239c6af2d84.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_53/JPG/fr_FR/83fd768498608d9845f0072c30feb48f.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "2",
+      "OCEAN_POWER": "2",
+      "MOUNTAIN_POWER": "3",
+      "FOREST_POWER": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_53/WEB_3821850fc51b50cb6e1c1f2418a2215c",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_53/WEB_5701736f05c20589b5744bb784128911",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_53/WEB_6f5b7d9fc597e7910e91480289d8b122"
+      ]
+    },
+    "mainFaction": "MU",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ANIMAL"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_OR_52_C": {
+    "id": "ALT_BISE_B_OR_52_C",
+    "name": {
+      "en": "Leo, Relic Expert"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_52/JPG/en_US/0a0354eef1b87ef93d0729249d569259.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_52/JPG/fr_FR/aafd1085cdb45816a75aa8c94dfff75e.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "3",
+      "OCEAN_POWER": "3",
+      "MOUNTAIN_POWER": "2",
+      "FOREST_POWER": "3",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_52/WEB_0f4a356d4f65aa35d807a64787f6386e",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_52/WEB_6650adda98b6a20a1e143911612cab91",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_52/WEB_b76422b8599cdacb4fd09bcca34dc948"
+      ]
+    },
+    "mainFaction": "OR",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "BUREAUCRAT",
+      "SCHOLAR"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_OR_55_C": {
+    "id": "ALT_BISE_B_OR_55_C",
+    "name": {
+      "en": "Health Inspector"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_55/JPG/en_US/34cf9f7c4220515e3e03e8b99efc5af6.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_55/JPG/fr_FR/be9c6086446f699a88ba9db2275faa37.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "4",
+      "RECALL_COST": "4",
+      "OCEAN_POWER": "3",
+      "MOUNTAIN_POWER": "3",
+      "FOREST_POWER": "3",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_55/WEB_4080b184f238cf5a30f7911ddecd666b",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_55/WEB_03add66860e5fbb3e9d95f7138045f13",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_55/WEB_a241a8e1ad235cb16e813c9b250a2b6e"
+      ]
+    },
+    "mainFaction": "OR",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "BUREAUCRAT"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_A_YZ_52_C": {
+    "id": "ALT_BISE_A_YZ_52_C",
+    "name": {
+      "en": "Pasiphaë"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_YZ_52/JPG/en_US/4fc030c12f76ac9dc1e5c8605906d5b3.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_YZ_52/JPG/fr_FR/8cc9360e07d7368d9d26e9f6989252eb.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "2",
+      "OCEAN_POWER": "0",
+      "MOUNTAIN_POWER": "0",
+      "FOREST_POWER": "0",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_YZ_52/WEB_57af3e6942644e31f1124e6bc6408265",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_YZ_52/WEB_043b2d228aa07a572234e6d8db524858",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_YZ_52/WEB_906fe91a7826e147b1322f3038f150e6"
+      ]
+    },
+    "mainFaction": "YZ",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "NOBLE"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_A_MU_58_C": {
+    "id": "ALT_BISE_A_MU_58_C",
+    "name": {
+      "en": "The Minotaur"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_MU_58/JPG/en_US/8fcf6a2f5248efc9083bcc4aa3fc81c6.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_MU_58/JPG/fr_FR/2a6c08a961c8be0dc98c9ea9b6c57076.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "6",
+      "RECALL_COST": "6",
+      "OCEAN_POWER": "5",
+      "MOUNTAIN_POWER": "5",
+      "FOREST_POWER": "5",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_MU_58/WEB_14f265488867e11c9236b355015cc8b8",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_MU_58/WEB_448ebe104e246c60b4f897a3fe0ee2d9",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_MU_58/WEB_96e01f2d775a568a46844c426f7eaf09"
+      ]
+    },
+    "mainFaction": "MU",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "DRUID",
+      "ANIMAL"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_A_LY_53_C": {
+    "id": "ALT_BISE_A_LY_53_C",
+    "name": {
+      "en": "Daedalus"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_LY_53/JPG/en_US/1c2755164bc28039b10c8612f43b2b22.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_LY_53/JPG/fr_FR/b1064f8c6878f121d75c8d072f6f868d.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "3",
+      "OCEAN_POWER": "3",
+      "MOUNTAIN_POWER": "3",
+      "FOREST_POWER": "0",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_LY_53/WEB_41e5f98bb2de901ecce2a3de1640cfc2",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_LY_53/WEB_37a6e327ea7474d6278fbb3a76577d2b",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_A_LY_53/WEB_0dc21c8986e80c958e6723a21b21d1ce"
+      ]
+    },
+    "mainFaction": "LY",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ENGINEER"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_AX_56_C": {
+    "id": "ALT_BISE_B_AX_56_C",
+    "name": {
+      "en": "Icarus"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_56/JPG/en_US/5920955d88fe7162a97cfcb16c403b21.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_56/JPG/fr_FR/2e9a65232d4e8d7253a1315cb9b290af.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "4",
+      "RECALL_COST": "3",
+      "OCEAN_POWER": "2",
+      "MOUNTAIN_POWER": "4",
+      "FOREST_POWER": "4",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_56/WEB_a33b89322493e217e8334fdd0b537581",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_56/WEB_59061f76b844203cdd4f85db3b8df610",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_56/WEB_c41f9e1f566d39588ec274c0f0c3a470"
+      ]
+    },
+    "mainFaction": "AX",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ADVENTURER"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_YZ_61_R1": {
+    "id": "ALT_BISE_B_YZ_61_R1",
+    "name": {
+      "en": "Feast of Thoughts"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_61/JPG/en_US/941843b1a01f1cc19ebd4ac1b50a55ad.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_61/JPG/fr_FR/c0ddc4c20fce53c81bf167fc9fac9324.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "#6#",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_61/WEB_964d68923e50bf727608534690d15e3d",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_61/WEB_c03cea4927683f8305b089fbb2eee8da"
+      ]
+    },
+    "mainFaction": "YZ",
+    "rarity": "RARE",
+    "type": "SPELL",
+    "subTypes": [
+      "CONJURATION",
+      "DISRUPTION"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_MU_53_R1": {
+    "id": "ALT_BISE_B_MU_53_R1",
+    "name": {
+      "en": "The Little Mouse"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_53/JPG/en_US/121179188582912644fd99e1ab7ed963.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_53/JPG/fr_FR/ba4b7c4f7cdb7c90b6a231cefe510f2c.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "#3#",
+      "OCEAN_POWER": "2",
+      "MOUNTAIN_POWER": "3",
+      "FOREST_POWER": "#3#",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_53/WEB_3821850fc51b50cb6e1c1f2418a2215c",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_53/WEB_5701736f05c20589b5744bb784128911",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_53/WEB_6f5b7d9fc597e7910e91480289d8b122"
+      ]
+    },
+    "mainFaction": "MU",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ANIMAL"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_BR_62_R2": {
+    "id": "ALT_BISE_B_BR_62_R2",
+    "name": {
+      "en": "The Stew"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_62/JPG/en_US/81e00fa23c732a827acbadb6d7d0eb90.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_62/JPG/fr_FR/5a083b2503449b9f771fa152a38c2aa3.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_62/WEB_113b16f9e28ec45be436bcb4d7b1cd45",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_62/WEB_ffdfb8e94c8fbe0e30925e2a041a70f9"
+      ]
+    },
+    "mainFaction": "MU",
+    "rarity": "RARE",
+    "type": "EXPEDITION_PERMANENT",
+    "subTypes": [
+      "GEAR"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_OR_52_R2": {
+    "id": "ALT_BISE_B_OR_52_R2",
+    "name": {
+      "en": "Leo, Relic Expert"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_52/JPG/en_US/729a3bb65e991c1ae32fbded6d3ab6ee.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_52/JPG/fr_FR/b644fdd99f729d102469202b9c0d7eb1.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "3",
+      "OCEAN_POWER": "3",
+      "MOUNTAIN_POWER": "2",
+      "FOREST_POWER": "3",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_52/WEB_0f4a356d4f65aa35d807a64787f6386e",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_52/WEB_6650adda98b6a20a1e143911612cab91",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_52/WEB_b76422b8599cdacb4fd09bcca34dc948"
+      ]
+    },
+    "mainFaction": "MU",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "BUREAUCRAT",
+      "SCHOLAR"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_LY_57_R2": {
+    "id": "ALT_BISE_B_LY_57_R2",
+    "name": {
+      "en": "Man in the Maze"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_57/JPG/en_US/adcc61d2a8239eab1404d7d7fc991c63.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_57/JPG/fr_FR/b90213c903439a08cb10009a27033f2e.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "7",
+      "RECALL_COST": "4",
+      "OCEAN_POWER": "5",
+      "MOUNTAIN_POWER": "5",
+      "FOREST_POWER": "0",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_57/WEB_e8ac75661a79852316e4339805fb0e34",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_57/WEB_a72693fdbeaa0b94c529b7a0ff4797be",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_57/WEB_6c3e71077c25feaf3b43ae5a0fa707d8"
+      ]
+    },
+    "mainFaction": "YZ",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "DEITY"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_BR_62_C": {
+    "id": "ALT_BISE_B_BR_62_C",
+    "name": {
+      "en": "The Stew"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_62/JPG/en_US/14a47509753c93df7cc66da1914b73c0.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_62/JPG/fr_FR/5727572264b31e61814525402f6399dc.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_62/WEB_113b16f9e28ec45be436bcb4d7b1cd45",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_62/WEB_ffdfb8e94c8fbe0e30925e2a041a70f9"
+      ]
+    },
+    "mainFaction": "BR",
+    "rarity": "COMMON",
+    "type": "EXPEDITION_PERMANENT",
+    "subTypes": [
+      "GEAR"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_BR_49_R1": {
+    "id": "ALT_BISE_B_BR_49_R1",
+    "name": {
+      "en": "Junior Chef"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_49/JPG/en_US/f5d246f2c7253f6b1c3f92b89525b04d.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_49/JPG/fr_FR/aa211eee39a0aa545a6c58ae25aba619.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "1",
+      "RECALL_COST": "3",
+      "OCEAN_POWER": "1",
+      "MOUNTAIN_POWER": "1",
+      "FOREST_POWER": "1",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_49/WEB_2e46dda5c5e39f98db5832840160e5f1",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_49/WEB_5d50885e0f9da2e3ba0c9ab1dc128ba7",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_49/WEB_b0f501ca92f33a154b21a74cb6b057d0"
+      ]
+    },
+    "mainFaction": "BR",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "APPRENTICE",
+      "ANIMAL"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_LY_60_C": {
+    "id": "ALT_BISE_B_LY_60_C",
+    "name": {
+      "en": "X Marks the Spot"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_60/JPG/en_US/8cc9219a374d67b38440ce5422d623ba.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_60/JPG/fr_FR/6f477e5b8f6640c46e354f961f0bf25f.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "3",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_60/WEB_8a9ae2ab3a3c4167b14b670811dab989",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_60/WEB_efa377dc8b66663dd5b43b184149764c"
+      ]
+    },
+    "mainFaction": "LY",
+    "rarity": "COMMON",
+    "type": "SPELL",
+    "subTypes": [
+      "DISRUPTION"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_YZ_61_C": {
+    "id": "ALT_BISE_B_YZ_61_C",
+    "name": {
+      "en": "Feast of Thoughts"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_61/JPG/en_US/6d91cc9db45c5969e1177d055653588d.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_61/JPG/fr_FR/8a7cf4e49ca1988d9d2c8bfd5bde1e53.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "5",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_61/WEB_964d68923e50bf727608534690d15e3d",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_61/WEB_c03cea4927683f8305b089fbb2eee8da"
+      ]
+    },
+    "mainFaction": "YZ",
+    "rarity": "COMMON",
+    "type": "SPELL",
+    "subTypes": [
+      "CONJURATION",
+      "DISRUPTION"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_YZ_61_R2": {
+    "id": "ALT_BISE_B_YZ_61_R2",
+    "name": {
+      "en": "Feast of Thoughts"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_61/JPG/en_US/dae086e8232986b7a4c579a885dcb2db.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_61/JPG/fr_FR/1021d523503b34a94f5bbd8d5e61cead.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "5",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_61/WEB_964d68923e50bf727608534690d15e3d",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_61/WEB_c03cea4927683f8305b089fbb2eee8da"
+      ]
+    },
+    "mainFaction": "OR",
+    "rarity": "RARE",
+    "type": "SPELL",
+    "subTypes": [
+      "CONJURATION",
+      "DISRUPTION"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_LY_51_C": {
+    "id": "ALT_BISE_B_LY_51_C",
+    "name": {
+      "en": "Lyra Contortionist"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_51/JPG/en_US/f1b176bfebb745fabd8ed2af782dcb35.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_51/JPG/fr_FR/7c247d07835c4c470694160604b1c16e.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "2",
+      "OCEAN_POWER": "0",
+      "MOUNTAIN_POWER": "3",
+      "FOREST_POWER": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_51/WEB_085d33f39f534bc55b5f4594875aaf86",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_51/WEB_30a2df5f59895985891775f3563b4370",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_51/WEB_32fbd29413f0a8362819f7b39d909f5a"
+      ]
+    },
+    "mainFaction": "LY",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ARTIST"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_YZ_51_R2": {
+    "id": "ALT_BISE_B_YZ_51_R2",
+    "name": {
+      "en": "Yzmir Nurse"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_51/JPG/en_US/6f4ca0a287103ba5575dc17324577ac1.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_51/JPG/fr_FR/964c307023535415d937781163f2b3f2.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "2",
+      "OCEAN_POWER": "2",
+      "MOUNTAIN_POWER": "2",
+      "FOREST_POWER": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_51/WEB_573f57b761bb51beeb0bc2813c2f7a11",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_51/WEB_94c60008ae5b045e5d4755da45a09bd2",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_51/WEB_70b46558cbdee27ee11d293608267c5f"
+      ]
+    },
+    "mainFaction": "AX",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "MAGE"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_YZ_51_R1": {
+    "id": "ALT_BISE_B_YZ_51_R1",
+    "name": {
+      "en": "Yzmir Nurse"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_51/JPG/en_US/0d1582c9ee78edb09687c64671527a63.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_51/JPG/fr_FR/c55db88d0bdd40e9d44f75044d005b28.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "2",
+      "OCEAN_POWER": "2",
+      "MOUNTAIN_POWER": "2",
+      "FOREST_POWER": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_51/WEB_573f57b761bb51beeb0bc2813c2f7a11",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_51/WEB_94c60008ae5b045e5d4755da45a09bd2",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_51/WEB_70b46558cbdee27ee11d293608267c5f"
+      ]
+    },
+    "mainFaction": "YZ",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "MAGE"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_YZ_51_C": {
+    "id": "ALT_BISE_B_YZ_51_C",
+    "name": {
+      "en": "Yzmir Nurse"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_51/JPG/en_US/5f8c598e7862846fb0f194c83f579ac5.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_51/JPG/fr_FR/4d9e135bbb2e0929545c148cd66fb39e.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "2",
+      "OCEAN_POWER": "2",
+      "MOUNTAIN_POWER": "2",
+      "FOREST_POWER": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_51/WEB_573f57b761bb51beeb0bc2813c2f7a11",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_51/WEB_94c60008ae5b045e5d4755da45a09bd2",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_51/WEB_70b46558cbdee27ee11d293608267c5f"
+      ]
+    },
+    "mainFaction": "YZ",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "MAGE"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_YZ_49_R2": {
+    "id": "ALT_BISE_B_YZ_49_R2",
+    "name": {
+      "en": "Scribbling Starfish"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_49/JPG/en_US/c8188e3b19187eea4216e940869e45a5.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_49/JPG/fr_FR/d757684dc048829b7d4f507dce97dba2.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "1",
+      "RECALL_COST": "2",
+      "OCEAN_POWER": "#0#",
+      "MOUNTAIN_POWER": "1",
+      "FOREST_POWER": "1",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_49/WEB_343e5021974aca57195af829332cdeb0",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_49/WEB_1e6e8a780b362a611653486de4e0d3f0",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_49/WEB_22b1177caaf713d97e5c320ef2fae3a4"
+      ]
+    },
+    "mainFaction": "LY",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ANIMAL"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_YZ_49_R1": {
+    "id": "ALT_BISE_B_YZ_49_R1",
+    "name": {
+      "en": "Scribbling Starfish"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_49/JPG/en_US/3e8eccd9b39255c9e6029949cedafa98.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_49/JPG/fr_FR/605528e063202367bf1e0d01f04f4dab.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "1",
+      "RECALL_COST": "2",
+      "OCEAN_POWER": "1",
+      "MOUNTAIN_POWER": "1",
+      "FOREST_POWER": "1",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_49/WEB_343e5021974aca57195af829332cdeb0",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_49/WEB_1e6e8a780b362a611653486de4e0d3f0",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_49/WEB_22b1177caaf713d97e5c320ef2fae3a4"
+      ]
+    },
+    "mainFaction": "YZ",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ANIMAL"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_YZ_49_C": {
+    "id": "ALT_BISE_B_YZ_49_C",
+    "name": {
+      "en": "Scribbling Starfish"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_49/JPG/en_US/009b386afdd050606400900879c46e9d.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_49/JPG/fr_FR/f2abd7d324b694256efc75d74c52b993.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "1",
+      "RECALL_COST": "2",
+      "OCEAN_POWER": "1",
+      "MOUNTAIN_POWER": "1",
+      "FOREST_POWER": "1",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_49/WEB_343e5021974aca57195af829332cdeb0",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_49/WEB_1e6e8a780b362a611653486de4e0d3f0",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_YZ_49/WEB_22b1177caaf713d97e5c320ef2fae3a4"
+      ]
+    },
+    "mainFaction": "YZ",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ANIMAL"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_OR_61_R2": {
+    "id": "ALT_BISE_B_OR_61_R2",
+    "name": {
+      "en": "Rune's Testament"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_61/JPG/en_US/d745f64f020d67ac352d14cbd28b4ec1.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_61/JPG/fr_FR/8857eecabe3032ca8fb149b655d6ab0c.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_61/WEB_b0c501b3986701957156cef1a58617d9",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_61/WEB_96915b497519efefef25c6da85b0f10f"
+      ]
+    },
+    "mainFaction": "YZ",
+    "rarity": "RARE",
+    "type": "EXPEDITION_PERMANENT",
+    "subTypes": [
+      "GEAR"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_OR_61_R1": {
+    "id": "ALT_BISE_B_OR_61_R1",
+    "name": {
+      "en": "Rune's Testament"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_61/JPG/en_US/d0242a6ea4c1dc10e2d645df3ddecc48.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_61/JPG/fr_FR/3a477af77e70de3b064bc4a35375f232.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_61/WEB_b0c501b3986701957156cef1a58617d9",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_61/WEB_96915b497519efefef25c6da85b0f10f"
+      ]
+    },
+    "mainFaction": "OR",
+    "rarity": "RARE",
+    "type": "EXPEDITION_PERMANENT",
+    "subTypes": [
+      "GEAR"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_OR_61_C": {
+    "id": "ALT_BISE_B_OR_61_C",
+    "name": {
+      "en": "Rune's Testament"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_61/JPG/en_US/724b86227a10fbcedbf1bd961b13fcab.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_61/JPG/fr_FR/d8692838892a19918517ac5883bf50b7.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_61/WEB_b0c501b3986701957156cef1a58617d9",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_61/WEB_96915b497519efefef25c6da85b0f10f"
+      ]
+    },
+    "mainFaction": "OR",
+    "rarity": "COMMON",
+    "type": "EXPEDITION_PERMANENT",
+    "subTypes": [
+      "GEAR"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_OR_59_R2": {
+    "id": "ALT_BISE_B_OR_59_R2",
+    "name": {
+      "en": "License Withdrawal"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_59/JPG/en_US/25656dda05aff575a443690c6a35f747.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_59/JPG/fr_FR/50488081b90ee92d9d7939da8f445057.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "#2#",
+      "RECALL_COST": "#2#",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_59/WEB_8917b523ef47269421c2b176336f5684",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_59/WEB_4663993137546be7baba926bb3dbe9de"
+      ]
+    },
+    "mainFaction": "YZ",
+    "rarity": "RARE",
+    "type": "SPELL",
+    "subTypes": [
+      "DISRUPTION",
+      "MANEUVER"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_OR_59_R1": {
+    "id": "ALT_BISE_B_OR_59_R1",
+    "name": {
+      "en": "License Withdrawal"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_59/JPG/en_US/207ca5ded82ddf99e2146ba0cfe1aa9b.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_59/JPG/fr_FR/a6792fe3f3fef1a5f54ba9780a1d0e69.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "#2#",
+      "RECALL_COST": "#2#",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_59/WEB_8917b523ef47269421c2b176336f5684",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_59/WEB_4663993137546be7baba926bb3dbe9de"
+      ]
+    },
+    "mainFaction": "OR",
+    "rarity": "RARE",
+    "type": "SPELL",
+    "subTypes": [
+      "DISRUPTION",
+      "MANEUVER"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_OR_59_C": {
+    "id": "ALT_BISE_B_OR_59_C",
+    "name": {
+      "en": "License Withdrawal"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_59/JPG/en_US/c25fb3abbf24475fae6b154b99005767.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_59/JPG/fr_FR/f2a3465e9df287ac9b3087c3042e17ee.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "3",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_59/WEB_8917b523ef47269421c2b176336f5684",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_59/WEB_4663993137546be7baba926bb3dbe9de"
+      ]
+    },
+    "mainFaction": "OR",
+    "rarity": "COMMON",
+    "type": "SPELL",
+    "subTypes": [
+      "DISRUPTION",
+      "MANEUVER"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_OR_58_R2": {
+    "id": "ALT_BISE_B_OR_58_R2",
+    "name": {
+      "en": "Simurgh"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_58/JPG/en_US/2588107068e824f14406452faf994cc6.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_58/JPG/fr_FR/f3a0cfd13475b8d5762a139cb6cf9771.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "7",
+      "RECALL_COST": "7",
+      "OCEAN_POWER": "4",
+      "MOUNTAIN_POWER": "4",
+      "FOREST_POWER": "4",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_58/WEB_c225f7eacf761205d61aee66ed41e585",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_58/WEB_2dadc52686e4f793de7b2810f96c8556",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_58/WEB_77c1394da4f840699832547183a94469"
+      ]
+    },
+    "mainFaction": "MU",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ANIMAL"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_OR_58_R1": {
+    "id": "ALT_BISE_B_OR_58_R1",
+    "name": {
+      "en": "Simurgh"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_58/JPG/en_US/fc6abd1d6db49956f9ec1c1e16ec5c2b.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_58/JPG/fr_FR/a3052d0deda1009eb07cf64a12d26756.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "7",
+      "RECALL_COST": "7",
+      "OCEAN_POWER": "4",
+      "MOUNTAIN_POWER": "4",
+      "FOREST_POWER": "4",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_58/WEB_c225f7eacf761205d61aee66ed41e585",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_58/WEB_2dadc52686e4f793de7b2810f96c8556",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_58/WEB_77c1394da4f840699832547183a94469"
+      ]
+    },
+    "mainFaction": "OR",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ANIMAL"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_OR_55_R2": {
+    "id": "ALT_BISE_B_OR_55_R2",
+    "name": {
+      "en": "Health Inspector"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_55/JPG/en_US/93a1b2dc417ea98960c9e4239506e8d0.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_55/JPG/fr_FR/83479d7d5e8f71303d7ff24ff6b71534.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "4",
+      "RECALL_COST": "4",
+      "OCEAN_POWER": "3",
+      "MOUNTAIN_POWER": "3",
+      "FOREST_POWER": "3",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_55/WEB_4080b184f238cf5a30f7911ddecd666b",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_55/WEB_03add66860e5fbb3e9d95f7138045f13",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_55/WEB_a241a8e1ad235cb16e813c9b250a2b6e"
+      ]
+    },
+    "mainFaction": "YZ",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "BUREAUCRAT"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_OR_55_R1": {
+    "id": "ALT_BISE_B_OR_55_R1",
+    "name": {
+      "en": "Health Inspector"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_55/JPG/en_US/31b2931d041e78ccbb1678e5ced2f01c.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_55/JPG/fr_FR/c76b35546f2fbcc188f4e3cb8d9674a7.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "4",
+      "RECALL_COST": "4",
+      "OCEAN_POWER": "#2#",
+      "MOUNTAIN_POWER": "#2#",
+      "FOREST_POWER": "#2#",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_55/WEB_4080b184f238cf5a30f7911ddecd666b",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_55/WEB_03add66860e5fbb3e9d95f7138045f13",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_55/WEB_a241a8e1ad235cb16e813c9b250a2b6e"
+      ]
+    },
+    "mainFaction": "OR",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "BUREAUCRAT"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_OR_52_R1": {
+    "id": "ALT_BISE_B_OR_52_R1",
+    "name": {
+      "en": "Leo, Relic Expert"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_52/JPG/en_US/11d6adce72c74fde579bc64a11cda6ab.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_52/JPG/fr_FR/7094c5dc35d52ceb7b9d89802059f685.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "#4#",
+      "RECALL_COST": "#4#",
+      "OCEAN_POWER": "3",
+      "MOUNTAIN_POWER": "#4#",
+      "FOREST_POWER": "3",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_52/WEB_0f4a356d4f65aa35d807a64787f6386e",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_52/WEB_6650adda98b6a20a1e143911612cab91",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_OR_52/WEB_b76422b8599cdacb4fd09bcca34dc948"
+      ]
+    },
+    "mainFaction": "OR",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "BUREAUCRAT",
+      "SCHOLAR"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_MU_60_R2": {
+    "id": "ALT_BISE_B_MU_60_R2",
+    "name": {
+      "en": "Requiem"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_60/JPG/en_US/4399ef84a628c12a9d2395db14b3005c.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_60/JPG/fr_FR/6d5bfe6f222aa4a32e49f892fb5afa09.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "#3#",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_60/WEB_32a23d33315d1a98807c45b9ecb1ffdc",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_60/WEB_4d7464c8fe921cfb321646e2059e3e72"
+      ]
+    },
+    "mainFaction": "LY",
+    "rarity": "RARE",
+    "type": "SPELL",
+    "subTypes": [
+      "DISRUPTION",
+      "SONG"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_MU_60_R1": {
+    "id": "ALT_BISE_B_MU_60_R1",
+    "name": {
+      "en": "Requiem"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_60/JPG/en_US/91117721184510cc827b91bcb06cf84d.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_60/JPG/fr_FR/ba53e718071ed2a930ca5eac2865f103.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "#3#",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_60/WEB_32a23d33315d1a98807c45b9ecb1ffdc",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_60/WEB_4d7464c8fe921cfb321646e2059e3e72"
+      ]
+    },
+    "mainFaction": "MU",
+    "rarity": "RARE",
+    "type": "SPELL",
+    "subTypes": [
+      "DISRUPTION",
+      "SONG"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_MU_60_C": {
+    "id": "ALT_BISE_B_MU_60_C",
+    "name": {
+      "en": "Requiem"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_60/JPG/en_US/fb8341ff4981f7edeac783ff3643e867.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_60/JPG/fr_FR/05969ddb68b10ff18f66966544b19d86.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_60/WEB_32a23d33315d1a98807c45b9ecb1ffdc",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_60/WEB_4d7464c8fe921cfb321646e2059e3e72"
+      ]
+    },
+    "mainFaction": "MU",
+    "rarity": "COMMON",
+    "type": "SPELL",
+    "subTypes": [
+      "DISRUPTION",
+      "SONG"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_MU_53_R2": {
+    "id": "ALT_BISE_B_MU_53_R2",
+    "name": {
+      "en": "The Little Mouse"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_53/JPG/en_US/701ba4fb93df499e9c8bc366a0b24b55.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_53/JPG/fr_FR/76cd5fb6695a7a4106ef31e01af900af.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "#3#",
+      "OCEAN_POWER": "2",
+      "MOUNTAIN_POWER": "3",
+      "FOREST_POWER": "#3#",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_53/WEB_3821850fc51b50cb6e1c1f2418a2215c",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_53/WEB_5701736f05c20589b5744bb784128911",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_53/WEB_6f5b7d9fc597e7910e91480289d8b122"
+      ]
+    },
+    "mainFaction": "LY",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ANIMAL"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_MU_52_R2": {
+    "id": "ALT_BISE_B_MU_52_R2",
+    "name": {
+      "en": "Cuddly Corgi"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_52/JPG/en_US/0e1bcebc2f569e126ec4fe55473ac091.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_52/JPG/fr_FR/911214549adb65936f0cf53e10db070a.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "2",
+      "OCEAN_POWER": "1",
+      "MOUNTAIN_POWER": "1",
+      "FOREST_POWER": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_52/WEB_1e64c77641011fe46ec502c33aba6219",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_52/WEB_aa72f9a3d61bf7f1bb395cb823bd1184",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_52/WEB_c185f0b2d04e1ddc74fc72812753a776"
+      ]
+    },
+    "mainFaction": "BR",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ANIMAL"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_MU_52_R1": {
+    "id": "ALT_BISE_B_MU_52_R1",
+    "name": {
+      "en": "Cuddly Corgi"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_52/JPG/en_US/a49585e327ea1d4b04a9b796126d3053.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_52/JPG/fr_FR/9d850e7a218759f4a93138f2dd28cebd.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "2",
+      "OCEAN_POWER": "1",
+      "MOUNTAIN_POWER": "1",
+      "FOREST_POWER": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_52/WEB_1e64c77641011fe46ec502c33aba6219",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_52/WEB_aa72f9a3d61bf7f1bb395cb823bd1184",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_52/WEB_c185f0b2d04e1ddc74fc72812753a776"
+      ]
+    },
+    "mainFaction": "MU",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ANIMAL"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_MU_52_C": {
+    "id": "ALT_BISE_B_MU_52_C",
+    "name": {
+      "en": "Cuddly Corgi"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_52/JPG/en_US/9a294f6d6f235d1d1da00c199620aace.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_52/JPG/fr_FR/8e74778d3756b2defbb61e24ac56ef8d.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "2",
+      "OCEAN_POWER": "1",
+      "MOUNTAIN_POWER": "1",
+      "FOREST_POWER": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_52/WEB_1e64c77641011fe46ec502c33aba6219",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_52/WEB_aa72f9a3d61bf7f1bb395cb823bd1184",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_52/WEB_c185f0b2d04e1ddc74fc72812753a776"
+      ]
+    },
+    "mainFaction": "MU",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ANIMAL"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_LY_60_R2": {
+    "id": "ALT_BISE_B_LY_60_R2",
+    "name": {
+      "en": "X Marks the Spot"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_60/JPG/en_US/82ca2852ba94a276434d8130c2c1c62c.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_60/JPG/fr_FR/0a8d3535de6006d5d26b9831d8b3214f.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "3",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_60/WEB_8a9ae2ab3a3c4167b14b670811dab989",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_60/WEB_efa377dc8b66663dd5b43b184149764c"
+      ]
+    },
+    "mainFaction": "MU",
+    "rarity": "RARE",
+    "type": "SPELL",
+    "subTypes": [
+      "DISRUPTION"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_LY_60_R1": {
+    "id": "ALT_BISE_B_LY_60_R1",
+    "name": {
+      "en": "X Marks the Spot"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_60/JPG/en_US/f994886e771d34cc84e774bc50fc942b.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_60/JPG/fr_FR/6922634b28e0be6065c0fd943231fea6.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "3",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_60/WEB_8a9ae2ab3a3c4167b14b670811dab989",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_60/WEB_efa377dc8b66663dd5b43b184149764c"
+      ]
+    },
+    "mainFaction": "LY",
+    "rarity": "RARE",
+    "type": "SPELL",
+    "subTypes": [
+      "DISRUPTION"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_LY_57_R1": {
+    "id": "ALT_BISE_B_LY_57_R1",
+    "name": {
+      "en": "Man in the Maze"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_57/JPG/en_US/800a298533f2680f5a5768b7a941cb60.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_57/JPG/fr_FR/674fee50d17dd6381cdcd48201963c6b.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "7",
+      "RECALL_COST": "4",
+      "OCEAN_POWER": "5",
+      "MOUNTAIN_POWER": "5",
+      "FOREST_POWER": "0",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_57/WEB_e8ac75661a79852316e4339805fb0e34",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_57/WEB_a72693fdbeaa0b94c529b7a0ff4797be",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_57/WEB_6c3e71077c25feaf3b43ae5a0fa707d8"
+      ]
+    },
+    "mainFaction": "LY",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "DEITY"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_LY_57_C": {
+    "id": "ALT_BISE_B_LY_57_C",
+    "name": {
+      "en": "Man in the Maze"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_57/JPG/en_US/b466c3413eaa64453d96aa9602bf4342.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_57/JPG/fr_FR/0e84faf2482069ed9fa308d1331dab69.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "7",
+      "RECALL_COST": "4",
+      "OCEAN_POWER": "5",
+      "MOUNTAIN_POWER": "5",
+      "FOREST_POWER": "0",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_57/WEB_e8ac75661a79852316e4339805fb0e34",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_57/WEB_a72693fdbeaa0b94c529b7a0ff4797be",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_57/WEB_6c3e71077c25feaf3b43ae5a0fa707d8"
+      ]
+    },
+    "mainFaction": "LY",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "DEITY"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_LY_55_R2": {
+    "id": "ALT_BISE_B_LY_55_R2",
+    "name": {
+      "en": "Lakshmi"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_55/JPG/en_US/0e9e70bb5d28e5879b03aaf7bbd69297.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_55/JPG/fr_FR/268abdd092248f103774ef2566d5d59d.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "3",
+      "OCEAN_POWER": "#3#",
+      "MOUNTAIN_POWER": "#3#",
+      "FOREST_POWER": "#3#",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_55/WEB_2bfbef0373b8b7f755aba6010ee5fe0d",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_55/WEB_2e7bc08a0971ad7c458388439ef8b546",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_55/WEB_50116370cd9287b22697f75e00535f9d"
+      ]
+    },
+    "mainFaction": "YZ",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "DEITY"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_LY_55_R1": {
+    "id": "ALT_BISE_B_LY_55_R1",
+    "name": {
+      "en": "Lakshmi"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_55/JPG/en_US/5781c21cf17c52b780cfc47aa0939aac.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_55/JPG/fr_FR/2cef4df1f87a3d368c8192874b03fbed.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "3",
+      "OCEAN_POWER": "2",
+      "MOUNTAIN_POWER": "2",
+      "FOREST_POWER": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_55/WEB_2bfbef0373b8b7f755aba6010ee5fe0d",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_55/WEB_2e7bc08a0971ad7c458388439ef8b546",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_55/WEB_50116370cd9287b22697f75e00535f9d"
+      ]
+    },
+    "mainFaction": "LY",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "DEITY"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_LY_55_C": {
+    "id": "ALT_BISE_B_LY_55_C",
+    "name": {
+      "en": "Lakshmi"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_55/JPG/en_US/bf2e8def37df5641504f04b448b67cf0.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_55/JPG/fr_FR/8121c598059ece5e3cea69679cb57948.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "3",
+      "OCEAN_POWER": "2",
+      "MOUNTAIN_POWER": "2",
+      "FOREST_POWER": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_55/WEB_2bfbef0373b8b7f755aba6010ee5fe0d",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_55/WEB_2e7bc08a0971ad7c458388439ef8b546",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_55/WEB_50116370cd9287b22697f75e00535f9d"
+      ]
+    },
+    "mainFaction": "LY",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "DEITY"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_LY_51_R2": {
+    "id": "ALT_BISE_B_LY_51_R2",
+    "name": {
+      "en": "Lyra Contortionist"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_51/JPG/en_US/55166af7dae38551b84d6f0314e23953.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_51/JPG/fr_FR/6fcc8ba6b79332d4743ee3e96a914eb9.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "2",
+      "OCEAN_POWER": "0",
+      "MOUNTAIN_POWER": "#2#",
+      "FOREST_POWER": "#3#",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_51/WEB_085d33f39f534bc55b5f4594875aaf86",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_51/WEB_30a2df5f59895985891775f3563b4370",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_51/WEB_32fbd29413f0a8362819f7b39d909f5a"
+      ]
+    },
+    "mainFaction": "MU",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ARTIST"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_LY_51_R1": {
+    "id": "ALT_BISE_B_LY_51_R1",
+    "name": {
+      "en": "Lyra Contortionist"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_51/JPG/en_US/3a30c4ed0848eeccae82833b70f16465.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_51/JPG/fr_FR/c12e4627dfeb435b8e3dafeba13f6a32.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "#3#",
+      "OCEAN_POWER": "0",
+      "MOUNTAIN_POWER": "3",
+      "FOREST_POWER": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_51/WEB_085d33f39f534bc55b5f4594875aaf86",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_51/WEB_30a2df5f59895985891775f3563b4370",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_51/WEB_32fbd29413f0a8362819f7b39d909f5a"
+      ]
+    },
+    "mainFaction": "LY",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ARTIST"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_LY_50_R2": {
+    "id": "ALT_BISE_B_LY_50_R2",
+    "name": {
+      "en": "BLISS Fan"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_50/JPG/en_US/1bccf7386241d0a11481bb4bdfdbb70f.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_50/JPG/fr_FR/507f0359aab00c8251ef85ed3d373bd5.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "1",
+      "OCEAN_POWER": "0",
+      "MOUNTAIN_POWER": "1",
+      "FOREST_POWER": "1",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_50/WEB_befc4bce46e564c74dfa0ef2eb185596",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_50/WEB_239fb6f42f0f0ea13404d406f881cf5b",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_50/WEB_ed8c9b92937594db95d303a440c78cef"
+      ]
+    },
+    "mainFaction": "BR",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ARTIST"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_LY_50_R1": {
+    "id": "ALT_BISE_B_LY_50_R1",
+    "name": {
+      "en": "BLISS Fan"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_50/JPG/en_US/c0ddc364625306b5d369fe9ea654c6ef.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_50/JPG/fr_FR/73d64e44e5492fb61ebab4f143e06eea.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "1",
+      "OCEAN_POWER": "0",
+      "MOUNTAIN_POWER": "1",
+      "FOREST_POWER": "1",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_50/WEB_befc4bce46e564c74dfa0ef2eb185596",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_50/WEB_239fb6f42f0f0ea13404d406f881cf5b",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_50/WEB_ed8c9b92937594db95d303a440c78cef"
+      ]
+    },
+    "mainFaction": "LY",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ARTIST"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_LY_50_C": {
+    "id": "ALT_BISE_B_LY_50_C",
+    "name": {
+      "en": "BLISS Fan"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_50/JPG/en_US/37d00c021020925054e2ecb9fc089088.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_50/JPG/fr_FR/43fb7a4d3d9bfd1364abf40b158e75ac.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "1",
+      "OCEAN_POWER": "0",
+      "MOUNTAIN_POWER": "1",
+      "FOREST_POWER": "1",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_50/WEB_befc4bce46e564c74dfa0ef2eb185596",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_50/WEB_239fb6f42f0f0ea13404d406f881cf5b",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_LY_50/WEB_ed8c9b92937594db95d303a440c78cef"
+      ]
+    },
+    "mainFaction": "LY",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ARTIST"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_BR_62_R1": {
+    "id": "ALT_BISE_B_BR_62_R1",
+    "name": {
+      "en": "The Stew"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_62/JPG/en_US/d9778d41ef39d718b88d7cad32f12061.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_62/JPG/fr_FR/454ec9913bb9069c621435f2378a7636.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "#1#",
+      "RECALL_COST": "#1#",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_62/WEB_113b16f9e28ec45be436bcb4d7b1cd45",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_62/WEB_ffdfb8e94c8fbe0e30925e2a041a70f9"
+      ]
+    },
+    "mainFaction": "BR",
+    "rarity": "RARE",
+    "type": "EXPEDITION_PERMANENT",
+    "subTypes": [
+      "GEAR"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_BR_55_R2": {
+    "id": "ALT_BISE_B_BR_55_R2",
+    "name": {
+      "en": "Hestia"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_55/JPG/en_US/1238499d100c1b6257880467fa3f8335.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_55/JPG/fr_FR/d0f97eea32b52c46cc485cc858951eac.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "4",
+      "RECALL_COST": "4",
+      "OCEAN_POWER": "4",
+      "MOUNTAIN_POWER": "2",
+      "FOREST_POWER": "4",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_55/WEB_095ea28fe5f007f67c129ecca1ce7d99",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_55/WEB_41cc4e1a3b5b81e2bdf1a19dbc05fb3a",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_55/WEB_3b080bfb1fa765fdc81d5030680a28e0"
+      ]
+    },
+    "mainFaction": "AX",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "DEITY"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_BR_55_R1": {
+    "id": "ALT_BISE_B_BR_55_R1",
+    "name": {
+      "en": "Hestia"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_55/JPG/en_US/9c4c282bfbe3716dc4c9b093ddf58b31.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_55/JPG/fr_FR/8c4d2b17d70a0811dfa924aaf85686a1.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "4",
+      "RECALL_COST": "4",
+      "OCEAN_POWER": "4",
+      "MOUNTAIN_POWER": "#4#",
+      "FOREST_POWER": "4",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_55/WEB_095ea28fe5f007f67c129ecca1ce7d99",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_55/WEB_41cc4e1a3b5b81e2bdf1a19dbc05fb3a",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_55/WEB_3b080bfb1fa765fdc81d5030680a28e0"
+      ]
+    },
+    "mainFaction": "BR",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "DEITY"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_BR_54_R2": {
+    "id": "ALT_BISE_B_BR_54_R2",
+    "name": {
+      "en": "Pastry Chef"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_54/JPG/en_US/1aea415bb3d58a66f3bad013cf8ff324.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_54/JPG/fr_FR/e12e5119c86188bc4f00ad39869d92a3.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "#4#",
+      "OCEAN_POWER": "2",
+      "MOUNTAIN_POWER": "4",
+      "FOREST_POWER": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_54/WEB_d753f8c504307de640eb0fd78951a2c5",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_54/WEB_714dedfddfdef96c6bf04c49013287f6",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_54/WEB_707297443326404be19a66180950275c"
+      ]
+    },
+    "mainFaction": "YZ",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "CITIZEN"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_BR_54_R1": {
+    "id": "ALT_BISE_B_BR_54_R1",
+    "name": {
+      "en": "Pastry Chef"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_54/JPG/en_US/6c31ca53e11223baed1c2e0d3cfdabe0.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_54/JPG/fr_FR/e18d906b645e31914019cc57c5fe8013.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "5",
+      "OCEAN_POWER": "2",
+      "MOUNTAIN_POWER": "4",
+      "FOREST_POWER": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_54/WEB_d753f8c504307de640eb0fd78951a2c5",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_54/WEB_714dedfddfdef96c6bf04c49013287f6",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_54/WEB_707297443326404be19a66180950275c"
+      ]
+    },
+    "mainFaction": "BR",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "CITIZEN"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_BR_53_R2": {
+    "id": "ALT_BISE_B_BR_53_R2",
+    "name": {
+      "en": "Bravos Excavator"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_53/JPG/en_US/5873d4e32cda1c63849c2134315a382c.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_53/JPG/fr_FR/224e23b5656e628d6a5a51c6322c73b9.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "2",
+      "OCEAN_POWER": "3",
+      "MOUNTAIN_POWER": "1",
+      "FOREST_POWER": "1",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_53/WEB_bd19c3d996491e14fe4b75fdaaecf112",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_53/WEB_0da12628ce30e2a2068d7334c83b7944",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_53/WEB_f0880dcb347bb89fc304e5d758a5754d"
+      ]
+    },
+    "mainFaction": "AX",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "CITIZEN"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_BR_53_R1": {
+    "id": "ALT_BISE_B_BR_53_R1",
+    "name": {
+      "en": "Bravos Excavator"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_53/JPG/en_US/f61473237a167d2b125a404fc030cb8c.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_53/JPG/fr_FR/d07d65aa2e21e37271248c45e6bb0289.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "#4#",
+      "OCEAN_POWER": "3",
+      "MOUNTAIN_POWER": "1",
+      "FOREST_POWER": "1",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_53/WEB_bd19c3d996491e14fe4b75fdaaecf112",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_53/WEB_0da12628ce30e2a2068d7334c83b7944",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_53/WEB_f0880dcb347bb89fc304e5d758a5754d"
+      ]
+    },
+    "mainFaction": "BR",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "CITIZEN"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_BR_53_C": {
+    "id": "ALT_BISE_B_BR_53_C",
+    "name": {
+      "en": "Bravos Excavator"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_53/JPG/en_US/f7a8d1d671f36cc9515d5047422adcee.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_53/JPG/fr_FR/f17b4cf595c748649f05e36663db4381.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "2",
+      "OCEAN_POWER": "3",
+      "MOUNTAIN_POWER": "1",
+      "FOREST_POWER": "1",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_53/WEB_bd19c3d996491e14fe4b75fdaaecf112",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_53/WEB_0da12628ce30e2a2068d7334c83b7944",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_53/WEB_f0880dcb347bb89fc304e5d758a5754d"
+      ]
+    },
+    "mainFaction": "BR",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "CITIZEN"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_BR_49_R2": {
+    "id": "ALT_BISE_B_BR_49_R2",
+    "name": {
+      "en": "Junior Chef"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_49/JPG/en_US/e67aefaa5cfaf33cc1de0b3f23f37232.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_49/JPG/fr_FR/aff4e621f4f55e8243b519c7d690564d.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "1",
+      "RECALL_COST": "3",
+      "OCEAN_POWER": "1",
+      "MOUNTAIN_POWER": "1",
+      "FOREST_POWER": "1",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_49/WEB_2e46dda5c5e39f98db5832840160e5f1",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_49/WEB_5d50885e0f9da2e3ba0c9ab1dc128ba7",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_49/WEB_b0f501ca92f33a154b21a74cb6b057d0"
+      ]
+    },
+    "mainFaction": "AX",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "APPRENTICE",
+      "ANIMAL"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_BR_49_C": {
+    "id": "ALT_BISE_B_BR_49_C",
+    "name": {
+      "en": "Junior Chef"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_49/JPG/en_US/b4780a9eea88db543e3dd09120f0c740.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_49/JPG/fr_FR/fe3a714f62143cd00caaef1670723cf7.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "1",
+      "RECALL_COST": "3",
+      "OCEAN_POWER": "1",
+      "MOUNTAIN_POWER": "1",
+      "FOREST_POWER": "1",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_49/WEB_2e46dda5c5e39f98db5832840160e5f1",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_49/WEB_5d50885e0f9da2e3ba0c9ab1dc128ba7",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_BR_49/WEB_b0f501ca92f33a154b21a74cb6b057d0"
+      ]
+    },
+    "mainFaction": "BR",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "APPRENTICE",
+      "ANIMAL"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_AX_62_R2": {
+    "id": "ALT_BISE_B_AX_62_R2",
+    "name": {
+      "en": "Bug-Out Bag"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_62/JPG/en_US/fd176e83842d837cb510f64583970538.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_62/JPG/fr_FR/03352889ef7ced8db9fff69fa938d0a5.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_62/WEB_51de9cbe101ea5218950116456bc9686",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_62/WEB_f4f9b4777001018e58d49770394b5a38"
+      ]
+    },
+    "mainFaction": "OR",
+    "rarity": "RARE",
+    "type": "EXPEDITION_PERMANENT",
+    "subTypes": [
+      "GEAR"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_AX_62_R1": {
+    "id": "ALT_BISE_B_AX_62_R1",
+    "name": {
+      "en": "Bug-Out Bag"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_62/JPG/en_US/ca72a958714552531dc03df9486fbefe.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_62/JPG/fr_FR/45cde88f76a0d8618d6b05537ccf534b.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "#3#",
+      "RECALL_COST": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_62/WEB_51de9cbe101ea5218950116456bc9686",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_62/WEB_f4f9b4777001018e58d49770394b5a38"
+      ]
+    },
+    "mainFaction": "AX",
+    "rarity": "RARE",
+    "type": "EXPEDITION_PERMANENT",
+    "subTypes": [
+      "GEAR"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_AX_62_C": {
+    "id": "ALT_BISE_B_AX_62_C",
+    "name": {
+      "en": "Bug-Out Bag"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_62/JPG/en_US/0c56563c320be43f3331821fe2110755.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_62/JPG/fr_FR/87a5f4d38cb2d0c12fd2c9ad29c81b3c.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_62/WEB_51de9cbe101ea5218950116456bc9686",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_62/WEB_f4f9b4777001018e58d49770394b5a38"
+      ]
+    },
+    "mainFaction": "AX",
+    "rarity": "COMMON",
+    "type": "EXPEDITION_PERMANENT",
+    "subTypes": [
+      "GEAR"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_AX_59_R1": {
+    "id": "ALT_BISE_B_AX_59_R1",
+    "name": {
+      "en": "Sap Overflow"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_59/JPG/en_US/182538c346da2dc37b59b6fc212ab16f.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_59/JPG/fr_FR/c9b1278bb9ac6305dfca3557a32c0443.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "4",
+      "RECALL_COST": "4",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_59/WEB_42ac8e81f796caec3ff2067581034441",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_59/WEB_c429cb2571f356f638d71df9a4711075"
+      ]
+    },
+    "mainFaction": "AX",
+    "rarity": "RARE",
+    "type": "SPELL",
+    "subTypes": [
+      "DISRUPTION"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_AX_59_C": {
+    "id": "ALT_BISE_B_AX_59_C",
+    "name": {
+      "en": "Sap Overflow"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_59/JPG/en_US/bb352414b7de0a8769a5c74400759c0e.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_59/JPG/fr_FR/785ff8c00c518be47ef8d2db9a36f89b.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "4",
+      "RECALL_COST": "4",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_59/WEB_42ac8e81f796caec3ff2067581034441",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_59/WEB_c429cb2571f356f638d71df9a4711075"
+      ]
+    },
+    "mainFaction": "AX",
+    "rarity": "COMMON",
+    "type": "SPELL",
+    "subTypes": [
+      "DISRUPTION"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_AX_56_R2": {
+    "id": "ALT_BISE_B_AX_56_R2",
+    "name": {
+      "en": "Icarus"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_56/JPG/en_US/97c7e5cf4fc77c177896f41be34384d7.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_56/JPG/fr_FR/da9f77e391d647238427edaa37224318.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "4",
+      "RECALL_COST": "3",
+      "OCEAN_POWER": "2",
+      "MOUNTAIN_POWER": "4",
+      "FOREST_POWER": "4",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_56/WEB_a33b89322493e217e8334fdd0b537581",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_56/WEB_59061f76b844203cdd4f85db3b8df610",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_56/WEB_c41f9e1f566d39588ec274c0f0c3a470"
+      ]
+    },
+    "mainFaction": "YZ",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ADVENTURER"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_AX_56_R1": {
+    "id": "ALT_BISE_B_AX_56_R1",
+    "name": {
+      "en": "Icarus"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_56/JPG/en_US/417f8398ce950cae336bcc8c8f4a6404.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_56/JPG/fr_FR/3e499dac7dd71f38e7c5429231587607.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "4",
+      "RECALL_COST": "3",
+      "OCEAN_POWER": "2",
+      "MOUNTAIN_POWER": "4",
+      "FOREST_POWER": "4",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_56/WEB_a33b89322493e217e8334fdd0b537581",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_56/WEB_59061f76b844203cdd4f85db3b8df610",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_56/WEB_c41f9e1f566d39588ec274c0f0c3a470"
+      ]
+    },
+    "mainFaction": "AX",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ADVENTURER"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_AX_52_R1": {
+    "id": "ALT_BISE_B_AX_52_R1",
+    "name": {
+      "en": "Drillmole"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_52/JPG/en_US/cb6079b0d64ad25b058356a372bca357.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_52/JPG/fr_FR/9db2fe1411bc615ca81c4bb5569e8c71.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "3",
+      "OCEAN_POWER": "#1#",
+      "MOUNTAIN_POWER": "2",
+      "FOREST_POWER": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_52/WEB_8c071b1d59499ea72aa486c429121e54",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_52/WEB_a30c3831c2a37b0a8c82ffb1b24e1b8a",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_52/WEB_2e9184b93c46e667e40e6ad72621ed6e"
+      ]
+    },
+    "mainFaction": "AX",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ROBOT"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_AX_52_C": {
+    "id": "ALT_BISE_B_AX_52_C",
+    "name": {
+      "en": "Drillmole"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_52/JPG/en_US/b4d1927c45e2998409f6972e932f4518.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_52/JPG/fr_FR/a3d2e4aca9d747c0b3b65f1fe40e6311.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "2",
+      "RECALL_COST": "3",
+      "OCEAN_POWER": "0",
+      "MOUNTAIN_POWER": "2",
+      "FOREST_POWER": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_52/WEB_8c071b1d59499ea72aa486c429121e54",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_52/WEB_a30c3831c2a37b0a8c82ffb1b24e1b8a",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_52/WEB_2e9184b93c46e667e40e6ad72621ed6e"
+      ]
+    },
+    "mainFaction": "AX",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ROBOT"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
   "ALT_BISE_B_AX_02_C": {
     "id": "ALT_BISE_B_AX_02_C",
     "name": {
@@ -14784,6 +17457,78 @@
       "set": "BISE"
     }
   },
+  "ALT_BISE_B_MU_50_C": {
+    "id": "ALT_BISE_B_MU_50_C",
+    "name": {
+      "en": "Bumblebeet"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_50/JPG/en_US/620bc82f5d933776ba08e0f5474efa11.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_50/JPG/fr_FR/50d8b4d7105351abb4a12fd5e0fde66f.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "1",
+      "RECALL_COST": "2",
+      "OCEAN_POWER": "1",
+      "MOUNTAIN_POWER": "1",
+      "FOREST_POWER": "1",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_50/WEB_75ba3676ba7dca5560ccb9511c48dfbe",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_50/WEB_57af396206cdacd09c53aee9b5a998a9",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_50/WEB_3dbdf283ffeb3c6dcfebcb99b6adccd9"
+      ]
+    },
+    "mainFaction": "MU",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ANIMAL",
+      "PLANT"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_MU_50_R1": {
+    "id": "ALT_BISE_B_MU_50_R1",
+    "name": {
+      "en": "Bumblebeet"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_50/JPG/en_US/dbab82bf41e7e2c73211670e0a67ee3f.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_50/JPG/fr_FR/625a45609b44936f2edad2a78d12ca7c.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "1",
+      "RECALL_COST": "#3#",
+      "OCEAN_POWER": "1",
+      "MOUNTAIN_POWER": "1",
+      "FOREST_POWER": "1",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_50/WEB_75ba3676ba7dca5560ccb9511c48dfbe",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_50/WEB_57af396206cdacd09c53aee9b5a998a9",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_50/WEB_3dbdf283ffeb3c6dcfebcb99b6adccd9"
+      ]
+    },
+    "mainFaction": "MU",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ANIMAL",
+      "PLANT"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
   "ALT_BISE_B_MU_51_C": {
     "id": "ALT_BISE_B_MU_51_C",
     "name": {
@@ -14849,6 +17594,76 @@
     "type": "CHARACTER",
     "subTypes": [
       "ANIMAL"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_MU_54_C": {
+    "id": "ALT_BISE_B_MU_54_C",
+    "name": {
+      "en": "Flore, Caring Gardener"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_54/JPG/en_US/2a0c6e5425528403622f58df89208319.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_54/JPG/fr_FR/a7d290108b68168602d35fb290ff5e31.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "3",
+      "RECALL_COST": "2",
+      "OCEAN_POWER": "0",
+      "MOUNTAIN_POWER": "3",
+      "FOREST_POWER": "3",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_54/WEB_0237c95f62eb13186c16b67ca2552254",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_54/WEB_6cfb9513d59332144169acafa4e4a43e",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_54/WEB_b831bf0af6f1678d4b56526c349b7d20"
+      ]
+    },
+    "mainFaction": "MU",
+    "rarity": "COMMON",
+    "type": "CHARACTER",
+    "subTypes": [
+      "DRUID"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_MU_54_R1": {
+    "id": "ALT_BISE_B_MU_54_R1",
+    "name": {
+      "en": "Flore, Caring Gardener"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_54/JPG/en_US/f0b0c999b4be669901055dc4c187e04e.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_54/JPG/fr_FR/98813743c6f0bbafe4888cdf64b77670.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "#2#",
+      "RECALL_COST": "2",
+      "OCEAN_POWER": "0",
+      "MOUNTAIN_POWER": "3",
+      "FOREST_POWER": "3",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_54/WEB_0237c95f62eb13186c16b67ca2552254",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_54/WEB_6cfb9513d59332144169acafa4e4a43e",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_54/WEB_b831bf0af6f1678d4b56526c349b7d20"
+      ]
+    },
+    "mainFaction": "MU",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "DRUID"
     ],
     "_meta": {
       "set": "BISE"
@@ -15667,6 +18482,37 @@
       "set": "BISE"
     }
   },
+  "ALT_BISE_B_AX_58_R2": {
+    "id": "ALT_BISE_B_AX_58_R2",
+    "name": {
+      "en": "Bugfix"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_58/JPG/en_US/f6880f464decc7e3f9c5f8018f717f7a.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_58/JPG/fr_FR/d1918ea4d045ea0622ac74805f69f825.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "1",
+      "RECALL_COST": "2",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_58/WEB_ae8370d122898b5454f2b5faa9da6a63",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_AX_58/WEB_73d75f9d8ba5119e966f1157a6527109"
+      ]
+    },
+    "mainFaction": "OR",
+    "rarity": "RARE",
+    "type": "SPELL",
+    "subTypes": [
+      "MANEUVER"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
   "ALT_BISE_B_LY_62_R2": {
     "id": "ALT_BISE_B_LY_62_R2",
     "name": {
@@ -15693,6 +18539,42 @@
     "type": "LANDMARK_PERMANENT",
     "subTypes": [
       "CONSTRUCTION"
+    ],
+    "_meta": {
+      "set": "BISE"
+    }
+  },
+  "ALT_BISE_B_MU_50_R2": {
+    "id": "ALT_BISE_B_MU_50_R2",
+    "name": {
+      "en": "Bumblebeet"
+    },
+    "imagePath": {
+      "en": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_50/JPG/en_US/4c2777bb0c87246cc75d676f7a485a55.jpg",
+      "fr": "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_50/JPG/fr_FR/f8296e1064b8f22c4865ae7d22846fb9.jpg"
+    },
+    "elements": {
+      "MAIN_COST": "1",
+      "RECALL_COST": "#3#",
+      "OCEAN_POWER": "1",
+      "MOUNTAIN_POWER": "1",
+      "FOREST_POWER": "1",
+      "MAIN_EFFECT": null,
+      "ECHO_EFFECT": null
+    },
+    "assets": {
+      "WEB": [
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_50/WEB_75ba3676ba7dca5560ccb9511c48dfbe",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_50/WEB_57af396206cdacd09c53aee9b5a998a9",
+        "https://altered-prod-eu.s3.amazonaws.com/Art/BISE/CARDS/ALT_BISE_B_MU_50/WEB_3dbdf283ffeb3c6dcfebcb99b6adccd9"
+      ]
+    },
+    "mainFaction": "OR",
+    "rarity": "RARE",
+    "type": "CHARACTER",
+    "subTypes": [
+      "ANIMAL",
+      "PLANT"
     ],
     "_meta": {
       "set": "BISE"

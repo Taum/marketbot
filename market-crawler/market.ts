@@ -79,7 +79,7 @@ export interface MarketUpdateCrawlerStats {
 const bannedWords = [
   'Lyra', 'Ordis', 'Yzmir', 'Muna', 'Axiom', 'Bravos',
   'The', 'of',
-  'Haven', 'Foundry'
+  'Haven', 'Foundry', 'BLISS'
 ]
 
 export async function marketUpdateStatsStartAndGetGenerationId(): Promise<number> {
@@ -163,9 +163,9 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
         const pageNumber = data["hydra:view"]["@id"].match(/page=\d+$/)?.[0];
         // const pageNumber = data["hydra:view"]["@id"].match(/page=\d+$/)?.[0];
         if ("queryParams" in request) {
-          console.log(`Query=${JSON.stringify(request.queryParams)} : ${pageNumber} -> ${data["hydra:member"].length} items`)
+          console.log(`Query=${JSON.stringify(request.queryParams)} : page=${pageNumber} -> ${data["hydra:member"].length} items`)
         } else {
-          console.log(`Family=${request.name} Faction=${request.faction} : ${pageNumber} -> ${data["hydra:member"].length} items`)
+          console.log(`Family=${request.name} (${request.cardFamilyId}) Faction=${request.faction} : page=${pageNumber} -> ${data["hydra:member"].length} items`)
         }
       } catch (e) {
         if ("queryParams" in request) {

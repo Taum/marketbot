@@ -61,6 +61,12 @@ body {
     --palette-teal: 162 43% 46%;
     --palette-charcoal: 208 25% 45%;
 
+    --axiom: 15 53.8% 35.7%;
+    --bravos: 354 67.4% 45.7%;
+    --lyra: 340 59.7% 53.3%;
+    --muna: 127 27.4% 32.9%;
+    --ordis: 201 81.5% 31.8%;
+    --yzmir: 278 33.6% 42.5%;
     
     @media (prefers-color-scheme: dark) {
       --background: 224 71.4% 4.1%;
