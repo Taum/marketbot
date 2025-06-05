@@ -2,6 +2,8 @@
 
 This project is a web application that indexes the [Altered TCG](https://www.altered.gg/) marketplace and tries to provide a more user-friendly interface to search for unique cards. It does not try to index prices for Rares and Commons, since those can be easily found on the Altered website.
 
+You can find the live version of the app at [https://market.sabotageafter.rest](https://market.sabotageafter.rest).
+
 # Docs for libraries used in this project
 
 - 📖 [Typescript docs](https://www.typescriptlang.org/docs/)
@@ -57,7 +59,7 @@ createdb -p 5411 -U test -h localhost -W mydatabase
 
 > This will allow you to test the UI with a full dataset without having to run the crawler manually.
 >
-> Download it from [Google Drive : marketbot_export_2025-05-21_clean.sql](https://drive.google.com/file/d/1T_CvDkeYH3F1ZSi6DruoWFsYBF18L7ha/view?usp=drive_link).
+> Download it from [Google Drive : marketbot_export_2025-06-04_clean.7z]https://drive.google.com/file/d/1Y8beYTkE_qxlWtyoeua6yb2CmCfLpPMk/view?usp=sharing) and decompress it.
 
 Once you have the file, you can import using the `psql` CLI:
 
