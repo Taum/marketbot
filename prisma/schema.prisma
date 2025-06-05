@@ -1,5 +1,15 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+
+generator kysely {
+    provider = "prisma-kysely"
+
+    // Optionally provide a destination directory for the generated file
+    // and a filename of your choice
+    output = "../generated/kysely-db"
+    fileName = "types.ts"
 }
 
 datasource db {
@@ -23,8 +33,9 @@ model UniqueInfo {
   imageUrlEs    String?
   imageUrlFr    String?
   imageUrlIt    String?
-  mainEffectEn  String?
-  echoEffectEn  String?
+
+  mainEffectEn  String? // Indexed for full text search managed outside of Prisma
+  echoEffectEn  String? // Indexed for full text search managed outside of Prisma
   cardSubTypes  String[]
 
   fetchedDetails   Boolean   @default(false)
@@ -49,9 +60,10 @@ model UniqueInfo {
   @@index([id])
   @@index([ref])
   @@index([cardFamilyId])
-  @@index([lastSeenInSaleAt])
   @@index([nameEn])
   @@index([seenInLastGeneration])
+  @@index([lastSeenInSalePrice])
+  @@index([cardSubTypes]) // GIN index
 }
 
 model UniqueAbilityLine {
