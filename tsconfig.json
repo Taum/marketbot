@@ -32,6 +32,7 @@
 		"./market-crawler/**/*",
 		"./common/**/*",
 		"./generated/**/*",
-		"./data/**/*"
+		"./data/**/*",
+		"./dev-utils/**/*"
 	]
 }
