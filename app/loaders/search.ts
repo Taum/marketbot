@@ -141,220 +141,269 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     return { results: [], pagination: undefined }
   }
 
-  let query = db.selectFrom('UniqueAbilityPart')
-    .innerJoin('AbilityPartLink', 'UniqueAbilityPart.id', 'AbilityPartLink.partId')
-    .innerJoin('UniqueAbilityLine', 'AbilityPartLink.abilityId', 'UniqueAbilityLine.id')
-    .innerJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
 
-  if (faction != null) {
-    query = query.where('faction', '=', faction)
-  }
+  const queryWithLimit = db
+    .with('uniques_with_abilities', (db) => {
 
-  if (characterName != null) {
-    const tokens = tokenize(characterName);
-    // Character name should default to a OR, not AND
-    // but negation of OR is NAND, so we need to handle that
-    const [negatedTokens, normalTokens] = tokens.reduce<[typeof tokens, typeof tokens]>(
-      ([neg, norm], token) => {
-        return token.negated
-          ? [[...neg, token], norm]
-          : [neg, [...norm, token]];
-      },
-      [[], []]
-    );
+      let query = db.selectFrom('UniqueAbilityPart')
+        .innerJoin('AbilityPartLink', 'UniqueAbilityPart.id', 'AbilityPartLink.partId')
+        .innerJoin('UniqueAbilityLine', 'AbilityPartLink.abilityId', 'UniqueAbilityLine.id')
+        .innerJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
 
-    if (normalTokens.length > 0) {
-      query = query.where((eb) => eb.or(
-        normalTokens.map(token => eb('nameEn', 'ilike', `%${token.text}%`))
-      ))
-    }
-    if (negatedTokens.length > 0) {
-      query = query.where((eb) => eb.and(
-        negatedTokens.map(token => eb('nameEn', 'not ilike', `%${token.text}%`))
-      ))
-    }
-  }
-  
-  if (!includeExpiredCards) {
-    query = query.where('seenInLastGeneration', '=', true)
-  }
+      if (faction != null) {
+        query = query.where('faction', '=', faction)
+      }
 
-  if (mainCosts && mainCosts.length > 0) {
-    query = query.where('mainCost', 'in', mainCosts)
-  }
-  if (recallCosts && recallCosts.length > 0) {
-    query = query.where('recallCost', 'in', recallCosts)
-  }
+      if (characterName != null) {
+        const tokens = tokenize(characterName);
+        // Character name should default to a OR, not AND
+        // but negation of OR is NAND, so we need to handle that
+        const [negatedTokens, normalTokens] = tokens.reduce<[typeof tokens, typeof tokens]>(
+          ([neg, norm], token) => {
+            return token.negated
+              ? [[...neg, token], norm]
+              : [neg, [...norm, token]];
+          },
+          [[], []]
+        );
 
-  if (set != null) {
-    if (set == CardSet.Core) {
-      query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
-    } else {
-      query = query.where('cardSet', '=', set)
-    }
-  }
+        if (normalTokens.length > 0) {
+          query = query.where((eb) => eb.or(
+            normalTokens.map(token => eb('nameEn', 'ilike', `%${token.text}%`))
+          ))
+        }
+        if (negatedTokens.length > 0) {
+          query = query.where((eb) => eb.and(
+            negatedTokens.map(token => eb('nameEn', 'not ilike', `%${token.text}%`))
+          ))
+        }
+      }
 
-  if (minPrice != null) {
-    query = query.where('UniqueInfo.lastSeenInSalePrice', '>=', minPrice)
-  }
-  if (maxPrice != null) {
-    query = query.where('UniqueInfo.lastSeenInSalePrice', '<=', maxPrice)
-  }
+      if (!includeExpiredCards) {
+        query = query.where('seenInLastGeneration', '=', true)
+      }
 
-  // if (mainEffect != null) {
-  //   const tokens = tokenize(mainEffect);
-  //   searchParams = searchParams.concat(tokens.map((token) => {
-  //     if (token.negated) {
-  //       return {
-  //         NOT: { mainEffectEn: { contains: token.text, mode: "insensitive" } }
-  //       }
-  //     }
-  //     return {
-  //       mainEffectEn: { contains: token.text, mode: "insensitive" },
-  //     }
-  //   }))
-  // }
+      if (mainCosts && mainCosts.length > 0) {
+        query = query.where('mainCost', 'in', mainCosts)
+      }
+      if (recallCosts && recallCosts.length > 0) {
+        query = query.where('recallCost', 'in', recallCosts)
+      }
 
-  // const mainAbilitySearchParams = [
-  //   ...searchInPart(AbilityPartType.Trigger, triggerPart),
-  //   ...searchInPart(AbilityPartType.Condition, conditionPart),
-  //   ...searchInPart(AbilityPartType.Effect, effectPart),
-  // ]
+      if (set != null) {
+        if (set == CardSet.Core) {
+          query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
+        } else {
+          query = query.where('cardSet', '=', set)
+        }
+      }
 
-  // if (mainAbilitySearchParams.length > 0) {
-  //   searchParams.push({
-  //     mainAbilities: {
-  //       some: {
-  //         AND: mainAbilitySearchParams.map((sp) => ({
-  //           allParts: {
-  //             some: {
-  //               AND: sp
-  //             }
-  //           },
-  //         }))
-  //       }
-  //     }
-  //   })
-  // }
+      if (mainEffect != null) {
+        // const tokens = tokenize(mainEffect);
+        // searchParams = searchParams.concat(tokens.map((token) => {
+        //   if (token.negated) {
+        //     return {
+        //       NOT: { mainEffectEn: { contains: token.text, mode: "insensitive" } }
+        //     }
+        //   }
+        //   return {
+        //     mainEffectEn: { contains: token.text, mode: "insensitive" },
+        //   }
+        // }))
 
-  // if (mainCosts) {
-  //   if (mainCosts.length == 1) {
-  //     searchParams.push({
-  //       mainCost: {
-  //         equals: mainCosts[0]
-  //       }
-  //     })
-  //   } else {
-  //     searchParams.push({
-  //       mainCost: {
-  //         in: mainCosts
-  //       }
-  //     })
-  //   }
-  // }
+        // TODO: Use actual search terms to create plainto/phraseto tsquery
+        query = query
+          .where(eb => eb(
+            to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
+            '@@',
+            plainto_tsquery("when you play a permanent"),
+          ))
+          .where(eb => eb(
+            to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
+            '@@',
+            phraseto_tsquery("i gain 2 boosts"),
+          ))
+      }
 
-  // if (recallCosts) {
-  //   if (recallCosts.length == 1) {
-  //     searchParams.push({
-  //       recallCost: {
-  //         equals: recallCosts[0]
-  //       }
-  //     })
-  //   } else {
-  //     searchParams.push({
-  //       recallCost: {
-  //         in: recallCosts
-  //       }
-  //     })
-  //   }
-  // }
-
-  // if (set != null) {
-  //   if (set == CardSet.Core) {
-  //     searchParams.push({
-  //       cardSet: {
-  //         in: [CardSet.Core, "COREKS"]
-  //       }
-  //     })
-  //   } else {
-  //     searchParams.push({
-  //       cardSet: {
-  //         equals: set
-  //       }
-  //     })
-  //   }
-  // }
-
-
-
-  // if (minPrice != null) {
-  //   searchParams.push({
-  //     lastSeenInSalePrice: {
-  //       gte: minPrice
-  //     }
-  //   })
-  // }
-  // if (maxPrice != null) {
-  //   searchParams.push({
-  //     lastSeenInSalePrice: {
-  //       lte: maxPrice
-  //     }
-  //   })
-  // }
-
-  // let query = db.selectFrom('UniqueAbilityPart')
-  //   .leftJoin('AbilityPartLink', 'UniqueAbilityPart.id', 'AbilityPartLink.partId')
-  //   .leftJoin('UniqueAbilityLine', 'AbilityPartLink.abilityId', 'UniqueAbilityLine.id')
-  //   .leftJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
-  //   .where((eb) => 
-  //     eb.and([
-  //       eb('UniqueAbilityPart.textEn', 'ilike', '%boost%'),
-  //       eb('UniqueAbilityPart.partType', '=', 'Trigger')
-  //     ])
-  //   )
-
-  const queryWithCount = query.select((eb) => [
-    eb.fn.count('UniqueInfo.id').distinct().as('totalCount')
-  ])
-
-  let queryWithSelect = query
-    .distinctOn('UniqueInfo.id')
-    .select([
-      'UniqueInfo.id',
-      'UniqueInfo.ref',
-      'UniqueInfo.nameEn',
-      'UniqueInfo.faction',
-      'UniqueInfo.mainEffectEn',
-      'UniqueInfo.echoEffectEn',
-      'UniqueInfo.lastSeenInSaleAt',
-      'UniqueInfo.lastSeenInSalePrice',
-      'UniqueInfo.seenInLastGeneration',
-      'UniqueInfo.cardSet',
-      'UniqueInfo.imageUrlEn',
-      'UniqueInfo.oceanPower',
-      'UniqueInfo.mountainPower',
-      'UniqueInfo.forestPower',
-      'UniqueInfo.mainCost',
-      'UniqueInfo.recallCost',
-    ])
-    .select((eb) => [
-      jsonArrayFrom(
-        eb.selectFrom('UniqueAbilityLine')
-          .select(['UniqueAbilityLine.id', 'UniqueAbilityLine.lineNumber', 'UniqueAbilityLine.textEn', 'UniqueAbilityLine.isSupport', 'UniqueAbilityLine.characterData'])
-          .select((eb2) => [
-            jsonArrayFrom(
-              eb2.selectFrom('AbilityPartLink')
-                .select(['AbilityPartLink.id', 'AbilityPartLink.partId', 'AbilityPartLink.partType'])
-                .whereRef('AbilityPartLink.abilityId', '=', 'UniqueAbilityLine.id')
-            ).as('allParts')
+      if (triggerPart != null) {
+        query = query.where((eb) =>
+          eb.and([
+            eb('UniqueAbilityPart.partType', '=', AbilityPartType.Trigger),
+            eb('UniqueAbilityPart.textEn', 'ilike', `%${triggerPart}%`)
           ])
-          .whereRef('UniqueAbilityLine.uniqueInfoId', '=', 'UniqueInfo.id')
-          .orderBy('UniqueAbilityLine.lineNumber')
-      ).as('mainAbilities'),
+        )
+      }
+      // if (mainEffect != null) {
+      //   const tokens = tokenize(mainEffect);
+      //   searchParams = searchParams.concat(tokens.map((token) => {
+      //     if (token.negated) {
+      //       return {
+      //         NOT: { mainEffectEn: { contains: token.text, mode: "insensitive" } }
+      //       }
+      //     }
+      //     return {
+      //       mainEffectEn: { contains: token.text, mode: "insensitive" },
+      //     }
+      //   }))
+      // }
+
+      // const mainAbilitySearchParams = [
+      //   ...searchInPart(AbilityPartType.Trigger, triggerPart),
+      //   ...searchInPart(AbilityPartType.Condition, conditionPart),
+      //   ...searchInPart(AbilityPartType.Effect, effectPart),
+      // ]
+
+      // if (mainAbilitySearchParams.length > 0) {
+      //   searchParams.push({
+      //     mainAbilities: {
+      //       some: {
+      //         AND: mainAbilitySearchParams.map((sp) => ({
+      //           allParts: {
+      //             some: {
+      //               AND: sp
+      //             }
+      //           },
+      //         }))
+      //       }
+      //     }
+      //   })
+      // }
+
+      // if (mainCosts) {
+      //   if (mainCosts.length == 1) {
+      //     searchParams.push({
+      //       mainCost: {
+      //         equals: mainCosts[0]
+      //       }
+      //     })
+      //   } else {
+      //     searchParams.push({
+      //       mainCost: {
+      //         in: mainCosts
+      //       }
+      //     })
+      //   }
+      // }
+
+      // if (recallCosts) {
+      //   if (recallCosts.length == 1) {
+      //     searchParams.push({
+      //       recallCost: {
+      //         equals: recallCosts[0]
+      //       }
+      //     })
+      //   } else {
+      //     searchParams.push({
+      //       recallCost: {
+      //         in: recallCosts
+      //       }
+      //     })
+      //   }
+      // }
+
+      // if (set != null) {
+      //   if (set == CardSet.Core) {
+      //     searchParams.push({
+      //       cardSet: {
+      //         in: [CardSet.Core, "COREKS"]
+      //       }
+      //     })
+      //   } else {
+      //     searchParams.push({
+      //       cardSet: {
+      //         equals: set
+      //       }
+      //     })
+      //   }
+      // }
+
+
+
+      // if (minPrice != null) {
+      //   searchParams.push({
+      //     lastSeenInSalePrice: {
+      //       gte: minPrice
+      //     }
+      //   })
+      // }
+      // if (maxPrice != null) {
+      //   searchParams.push({
+      //     lastSeenInSalePrice: {
+      //       lte: maxPrice
+      //     }
+      //   })
+      // }
+
+      // let query = db.selectFrom('UniqueAbilityPart')
+      //   .leftJoin('AbilityPartLink', 'UniqueAbilityPart.id', 'AbilityPartLink.partId')
+      //   .leftJoin('UniqueAbilityLine', 'AbilityPartLink.abilityId', 'UniqueAbilityLine.id')
+      //   .leftJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
+      //   .where((eb) => 
+      //     eb.and([
+      //       eb('UniqueAbilityPart.textEn', 'ilike', '%boost%'),
+      //       eb('UniqueAbilityPart.partType', '=', 'Trigger')
+      //     ])
+      //   )
+
+      let queryWithSelect = query
+        .groupBy('UniqueInfo.id')
+        .distinctOn('UniqueInfo.id')
+        .select([
+          'UniqueInfo.id',
+          'UniqueInfo.ref',
+          'UniqueInfo.nameEn',
+          'UniqueInfo.faction',
+          'UniqueInfo.mainEffectEn',
+          'UniqueInfo.echoEffectEn',
+          'UniqueInfo.lastSeenInSaleAt',
+          'UniqueInfo.lastSeenInSalePrice',
+          'UniqueInfo.seenInLastGeneration',
+          'UniqueInfo.cardSet',
+          'UniqueInfo.imageUrlEn',
+          'UniqueInfo.oceanPower',
+          'UniqueInfo.mountainPower',
+          'UniqueInfo.forestPower',
+          'UniqueInfo.mainCost',
+          'UniqueInfo.recallCost',
+        ])
+        .select((eb) => [
+          jsonArrayFrom(
+            eb.selectFrom('UniqueAbilityLine')
+              .select(['UniqueAbilityLine.id', 'UniqueAbilityLine.lineNumber', 'UniqueAbilityLine.textEn', 'UniqueAbilityLine.isSupport', 'UniqueAbilityLine.characterData'])
+              .select((eb2) => [
+                jsonArrayFrom(
+                  eb2.selectFrom('AbilityPartLink')
+                    .select(['AbilityPartLink.id', 'AbilityPartLink.partId', 'AbilityPartLink.partType'])
+                    .whereRef('AbilityPartLink.abilityId', '=', 'UniqueAbilityLine.id')
+                ).as('allParts')
+              ])
+              .whereRef('UniqueAbilityLine.uniqueInfoId', '=', 'UniqueInfo.id')
+              .orderBy('UniqueAbilityLine.lineNumber')
+          ).as('mainAbilities'),
+        ])
+
+      return queryWithSelect
+    })
+
+  const queryWithCount = queryWithLimit
+    .selectFrom('uniques_with_abilities')
+    .where((eb) => eb.and([
+      minPrice ? eb('lastSeenInSalePrice', '>=', minPrice) : null,
+      maxPrice ? eb('lastSeenInSalePrice', '<=', maxPrice) : null,
+    ].filter(x => x != null)))
+    .select((eb) => [
+      eb.fn.count('id').as('totalCount')
     ])
-    .orderBy('UniqueInfo.id', 'asc')
-    .orderBy('UniqueInfo.lastSeenInSalePrice', 'asc')
-    .limit(100)
+
+  const queryWithSelect = queryWithLimit
+    .selectFrom('uniques_with_abilities')
+    .where((eb) => eb.and([
+      minPrice ? eb('lastSeenInSalePrice', '>=', minPrice) : null,
+      maxPrice ? eb('lastSeenInSalePrice', '<=', maxPrice) : null,
+    ].filter(x => x != null)))
+    .selectAll()
+    .orderBy('lastSeenInSalePrice', 'asc')
+    .limit(PAGE_SIZE)
     .offset(PAGE_SIZE * (page - 1))
 
   if (debug) {
@@ -387,7 +436,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
 
   let pagination: { totalCount: number, pageCount: number } | undefined = undefined
   if (includePagination) {
-    
+
     if (debug) {
       const compiled = queryWithCount.compile()
       console.log("Count Query:")
