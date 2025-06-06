@@ -72,6 +72,8 @@ model UniqueAbilityLine {
   uniqueInfo    UniqueInfo @relation(fields: [uniqueInfoId], references: [id])
   lineNumber    Int
   isSupport     Boolean
+  
+  /// @kyselyType(JsonValue | null)
   characterData Json?
 
   textEn String

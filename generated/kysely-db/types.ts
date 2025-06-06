@@ -49,7 +49,10 @@ export type UniqueAbilityLine = {
     uniqueInfoId: number;
     lineNumber: number;
     isSupport: boolean;
-    characterData: unknown | null;
+    /**
+     * @kyselyType(JsonValue | null)
+     */
+    characterData: JsonValue | null | null;
     textEn: string;
 };
 export type UniqueAbilityPart = {
