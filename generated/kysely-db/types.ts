@@ -50,9 +50,9 @@ export type UniqueAbilityLine = {
     lineNumber: number;
     isSupport: boolean;
     /**
-     * @kyselyType(JsonValue | null)
+     * @kyselyType(JsonValue)
      */
-    characterData: JsonValue | null | null;
+    characterData: JsonValue | null;
     textEn: string;
 };
 export type UniqueAbilityPart = {
@@ -85,7 +85,10 @@ export type UniqueInfo = {
     firstSeenGenerationId: number | null;
     lastSeenGenerationId: number | null;
     lastSeenInSaleAt: Timestamp | null;
-    lastSeenInSalePrice: string | null;
+    /**
+     * @kyselyType(number)
+     */
+    lastSeenInSalePrice: number | null;
     seenInLastGeneration: Generated<boolean>;
     cardFamilyId: string | null;
 };

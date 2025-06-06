@@ -44,6 +44,7 @@ model UniqueInfo {
   firstSeenGenerationId Int?
   lastSeenGenerationId  Int?
   lastSeenInSaleAt      DateTime?
+  /// @kyselyType(number)
   lastSeenInSalePrice   Decimal?
 
   seenInLastGeneration Boolean @default(false)
@@ -73,7 +74,7 @@ model UniqueAbilityLine {
   lineNumber    Int
   isSupport     Boolean
   
-  /// @kyselyType(JsonValue | null)
+  /// @kyselyType(JsonValue)
   characterData Json?
 
   textEn String

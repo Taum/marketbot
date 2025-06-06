@@ -5,7 +5,7 @@ import { AbilityCharacterDataV1 } from "@common/models/postprocess";
 import { db } from "@common/utils/kysely.server";
 import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/postgres'
 import { Decimal } from "decimal.js";
-import { sql } from "kysely";
+import { Expression, sql } from "kysely";
 
 // Add the type from Prisma namespace
 type UniqueInfoWhereInput = Prisma.UniqueInfoWhereInput;
@@ -37,6 +37,18 @@ interface Token {
   negated: boolean
 }
 
+function to_tsvector(expr: Expression<string | null> | string) {
+  return sql`to_tsvector('english', COALESCE(${expr}, ''))`
+}
+function to_tsvector2(expr1: Expression<string | null> | string, expr2: Expression<string | null> | string) {
+  return sql`to_tsvector('english', COALESCE(${expr1}, '') || ' ' || COALESCE(${expr2}, ''))`
+}
+function plainto_tsquery(expr: Expression<string> | string) {
+  return sql`plainto_tsquery('english', ${expr})`
+}
+function phraseto_tsquery(expr: Expression<string> | string) {
+  return sql`phraseto_tsquery('english', ${expr})`
+}
 
 function tokenize(text: string): Token[] {
   const quotedRegex = /(-?)(?:"([^"]+)"|(\S+))/g;
@@ -129,10 +141,10 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     return { results: [], pagination: undefined }
   }
 
-  let query = db.selectFrom(`UniqueInfo`)
-  
-
-  let searchParams: UniqueInfoWhereInput[] = []
+  let query = db.selectFrom('UniqueAbilityPart')
+    .innerJoin('AbilityPartLink', 'UniqueAbilityPart.id', 'AbilityPartLink.partId')
+    .innerJoin('UniqueAbilityLine', 'AbilityPartLink.abilityId', 'UniqueAbilityLine.id')
+    .innerJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
 
   if (faction != null) {
     query = query.where('faction', '=', faction)
@@ -161,6 +173,32 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
         negatedTokens.map(token => eb('nameEn', 'not ilike', `%${token.text}%`))
       ))
     }
+  }
+  
+  if (!includeExpiredCards) {
+    query = query.where('seenInLastGeneration', '=', true)
+  }
+
+  if (mainCosts && mainCosts.length > 0) {
+    query = query.where('mainCost', 'in', mainCosts)
+  }
+  if (recallCosts && recallCosts.length > 0) {
+    query = query.where('recallCost', 'in', recallCosts)
+  }
+
+  if (set != null) {
+    if (set == CardSet.Core) {
+      query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
+    } else {
+      query = query.where('cardSet', '=', set)
+    }
+  }
+
+  if (minPrice != null) {
+    query = query.where('UniqueInfo.lastSeenInSalePrice', '>=', minPrice)
+  }
+  if (maxPrice != null) {
+    query = query.where('UniqueInfo.lastSeenInSalePrice', '<=', maxPrice)
   }
 
   // if (mainEffect != null) {
@@ -247,9 +285,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
   //   }
   // }
 
-  if (!includeExpiredCards) {
-    query = query.where('seenInLastGeneration', '=', true)
-  }
+
 
   // if (minPrice != null) {
   //   searchParams.push({
@@ -266,9 +302,23 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
   //   })
   // }
 
+  // let query = db.selectFrom('UniqueAbilityPart')
+  //   .leftJoin('AbilityPartLink', 'UniqueAbilityPart.id', 'AbilityPartLink.partId')
+  //   .leftJoin('UniqueAbilityLine', 'AbilityPartLink.abilityId', 'UniqueAbilityLine.id')
+  //   .leftJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
+  //   .where((eb) => 
+  //     eb.and([
+  //       eb('UniqueAbilityPart.textEn', 'ilike', '%boost%'),
+  //       eb('UniqueAbilityPart.partType', '=', 'Trigger')
+  //     ])
+  //   )
 
+  const queryWithCount = query.select((eb) => [
+    eb.fn.count('UniqueInfo.id').distinct().as('totalCount')
+  ])
 
-  let queryWithJoins = query
+  let queryWithSelect = query
+    .distinctOn('UniqueInfo.id')
     .select([
       'UniqueInfo.id',
       'UniqueInfo.ref',
@@ -302,25 +352,22 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
           .orderBy('UniqueAbilityLine.lineNumber')
       ).as('mainAbilities'),
     ])
-    // .leftJoin('UniqueAbilityLine', 'UniqueInfo.id', 'UniqueAbilityLine.uniqueInfoId')
-    // .leftJoin('AbilityPartLink', 'UniqueAbilityLine.id', 'AbilityPartLink.abilityId')
-    // .leftJoin('UniqueAbilityPart', 'AbilityPartLink.partId', 'UniqueAbilityPart.id')
-    // .selectAll('UniqueInfo')
-    // .selectAll('UniqueAbilityLine')
-    // .selectAll('AbilityPartLink')
-    // .selectAll('UniqueAbilityPart')
-
-    .limit(2)
+    .orderBy('UniqueInfo.id', 'asc')
+    .orderBy('UniqueInfo.lastSeenInSalePrice', 'asc')
+    .limit(100)
+    .offset(PAGE_SIZE * (page - 1))
 
   if (debug) {
-    const compiled = queryWithJoins.compile()
+    const compiled = queryWithSelect.compile()
     console.log("Compiled Query:")
     console.log(compiled.sql)
 
     console.log("Explain Analyze:")
-    const explainAnalyze = await queryWithJoins.explain(undefined, sql`analyze`)
+    const explainAnalyze = await queryWithSelect.explain(undefined, sql`analyze`)
     console.log(explainAnalyze.map(x => x['QUERY PLAN']).join('\n'))
   }
+
+  const results = await queryWithSelect.execute()
 
   // const results = await prisma.uniqueInfo.findMany({
   //   where: whereClause,
@@ -340,11 +387,24 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
 
   let pagination: { totalCount: number, pageCount: number } | undefined = undefined
   if (includePagination) {
-    const countQuery = query
-      .select((eb) => [
-        eb.fn.count('UniqueInfo.id').as('count')
-      ])
-    const totalCount = ((await countQuery.executeTakeFirst())?.count ?? 0) as number
+    
+    if (debug) {
+      const compiled = queryWithCount.compile()
+      console.log("Count Query:")
+      console.log(compiled.sql)
+
+      // console.log("Explain Analyze:")
+      // const explainAnalyze = await queryWithSelect.explain(undefined, sql`analyze`)
+      // console.log(explainAnalyze.map(x => x['QUERY PLAN']).join('\n'))
+    }
+
+    const countResult = await queryWithCount.executeTakeFirst()
+    const totalCount = Number(countResult?.totalCount ?? 0)
+    // const countQuery = query
+    //   .select((eb) => [
+    //     eb.fn.count('UniqueInfo.id').as('count')
+    //   ])
+    // const totalCount = ((await countQuery.executeTakeFirst())?.count ?? 0) as number
 
     if (debug) {
       console.log('Total count: ' + totalCount)
@@ -356,13 +416,12 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     }
   }
 
-  const results = await queryWithJoins.execute()
 
   // console.log("Results:")
   // console.dir(results, { depth: null })
 
   const outResults: DisplayUniqueCard[] = results.map((result) => {
-    if (!result.nameEn || !result.faction || !result.mainEffectEn) {
+    if (!result.ref || !result.nameEn || !result.faction || !result.mainEffectEn) {
       return null;
     }
 
