@@ -38,16 +38,26 @@ interface Token {
 }
 
 function to_tsvector(expr: Expression<string | null> | string) {
-  return sql`to_tsvector('english', COALESCE(${expr}, ''))`
+  return sql`to_tsvector('simple', COALESCE(${expr}, ''))`
 }
 function to_tsvector2(expr1: Expression<string | null> | string, expr2: Expression<string | null> | string) {
-  return sql`to_tsvector('english', COALESCE(${expr1}, '') || ' ' || COALESCE(${expr2}, ''))`
+  return sql`to_tsvector('simple', COALESCE(${expr1}, '') || ' ' || COALESCE(${expr2}, ''))`
 }
 function plainto_tsquery(expr: Expression<string> | string) {
-  return sql`plainto_tsquery('english', ${expr})`
+  return sql`plainto_tsquery('simple', ${expr})`
 }
 function phraseto_tsquery(expr: Expression<string> | string) {
-  return sql`phraseto_tsquery('english', ${expr})`
+  return sql`phraseto_tsquery('simple', ${expr})`
+}
+function tokens_to_tsquery(tokens: Token[]) {
+  const tokensAsSql = tokens.map(token => {
+    const neg = token.negated ? (x) => `!!(${x})` : (x) => x
+    if (token.text.indexOf(' ') >= 0) {
+      return neg(sql`phraseto_tsquery('simple', ${token.text})`)
+    }
+    return neg(sql`plainto_tsquery('simple', ${token.text})`)
+  })
+  return sql`(${sql.join(tokensAsSql, sql`&&`)})`
 }
 
 function tokenize(text: string): Token[] {
@@ -199,7 +209,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
       }
 
       if (mainEffect != null) {
-        // const tokens = tokenize(mainEffect);
+        const tokens = tokenize(mainEffect);
         // searchParams = searchParams.concat(tokens.map((token) => {
         //   if (token.negated) {
         //     return {
@@ -216,12 +226,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
           .where(eb => eb(
             to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
             '@@',
-            plainto_tsquery("when you play a permanent"),
-          ))
-          .where(eb => eb(
-            to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
-            '@@',
-            phraseto_tsquery("i gain 2 boosts"),
+            tokens_to_tsquery(tokens),
           ))
       }
 
@@ -385,16 +390,6 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
       return queryWithSelect
     })
 
-  const queryWithCount = queryWithLimit
-    .selectFrom('uniques_with_abilities')
-    .where((eb) => eb.and([
-      minPrice ? eb('lastSeenInSalePrice', '>=', minPrice) : null,
-      maxPrice ? eb('lastSeenInSalePrice', '<=', maxPrice) : null,
-    ].filter(x => x != null)))
-    .select((eb) => [
-      eb.fn.count('id').as('totalCount')
-    ])
-
   const queryWithSelect = queryWithLimit
     .selectFrom('uniques_with_abilities')
     .where((eb) => eb.and([
@@ -402,6 +397,9 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
       maxPrice ? eb('lastSeenInSalePrice', '<=', maxPrice) : null,
     ].filter(x => x != null)))
     .selectAll()
+    .select(() => [
+      sql`COUNT(*) OVER ()`.as('totalCount')
+    ])
     .orderBy('lastSeenInSalePrice', 'asc')
     .limit(PAGE_SIZE)
     .offset(PAGE_SIZE * (page - 1))
@@ -438,17 +436,16 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
   if (includePagination) {
 
     if (debug) {
-      const compiled = queryWithCount.compile()
-      console.log("Count Query:")
-      console.log(compiled.sql)
+      // const compiled = queryWithCount.compile()
+      // console.log("Count Query:")
+      // console.log(compiled.sql)
 
       // console.log("Explain Analyze:")
       // const explainAnalyze = await queryWithSelect.explain(undefined, sql`analyze`)
       // console.log(explainAnalyze.map(x => x['QUERY PLAN']).join('\n'))
     }
 
-    const countResult = await queryWithCount.executeTakeFirst()
-    const totalCount = Number(countResult?.totalCount ?? 0)
+    const totalCount = Number(results[0].totalCount)
     // const countQuery = query
     //   .select((eb) => [
     //     eb.fn.count('UniqueInfo.id').as('count')
