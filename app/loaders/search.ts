@@ -116,266 +116,178 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
   }
 
 
-  const queryWithLimit = db
-    .with('uniques_with_abilities', (db) => {
+  // const queryWithLimit = db
+  //   .with('uniques_with_abilities', (db) => {
 
-      let query = db.selectFrom('UniqueAbilityPart')
-        .innerJoin('AbilityPartLink', 'UniqueAbilityPart.id', 'AbilityPartLink.partId')
-        .innerJoin('UniqueAbilityLine', 'AbilityPartLink.abilityId', 'UniqueAbilityLine.id')
-        .innerJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
+  let query = db.selectFrom('UniqueInfo')
+  // .innerJoin('AbilityPartLink', 'UniqueAbilityPart.id', 'AbilityPartLink.partId')
+  // .innerJoin('UniqueAbilityLine', 'AbilityPartLink.abilityId', 'UniqueAbilityLine.id')
+  // .innerJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
 
-      if (faction != null) {
-        query = query.where('faction', '=', faction)
-      }
+  if (faction != null) {
+    query = query.where('faction', '=', faction)
+  }
 
-      if (characterName != null) {
-        const tokens = tokenize(characterName);
-        // Character name should default to a OR, not AND
-        // but negation of OR is NAND, so we need to handle that
-        const [negatedTokens, normalTokens] = tokens.reduce<[typeof tokens, typeof tokens]>(
-          ([neg, norm], token) => {
-            return token.negated
-              ? [[...neg, token], norm]
-              : [neg, [...norm, token]];
-          },
-          [[], []]
-        );
+  if (characterName != null) {
+    // Character name should default to a OR, not AND
+    // but negation of OR is NAND, so we need to handle that
+    const [negatedTokens, normalTokens] = partition(tokenize(characterName), t => t.negated);
 
-        if (normalTokens.length > 0) {
-          query = query.where((eb) => eb.or(
-            normalTokens.map(token => eb('nameEn', 'ilike', `%${token.text}%`))
-          ))
-        }
-        if (negatedTokens.length > 0) {
-          query = query.where((eb) => eb.and(
-            negatedTokens.map(token => eb('nameEn', 'not ilike', `%${token.text}%`))
-          ))
-        }
-      }
+    if (normalTokens.length > 0) {
+      query = query.where((eb) => eb.or(
+        normalTokens.map(token => eb('nameEn', 'ilike', `%${token.text}%`))
+      ))
+    }
+    if (negatedTokens.length > 0) {
+      query = query.where((eb) => eb.and(
+        negatedTokens.map(token => eb('nameEn', 'not ilike', `%${token.text}%`))
+      ))
+    }
+  }
 
-      if (!includeExpiredCards) {
-        query = query.where('seenInLastGeneration', '=', true)
-      }
+  if (!includeExpiredCards) {
+    query = query.where('seenInLastGeneration', '=', true)
+  }
 
-      if (mainCosts && mainCosts.length > 0) {
-        query = query.where('mainCost', 'in', mainCosts)
-      }
-      if (recallCosts && recallCosts.length > 0) {
-        query = query.where('recallCost', 'in', recallCosts)
-      }
+  if (mainCosts && mainCosts.length > 0) {
+    query = query.where('mainCost', 'in', mainCosts)
+  }
+  if (recallCosts && recallCosts.length > 0) {
+    query = query.where('recallCost', 'in', recallCosts)
+  }
 
-      if (set != null) {
-        if (set == CardSet.Core) {
-          query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
-        } else {
-          query = query.where('cardSet', '=', set)
-        }
-      }
+  if (set != null) {
+    if (set == CardSet.Core) {
+      query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
+    } else {
+      query = query.where('cardSet', '=', set)
+    }
+  }
 
-      if (mainEffect != null) {
-        const tokens = tokenize(mainEffect);
-        query = query
-          .where(eb => eb(
-            to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
-            '@@',
-            tokens_to_tsquery(tokens),
-          ))
-      }
+  if (mainEffect != null) {
+    const tokens = tokenize(mainEffect);
+    query = query
+      .where(eb => eb(
+        to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
+        '@@',
+        tokens_to_tsquery(tokens),
+      ))
+  }
 
-      const abilityParts = [
-        { part: AbilityPartType.Trigger, text: triggerPart },
-        { part: AbilityPartType.Condition, text: conditionPart },
-        { part: AbilityPartType.Effect, text: effectPart }
-      ].filter((x) => x.text != null)
+  const abilityParts = [
+    { part: AbilityPartType.Trigger, text: triggerPart },
+    { part: AbilityPartType.Condition, text: conditionPart },
+    { part: AbilityPartType.Effect, text: effectPart }
+  ].filter((x) => x.text != null)
 
-      // if (abilityParts.length > 0) {
-      //   query = query.where(({ eb, or, and, not, exists, selectFrom }) => {
-      //     const abilityPartFilters = abilityParts.map((part) => {
-      //       const [negatedTokens, tokens] = partition(tokenize(part.text!), (token) => token.negated);
-      //       if (debug) {
-      //         console.log(`Part ${part.part}: ${part.text}`)
-      //         console.dir(tokens, { depth: null })
-      //         console.dir(negatedTokens, { depth: null })
-      //       }
-      //       return [
-      //         negatedTokens.length > 0 ?
-      //           not(and([
-      //             eb('UniqueAbilityPart.partType', '=', part.part),
-      //             or(
-      //               negatedTokens.map(token => eb('UniqueAbilityPart.textEn', 'not ilike', `%${token.text}%`))
-      //             )
-      //           ]))
-      //           : null,
-      //         tokens.length > 0 ?
-      //           and([
-      //             eb('UniqueAbilityPart.partType', '=', part.part),
-      //             ...tokens.map(token => eb('UniqueAbilityPart.textEn', 'ilike', `%${token.text}%`))
-      //           ])
-      //           : null,
-      //       ].filter(x => x != null)
-      //     }).flat()
-      //     return exists(
-      //       selectFrom('UniqueAbilityLine')
-      //         .select('id')
-      //         .where((eb2) => {
-      //           return and(abilityPartFilters)
-      //         })
-      //         //.whereRef('UniqueAbilityLine.partId', '=', 'UniqueAbilityPart.id')
-      //     )
-      //   })
-      // }
+  if (abilityParts.length > 0) {
+    query = query.where(({ eb, or, and, not, exists, selectFrom }) => {
 
-      // if (triggerPart != null) {
-      //   query = query.where((eb) =>
-      //     eb.and([
-      //       eb('UniqueAbilityPart.partType', '=', AbilityPartType.Trigger),
-      //       eb('UniqueAbilityPart.textEn', 'ilike', `%${triggerPart}%`)
-      //     ])
-      //   )
-      // }
-      // const mainAbilitySearchParams = [
-      //   ...searchInPart(AbilityPartType.Trigger, triggerPart),
-      //   ...searchInPart(AbilityPartType.Condition, conditionPart),
-      //   ...searchInPart(AbilityPartType.Effect, effectPart),
-      // ]
+      return exists(
+        selectFrom('UniqueAbilityLine')
+          .select('id')
+          .where(({ eb, or, and, not, exists, selectFrom }) => {
+            const abilityPartFilters = abilityParts.map((part) => {
+              const [negatedTokens, tokens] = partition(tokenize(part.text!), (token) => token.negated);
+              if (debug) {
+                console.log(`Part ${part.part}: ${part.text}`)
+                console.dir(tokens, { depth: null })
+                console.dir(negatedTokens, { depth: null })
+              }
 
-      // if (mainAbilitySearchParams.length > 0) {
-      //   searchParams.push({
-      //     mainAbilities: {
-      //       some: {
-      //         AND: mainAbilitySearchParams.map((sp) => ({
-      //           allParts: {
-      //             some: {
-      //               AND: sp
-      //             }
-      //           },
-      //         }))
-      //       }
-      //     }
-      //   })
-      // }
-
-      // if (mainCosts) {
-      //   if (mainCosts.length == 1) {
-      //     searchParams.push({
-      //       mainCost: {
-      //         equals: mainCosts[0]
-      //       }
-      //     })
-      //   } else {
-      //     searchParams.push({
-      //       mainCost: {
-      //         in: mainCosts
-      //       }
-      //     })
-      //   }
-      // }
-
-      // if (recallCosts) {
-      //   if (recallCosts.length == 1) {
-      //     searchParams.push({
-      //       recallCost: {
-      //         equals: recallCosts[0]
-      //       }
-      //     })
-      //   } else {
-      //     searchParams.push({
-      //       recallCost: {
-      //         in: recallCosts
-      //       }
-      //     })
-      //   }
-      // }
-
-      // if (set != null) {
-      //   if (set == CardSet.Core) {
-      //     searchParams.push({
-      //       cardSet: {
-      //         in: [CardSet.Core, "COREKS"]
-      //       }
-      //     })
-      //   } else {
-      //     searchParams.push({
-      //       cardSet: {
-      //         equals: set
-      //       }
-      //     })
-      //   }
-      // }
-
-
-
-      // if (minPrice != null) {
-      //   searchParams.push({
-      //     lastSeenInSalePrice: {
-      //       gte: minPrice
-      //     }
-      //   })
-      // }
-      // if (maxPrice != null) {
-      //   searchParams.push({
-      //     lastSeenInSalePrice: {
-      //       lte: maxPrice
-      //     }
-      //   })
-      // }
-
-      // let query = db.selectFrom('UniqueAbilityPart')
-      //   .leftJoin('AbilityPartLink', 'UniqueAbilityPart.id', 'AbilityPartLink.partId')
-      //   .leftJoin('UniqueAbilityLine', 'AbilityPartLink.abilityId', 'UniqueAbilityLine.id')
-      //   .leftJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
-      //   .where((eb) => 
-      //     eb.and([
-      //       eb('UniqueAbilityPart.textEn', 'ilike', '%boost%'),
-      //       eb('UniqueAbilityPart.partType', '=', 'Trigger')
-      //     ])
-      //   )
-
-      let queryWithSelect = query
-        .groupBy('UniqueInfo.id')
-        .distinctOn('UniqueInfo.id')
-        .select(() => [
-          sql`COUNT(*) OVER ()`.as('totalCount')
-        ])
-        .select([
-          'UniqueInfo.id',
-          'UniqueInfo.ref',
-          'UniqueInfo.nameEn',
-          'UniqueInfo.faction',
-          'UniqueInfo.mainEffectEn',
-          'UniqueInfo.echoEffectEn',
-          'UniqueInfo.lastSeenInSaleAt',
-          'UniqueInfo.lastSeenInSalePrice',
-          'UniqueInfo.seenInLastGeneration',
-          'UniqueInfo.cardSet',
-          'UniqueInfo.imageUrlEn',
-          'UniqueInfo.oceanPower',
-          'UniqueInfo.mountainPower',
-          'UniqueInfo.forestPower',
-          'UniqueInfo.mainCost',
-          'UniqueInfo.recallCost',
-        ])
-        .select((eb) => [
-          jsonArrayFrom(
-            eb.selectFrom('UniqueAbilityLine')
-              .select(['UniqueAbilityLine.id', 'UniqueAbilityLine.lineNumber', 'UniqueAbilityLine.textEn', 'UniqueAbilityLine.isSupport', 'UniqueAbilityLine.characterData'])
-              .select((eb2) => [
-                jsonArrayFrom(
-                  eb2.selectFrom('AbilityPartLink')
-                    .select(['AbilityPartLink.id', 'AbilityPartLink.partId', 'AbilityPartLink.partType'])
-                    .whereRef('AbilityPartLink.abilityId', '=', 'UniqueAbilityLine.id')
-                ).as('allParts')
-              ])
-              .whereRef('UniqueAbilityLine.uniqueInfoId', '=', 'UniqueInfo.id')
-              .orderBy('UniqueAbilityLine.lineNumber')
-          ).as('mainAbilities'),
-        ])
-
-      return queryWithSelect
+              return exists(
+                selectFrom('AbilityPartLink')
+                  .leftJoin('UniqueAbilityPart', 'UniqueAbilityPart.id', 'AbilityPartLink.partId')
+                  .select('AbilityPartLink.id')
+                  .where(({ eb, or, and, not, exists, selectFrom }) => {
+                    return and([
+                      eb('UniqueAbilityPart.partType', '=', part.part),
+                      ...tokens.map(token => eb('UniqueAbilityPart.textEn', 'ilike', `%${token.text}%`)),
+                      ...negatedTokens.map(token => not(eb('UniqueAbilityPart.textEn', 'ilike', `%${token.text}%`)))
+                    ])
+                  })
+                  .whereRef('AbilityPartLink.abilityId', '=', 'UniqueAbilityLine.id')
+              )
+            })
+            return and(abilityPartFilters)
+          })
+          .whereRef('UniqueAbilityLine.uniqueInfoId', '=', 'UniqueInfo.id')
+      )
     })
+  }
 
-  const queryWithSelect = queryWithLimit
-    .selectFrom('uniques_with_abilities')
+  // if (triggerPart != null) {
+  //   query = query.where((eb) =>
+  //     eb.and([
+  //       eb('UniqueAbilityPart.partType', '=', AbilityPartType.Trigger),
+  //       eb('UniqueAbilityPart.textEn', 'ilike', `%${triggerPart}%`)
+  //     ])
+  //   )
+  // }
+
+  // let queryWithSelect = query
+  //   // .groupBy('UniqueInfo.id')
+  //   // .distinctOn('UniqueInfo.id')
+  //   // .select(() => [
+  //   //   sql`COUNT(*) OVER ()`.as('totalCount')
+  //   // ])
+  //   .select([
+  //     'UniqueInfo.id',
+  //     'UniqueInfo.ref',
+  //     'UniqueInfo.nameEn',
+  //     'UniqueInfo.faction',
+  //     'UniqueInfo.mainEffectEn',
+  //     'UniqueInfo.echoEffectEn',
+  //     'UniqueInfo.lastSeenInSaleAt',
+  //     'UniqueInfo.lastSeenInSalePrice',
+  //     'UniqueInfo.seenInLastGeneration',
+  //     'UniqueInfo.cardSet',
+  //     'UniqueInfo.imageUrlEn',
+  //     'UniqueInfo.oceanPower',
+  //     'UniqueInfo.mountainPower',
+  //     'UniqueInfo.forestPower',
+  //     'UniqueInfo.mainCost',
+  //     'UniqueInfo.recallCost',
+  //   ])
+
+
+  //   return queryWithSelect
+  // })
+
+  const queryWithSelect = query
+    .select([
+      'UniqueInfo.id',
+      'UniqueInfo.ref',
+      'UniqueInfo.nameEn',
+      'UniqueInfo.faction',
+      'UniqueInfo.mainEffectEn',
+      'UniqueInfo.echoEffectEn',
+      'UniqueInfo.lastSeenInSaleAt',
+      'UniqueInfo.lastSeenInSalePrice',
+      'UniqueInfo.seenInLastGeneration',
+      'UniqueInfo.cardSet',
+      'UniqueInfo.imageUrlEn',
+      'UniqueInfo.oceanPower',
+      'UniqueInfo.mountainPower',
+      'UniqueInfo.forestPower',
+      'UniqueInfo.mainCost',
+      'UniqueInfo.recallCost',
+    ])
+    .select((eb) => [
+      jsonArrayFrom(
+        eb.selectFrom('UniqueAbilityLine')
+          .select(['UniqueAbilityLine.id', 'UniqueAbilityLine.lineNumber', 'UniqueAbilityLine.textEn', 'UniqueAbilityLine.isSupport', 'UniqueAbilityLine.characterData'])
+          .select((eb2) => [
+            jsonArrayFrom(
+              eb2.selectFrom('AbilityPartLink')
+                .select(['AbilityPartLink.id', 'AbilityPartLink.partId', 'AbilityPartLink.partType'])
+                .whereRef('AbilityPartLink.abilityId', '=', 'UniqueAbilityLine.id')
+            ).as('allParts')
+          ])
+          .whereRef('UniqueAbilityLine.uniqueInfoId', '=', 'UniqueInfo.id')
+          .orderBy('UniqueAbilityLine.lineNumber')
+      ).as('mainAbilities'),
+    ])
     .where((eb) => eb.and([
       minPrice ? eb('lastSeenInSalePrice', '>=', minPrice) : null,
       maxPrice ? eb('lastSeenInSalePrice', '<=', maxPrice) : null,

@@ -60,6 +60,7 @@ model UniqueInfo {
   @@unique([ref])
   @@index([id])
   @@index([ref])
+  @@index([cardSet])
   @@index([cardFamilyId])
   @@index([nameEn])
   @@index([seenInLastGeneration])
