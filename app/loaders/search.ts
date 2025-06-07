@@ -6,6 +6,7 @@ import { db } from "@common/utils/kysely.server";
 import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/postgres'
 import { Decimal } from "decimal.js";
 import { Expression, sql } from "kysely";
+import { partition } from "~/lib/utils";
 
 // Add the type from Prisma namespace
 type UniqueInfoWhereInput = Prisma.UniqueInfoWhereInput;
@@ -70,43 +71,6 @@ function tokenize(text: string): Token[] {
     tokens.push({ text: match[2] || match[3], negated: match[1] === "-" });
   }
   return tokens;
-}
-
-function searchInPart(partType: DbAbilityPartType, query?: string): Prisma.AbilityPartLinkWhereInput[] {
-  if (!query) {
-    return []
-  }
-
-  const tokens = tokenize(query)
-  if (debug) {
-    console.log(`Tokens for ${partType}`)
-    console.dir(tokens);
-  }
-  if (tokens.length == 0) {
-    return []
-  }
-
-  return [{
-    part: {
-      partType: partType,
-      AND: tokens.map((token) => {
-        if (token.negated) {
-          return {
-            NOT: {
-              textEn: {
-                contains: token.text, mode: "insensitive"
-              }
-            }
-          }
-        }
-        return {
-          textEn: {
-            contains: token.text, mode: "insensitive"
-          }
-        }
-      })
-    }
-  }]
 }
 
 const PAGE_SIZE = 100
@@ -210,18 +174,6 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
 
       if (mainEffect != null) {
         const tokens = tokenize(mainEffect);
-        // searchParams = searchParams.concat(tokens.map((token) => {
-        //   if (token.negated) {
-        //     return {
-        //       NOT: { mainEffectEn: { contains: token.text, mode: "insensitive" } }
-        //     }
-        //   }
-        //   return {
-        //     mainEffectEn: { contains: token.text, mode: "insensitive" },
-        //   }
-        // }))
-
-        // TODO: Use actual search terms to create plainto/phraseto tsquery
         query = query
           .where(eb => eb(
             to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
@@ -230,28 +182,57 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
           ))
       }
 
-      if (triggerPart != null) {
-        query = query.where((eb) =>
-          eb.and([
-            eb('UniqueAbilityPart.partType', '=', AbilityPartType.Trigger),
-            eb('UniqueAbilityPart.textEn', 'ilike', `%${triggerPart}%`)
-          ])
-        )
-      }
-      // if (mainEffect != null) {
-      //   const tokens = tokenize(mainEffect);
-      //   searchParams = searchParams.concat(tokens.map((token) => {
-      //     if (token.negated) {
-      //       return {
-      //         NOT: { mainEffectEn: { contains: token.text, mode: "insensitive" } }
+      const abilityParts = [
+        { part: AbilityPartType.Trigger, text: triggerPart },
+        { part: AbilityPartType.Condition, text: conditionPart },
+        { part: AbilityPartType.Effect, text: effectPart }
+      ].filter((x) => x.text != null)
+
+      // if (abilityParts.length > 0) {
+      //   query = query.where(({ eb, or, and, not, exists, selectFrom }) => {
+      //     const abilityPartFilters = abilityParts.map((part) => {
+      //       const [negatedTokens, tokens] = partition(tokenize(part.text!), (token) => token.negated);
+      //       if (debug) {
+      //         console.log(`Part ${part.part}: ${part.text}`)
+      //         console.dir(tokens, { depth: null })
+      //         console.dir(negatedTokens, { depth: null })
       //       }
-      //     }
-      //     return {
-      //       mainEffectEn: { contains: token.text, mode: "insensitive" },
-      //     }
-      //   }))
+      //       return [
+      //         negatedTokens.length > 0 ?
+      //           not(and([
+      //             eb('UniqueAbilityPart.partType', '=', part.part),
+      //             or(
+      //               negatedTokens.map(token => eb('UniqueAbilityPart.textEn', 'not ilike', `%${token.text}%`))
+      //             )
+      //           ]))
+      //           : null,
+      //         tokens.length > 0 ?
+      //           and([
+      //             eb('UniqueAbilityPart.partType', '=', part.part),
+      //             ...tokens.map(token => eb('UniqueAbilityPart.textEn', 'ilike', `%${token.text}%`))
+      //           ])
+      //           : null,
+      //       ].filter(x => x != null)
+      //     }).flat()
+      //     return exists(
+      //       selectFrom('UniqueAbilityLine')
+      //         .select('id')
+      //         .where((eb2) => {
+      //           return and(abilityPartFilters)
+      //         })
+      //         //.whereRef('UniqueAbilityLine.partId', '=', 'UniqueAbilityPart.id')
+      //     )
+      //   })
       // }
 
+      // if (triggerPart != null) {
+      //   query = query.where((eb) =>
+      //     eb.and([
+      //       eb('UniqueAbilityPart.partType', '=', AbilityPartType.Trigger),
+      //       eb('UniqueAbilityPart.textEn', 'ilike', `%${triggerPart}%`)
+      //     ])
+      //   )
+      // }
       // const mainAbilitySearchParams = [
       //   ...searchInPart(AbilityPartType.Trigger, triggerPart),
       //   ...searchInPart(AbilityPartType.Condition, conditionPart),
@@ -353,6 +334,9 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
       let queryWithSelect = query
         .groupBy('UniqueInfo.id')
         .distinctOn('UniqueInfo.id')
+        .select(() => [
+          sql`COUNT(*) OVER ()`.as('totalCount')
+        ])
         .select([
           'UniqueInfo.id',
           'UniqueInfo.ref',
@@ -397,9 +381,6 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
       maxPrice ? eb('lastSeenInSalePrice', '<=', maxPrice) : null,
     ].filter(x => x != null)))
     .selectAll()
-    .select(() => [
-      sql`COUNT(*) OVER ()`.as('totalCount')
-    ])
     .orderBy('lastSeenInSalePrice', 'asc')
     .limit(PAGE_SIZE)
     .offset(PAGE_SIZE * (page - 1))
