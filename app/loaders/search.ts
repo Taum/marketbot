@@ -21,6 +21,7 @@ export interface SearchQuery {
   triggerPart?: string;
   conditionPart?: string;
   effectPart?: string;
+  partIncludeSupport?: boolean;
   mainCosts?: number[];
   recallCosts?: number[];
   includeExpiredCards?: boolean;
@@ -92,6 +93,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     triggerPart,
     conditionPart,
     effectPart,
+    partIncludeSupport,
     mainCosts,
     recallCosts,
     includeExpiredCards,
@@ -115,11 +117,75 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     return { results: [], pagination: undefined }
   }
 
+  let query2 = db.selectFrom('UniqueAbilityLine')
+
+  if (!partIncludeSupport) {
+    query2 = query2.where('isSupport', '=', false)
+  }
+
+  const abilityParts = [
+    { part: AbilityPartType.Trigger, text: triggerPart },
+    { part: AbilityPartType.Condition, text: conditionPart },
+    { part: AbilityPartType.Effect, text: effectPart }
+  ].filter((x) => x.text != null)
+
+  if (abilityParts.length > 0) {
+    query2 = query2.where(({ eb, or, and, not, exists, selectFrom }) => {
+      const abilityPartFilters = abilityParts.map((part) => {
+        const [negatedTokens, tokens] = partition(tokenize(part.text!), (token) => token.negated);
+        if (debug) {
+          console.log(`Part ${part.part}: ${part.text}`)
+          console.dir(tokens, { depth: null })
+          console.dir(negatedTokens, { depth: null })
+        }
+
+        return exists(
+          selectFrom('AbilityPartLink')
+            .where(({ eb, and, not, exists, selectFrom }) => {
+              return and([
+                tokens.length > 0 ?
+                  exists(
+                    selectFrom('UniqueAbilityPart')
+                      .where(({ eb, and, not, exists, selectFrom }) => {
+                        return and([
+                          eb('UniqueAbilityPart.partType', '=', part.part),
+                          ...tokens.map(token => eb('UniqueAbilityPart.textEn', 'ilike', `%${token.text}%`)),
+                        ])
+                      })
+                      .whereRef('UniqueAbilityPart.id', '=', 'AbilityPartLink.partId')
+                    )
+                    : null,
+                negatedTokens.length > 0 ?
+                  not(
+                    exists(
+                      selectFrom('UniqueAbilityPart')
+                        .where(({ eb, and, not, exists, selectFrom }) => {
+                          return and([
+                            eb('UniqueAbilityPart.partType', '=', part.part),
+                            or(
+                              negatedTokens.map(token => eb('UniqueAbilityPart.textEn', 'ilike', `%${token.text}%`)),
+                            )
+                          ])
+                        })
+                        .whereRef('UniqueAbilityPart.id', '=', 'AbilityPartLink.partId')
+                    )
+                  )
+                  : null,
+              ].filter(x => x != null))
+            })
+            .whereRef('AbilityPartLink.abilityId', '=', 'UniqueAbilityLine.id')
+        )
+      })
+      return and(abilityPartFilters)
+    })
+  }
+
+  let query = query2.innerJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
 
   // const queryWithLimit = db
   //   .with('uniques_with_abilities', (db) => {
 
-  let query = db.selectFrom('UniqueInfo')
+  // let query = db.selectFrom('UniqueInfo')
   // .innerJoin('AbilityPartLink', 'UniqueAbilityPart.id', 'AbilityPartLink.partId')
   // .innerJoin('UniqueAbilityLine', 'AbilityPartLink.abilityId', 'UniqueAbilityLine.id')
   // .innerJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
@@ -172,48 +238,6 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
         '@@',
         tokens_to_tsquery(tokens),
       ))
-  }
-
-  const abilityParts = [
-    { part: AbilityPartType.Trigger, text: triggerPart },
-    { part: AbilityPartType.Condition, text: conditionPart },
-    { part: AbilityPartType.Effect, text: effectPart }
-  ].filter((x) => x.text != null)
-
-  if (abilityParts.length > 0) {
-    query = query.where(({ eb, or, and, not, exists, selectFrom }) => {
-
-      return exists(
-        selectFrom('UniqueAbilityLine')
-          .select('id')
-          .where(({ eb, or, and, not, exists, selectFrom }) => {
-            const abilityPartFilters = abilityParts.map((part) => {
-              const [negatedTokens, tokens] = partition(tokenize(part.text!), (token) => token.negated);
-              if (debug) {
-                console.log(`Part ${part.part}: ${part.text}`)
-                console.dir(tokens, { depth: null })
-                console.dir(negatedTokens, { depth: null })
-              }
-
-              return exists(
-                selectFrom('AbilityPartLink')
-                  .leftJoin('UniqueAbilityPart', 'UniqueAbilityPart.id', 'AbilityPartLink.partId')
-                  .select('AbilityPartLink.id')
-                  .where(({ eb, or, and, not, exists, selectFrom }) => {
-                    return and([
-                      eb('UniqueAbilityPart.partType', '=', part.part),
-                      ...tokens.map(token => eb('UniqueAbilityPart.textEn', 'ilike', `%${token.text}%`)),
-                      ...negatedTokens.map(token => not(eb('UniqueAbilityPart.textEn', 'ilike', `%${token.text}%`)))
-                    ])
-                  })
-                  .whereRef('AbilityPartLink.abilityId', '=', 'UniqueAbilityLine.id')
-              )
-            })
-            return and(abilityPartFilters)
-          })
-          .whereRef('UniqueAbilityLine.uniqueInfoId', '=', 'UniqueInfo.id')
-      )
-    })
   }
 
   // if (triggerPart != null) {
@@ -272,6 +296,9 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
       'UniqueInfo.forestPower',
       'UniqueInfo.mainCost',
       'UniqueInfo.recallCost',
+    ])
+    .select(() => [
+      sql`COUNT(*) OVER ()`.as('totalCount')
     ])
     .select((eb) => [
       jsonArrayFrom(
@@ -417,4 +444,3 @@ export function buildDisplayAbility(
     parts: displayParts.sort((a, b) => a.startIndex - b.startIndex)
   }
 }
-

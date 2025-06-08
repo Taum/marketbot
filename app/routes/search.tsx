@@ -65,7 +65,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const recallCosts = parseRange(recallCostRange)
 
   try {
-    const startTs = new Date()
+    const startTs = performance.now()
 
     const { results, pagination } = await search(
       {
@@ -76,6 +76,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         triggerPart,
         conditionPart,
         effectPart,
+        partIncludeSupport: false,
         mainCosts,
         recallCosts,
         includeExpiredCards,
@@ -88,8 +89,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
       }
     );
 
-    const endTs = new Date()
-    const duration = endTs.getTime() - startTs.getTime()
+    const endTs = performance.now()
+    const duration = endTs - startTs
     
     return {
       results,
