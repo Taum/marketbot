@@ -6,6 +6,10 @@ import { processAndWriteOneUnique } from "./post-process.js";
 import { ThrottlingConfig, throttlingConfig } from "./config.js";
 import { getEnv } from "./helpers.js";
 import { PrismaClient, UniqueInfo } from "@prisma/client";
+import path from "node:path";
+import fs from "fs/promises";
+import { UniquesCrawler } from "./uniques.js";
+import throttledQueue from "throttled-queue";
 
 export interface UniqueRequest {
   id: string;
@@ -51,16 +55,33 @@ export const recordOneUnique = async (cardData: AlteredggCard, prisma: PrismaCli
   }
 }
 
-export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
+export class CommunityDbUniquesCrawler extends UniquesCrawler {
 
-  constructor(config: ThrottlingConfig = throttlingConfig["uniques"]) {
-    // Call super with the fetch and persist functions, plus any options
-    super(null, config);
+  private apiThrottleQueue
+
+  constructor(
+    private dbRoot: string
+  ) {
+    const config: ThrottlingConfig = {
+      maxOperationsPerWindow: 100,
+      windowMs: 1000,
+    }
+    super(config);
+
+    this.apiThrottleQueue = throttledQueue(config.maxOperationsPerWindow, config.windowMs, true);
   }
 
-  // Create fetch and persist functions
   public async fetch(request: UniqueRequest) {
-    const response = await fetch(`https://api.altered.gg/cards/${request.id}`);
+    const id = request.id
+
+    if (await this.communityDbFileExists(id)) {
+      console.log(`Community DB file exists for ${id}, reading from file...`)
+      const card = await this.communityDbRead(id)
+      return { card }
+    }
+
+    console.log(`Community DB file does not exist for ${id}, fetching from API...`)
+    const response = await this.apiThrottleQueue(() => fetch(`https://api.altered.gg/cards/${request.id}`));
     const card = await response.json();
     return { card };
   };
@@ -70,7 +91,6 @@ export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
     await recordOneUnique(cardData, prisma);
   };
 
-
   public async enqueueUniquesWithId(ids: string[]) {
     console.log(`Enqueuing by ID ${ids.length} uniques...`)
     for (const id of ids) {
@@ -78,7 +98,7 @@ export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
     }
   }
 
-  public async enqueueUniquesWithMissingEffects({ limit = 1000 }: { limit?: number } = {}) {
+  public async enqueueUniquesWithMissingEffects({ limit = 10 }: { limit?: number } = {}) {
     const uniques = await prisma.uniqueInfo.findMany({
       where: {
         fetchedDetails: false,
@@ -108,5 +128,28 @@ export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
         await delay(60_000)
       }
     }
+  }
+
+
+  private communityDbPath(id: string) {
+    const split = id.split("_")
+    return path.join(split[1], split[3], split[4], `${id}.json`)
+  }
+  private communityDbFullPath(id: string) {
+    return path.join(this.dbRoot, this.communityDbPath(id))
+  }
+
+  public async communityDbFileExists(id: string): Promise<boolean> {
+    try {
+      await fs.access(this.communityDbFullPath(id), fs.constants.R_OK)
+      return true
+    } catch (error) {
+      return false
+    }
+  }
+
+  public async communityDbRead(id: string): Promise<AlteredggCard> {
+    const content = await fs.readFile(this.communityDbFullPath(id), "utf8")
+    return JSON.parse(content)
   }
 }

@@ -233,7 +233,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
     }
 
     // Call super with the fetch and persist functions, plus any options
-    super(fetchPage, persistPage, initialCrawlerStats, throttlingConfig["market"]);
+    super(initialCrawlerStats, throttlingConfig["market"]);
   }
 
   public async addAllWithFilter(fetchGenerationId: number, filter: ((card: CardDbEntry) => boolean) | undefined = undefined) {

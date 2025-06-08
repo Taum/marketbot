@@ -2,7 +2,7 @@ import fs from "fs"
 import prisma from "@common/utils/prisma.server"
 import { getEnv } from "../market-crawler/helpers"
 
-const dbRepoPath = getEnv("DB_REPO_PATH")
+const dbRepoPath = getEnv("COMMUNITY_DB_PATH")
 
 const cards = await prisma.uniqueInfo.findMany({
 })
@@ -17,6 +17,7 @@ for (const card of cards) {
   const parts = card.ref.split("_")
   const path = `${dbRepoPath}/${parts[1]}/${parts[3]}/${parts[4]}/${card.ref}.json`
   if (fs.existsSync(path)) {
+    console.log(`Found ${card.ref}`)
     found++
   } else {
     console.log(`Missing ${card.ref}`)

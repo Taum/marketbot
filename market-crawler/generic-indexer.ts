@@ -13,10 +13,8 @@ export interface IdentifiedRequest<T = any> {
 export type FetchFunction<Req = any, Data = any> = (request: Req) => Promise<Data>;
 export type PersistFunction<Req = any, Data = any> = (data: Data, request: Req) => Promise<void>;
 
-export class GenericIndexer<Req = any, Data = any, Response = Data, Comp = any> {
+export abstract class GenericIndexer<Req = any, Data = any, Response = Data, Comp = any> {
   private queue: Req[] = [];
-  private fetchFn: FetchFunction<Req, Response>;
-  private persistFn: PersistFunction<Req, Response>;
   private throttle: any;
 
   protected _completionValue: Comp;
@@ -33,8 +31,6 @@ export class GenericIndexer<Req = any, Data = any, Response = Data, Comp = any> 
   private _isProcessing = false;
 
   constructor(
-    fetch: FetchFunction<Req, Response>,
-    persist: PersistFunction<Req, Response>,
     initialCompletionValue: Comp,
     options: {
       concurrency?: number,
@@ -42,9 +38,6 @@ export class GenericIndexer<Req = any, Data = any, Response = Data, Comp = any> 
       windowMs?: number
     } = {}
   ) {
-    this.fetchFn = fetch;
-    this.persistFn = persist;
-
     this._completionValue = initialCompletionValue;
 
     // Create throttle instance for rate limiting
@@ -52,6 +45,9 @@ export class GenericIndexer<Req = any, Data = any, Response = Data, Comp = any> 
     const windowTime = options.windowMs || 60000;
     this.throttle = throttledQueue(maxOps, windowTime, true);
   }
+
+  public abstract fetch(request: Req): Promise<Response>;
+  public abstract persist(data: Response, request: Req): Promise<void>;
 
   /**
    * Add multiple requests to the queue
@@ -124,9 +120,9 @@ export class GenericIndexer<Req = any, Data = any, Response = Data, Comp = any> 
         try {
           await this.throttle(async () => {
             // Process the request
-            const response = await this.fetchFn(request);
+            const response = await this.fetch(request);
             // Persist the data if a persist function is provided
-            await this.persistFn(response, request);
+            await this.persist(response, request);
           })
           break;
         } catch (error) {
