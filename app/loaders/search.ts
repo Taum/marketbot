@@ -130,7 +130,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
   ].filter((x) => x.text != null)
 
   if (abilityParts.length > 0) {
-    query2 = query2.where(({ eb, or, and, not, exists, selectFrom }) => {
+    query2 = query2.where(({ eb, and, or, not, exists, selectFrom }) => {
       const abilityPartFilters = abilityParts.map((part) => {
         const [negatedTokens, tokens] = partition(tokenize(part.text!), (token) => token.negated);
         if (debug) {
@@ -141,16 +141,17 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
 
         return exists(
           selectFrom('AbilityPartLink')
-            .where(({ eb, and, not, exists, selectFrom }) => {
+            .where(({ eb, and, or, not, exists, selectFrom }) => {
               return and([
                 tokens.length > 0 ?
                   exists(
                     selectFrom('UniqueAbilityPart')
-                      .where(({ eb, and, not, exists, selectFrom }) => {
+                      .where(({ eb, and, or, not, exists, selectFrom }) => {
                         return and([
                           eb('UniqueAbilityPart.partType', '=', part.part),
+                          !partIncludeSupport ? eb('UniqueAbilityPart.isSupport', '=', false) : null,
                           ...tokens.map(token => eb('UniqueAbilityPart.textEn', 'ilike', `%${token.text}%`)),
-                        ])
+                        ].filter(x => x != null))
                       })
                       .whereRef('UniqueAbilityPart.id', '=', 'AbilityPartLink.partId')
                     )
@@ -159,13 +160,14 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
                   not(
                     exists(
                       selectFrom('UniqueAbilityPart')
-                        .where(({ eb, and, not, exists, selectFrom }) => {
+                        .where(({ eb, and, or, not, exists, selectFrom }) => {
                           return and([
                             eb('UniqueAbilityPart.partType', '=', part.part),
+                            !partIncludeSupport ? eb('UniqueAbilityPart.isSupport', '=', false) : null,
                             or(
                               negatedTokens.map(token => eb('UniqueAbilityPart.textEn', 'ilike', `%${token.text}%`)),
                             )
-                          ])
+                          ].filter(x => x != null))
                         })
                         .whereRef('UniqueAbilityPart.id', '=', 'AbilityPartLink.partId')
                     )

@@ -18,10 +18,11 @@ interface SearchQuery {
   faction?: string;
   set?: string;
   characterName?: string;
-  mainEffect?: string;
+  cardText?: string;
   triggerPart?: string;
   conditionPart?: string;
   effectPart?: string;
+  partIncludeSupport?: boolean;
   mainCostRange?: string;
   recallCostRange?: string;
   includeExpiredCards?: boolean;
@@ -53,6 +54,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const triggerPart = nullifyTrim(url.searchParams.get("tr"));
   const conditionPart = nullifyTrim(url.searchParams.get("cond"));
   const effectPart = nullifyTrim(url.searchParams.get("eff"));
+  const partIncludeSupport = nullifyTrim(url.searchParams.get("inclSup")) == "1";
   const mainCostRange = nullifyTrim(url.searchParams.get("mc"));
   const recallCostRange = nullifyTrim(url.searchParams.get("rc"));
   const includeExpiredCards = nullifyTrim(url.searchParams.get("exp")) == "1";
@@ -76,7 +78,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         triggerPart,
         conditionPart,
         effectPart,
-        partIncludeSupport: false,
+        partIncludeSupport,
         mainCosts,
         recallCosts,
         includeExpiredCards,
@@ -106,6 +108,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         triggerPart,
         conditionPart,
         effectPart,
+        partIncludeSupport,
         mainCostRange,
         recallCostRange,
         includeExpiredCards,
@@ -128,6 +131,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         triggerPart,
         conditionPart,
         effectPart,
+        partIncludeSupport,
         mainCostRange,
         recallCostRange,
         includeExpiredCards,
@@ -201,10 +205,11 @@ const SearchForm: FC<SearchQuery> = ({
   faction,
   set,
   characterName,
-  mainEffect,
+  cardText,
   triggerPart,
   conditionPart,
   effectPart,
+  partIncludeSupport,
   mainCostRange,
   recallCostRange,
   includeExpiredCards,
@@ -220,6 +225,15 @@ const SearchForm: FC<SearchQuery> = ({
       searchParams.set("exp", "1");
     } else {
       searchParams.delete("exp");
+    }
+    window.location.search = searchParams.toString();
+  }
+
+  const handleIncludeSupport = (newValue: boolean) => {
+    if (newValue) {
+      searchParams.set("inclSup", "1");
+    } else {
+      searchParams.delete("inclSup");
     }
     window.location.search = searchParams.toString();
   }
@@ -272,17 +286,17 @@ const SearchForm: FC<SearchQuery> = ({
         </div>
         <div className="flex flex-row gap-4">
           <div className="grow-1 flex-[60%]">
-            <Label htmlFor="m">Main effect</Label>
+            <Label htmlFor="text">Card text</Label>
             <Input
               type="search"
-              name="m"
-              defaultValue={mainEffect ?? ""}
+              name="text"
+              defaultValue={cardText ?? ""}
               placeholder="Card text..."
             />
           </div>
         </div>
         <div className="flex flex-row gap-4">
-          <div className="grow-1 flex-[60%]">
+          <div className="grow-1 flex-[30%]">
             <Label htmlFor="tr">Trigger</Label>
             <Input
               type="search"
@@ -291,7 +305,7 @@ const SearchForm: FC<SearchQuery> = ({
               placeholder="Trigger text..."
             />
           </div>
-          <div className="grow-1 flex-[60%]">
+          <div className="grow-1 flex-[30%]">
             <Label htmlFor="cond">Condition</Label>
             <Input
               type="search"
@@ -300,7 +314,7 @@ const SearchForm: FC<SearchQuery> = ({
               placeholder="Condition text..."
             />
           </div>
-          <div className="grow-1 flex-[60%]">
+          <div className="grow-1 flex-[30%]">
             <Label htmlFor="eff">Effect</Label>
             <Input
               type="search"
@@ -308,6 +322,15 @@ const SearchForm: FC<SearchQuery> = ({
               defaultValue={effectPart ?? ""}
               placeholder="Effect text..."
             />
+          </div>
+          <div className="grow-1 flex-[10%] pt-4 flex flex-row gap-2 items-center">
+            <Checkbox
+              value="1"
+              name="inclSup"
+              defaultChecked={partIncludeSupport ?? false}
+              onCheckedChange={handleIncludeSupport}
+            />
+            <Label htmlFor="inclSup" className="text-xs/3 inline-block">Also match support abilities</Label>
           </div>
         </div>
         <div className="flex flex-row gap-8 align-self-start justify-between items-end">
