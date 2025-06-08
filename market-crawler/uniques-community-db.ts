@@ -10,6 +10,7 @@ import path from "node:path";
 import fs from "fs/promises";
 import { UniquesCrawler } from "./uniques.js";
 import throttledQueue from "throttled-queue";
+import { simpleGit, SimpleGit, SimpleGitOptions } from 'simple-git';
 
 export interface UniqueRequest {
   id: string;
@@ -58,6 +59,7 @@ export const recordOneUnique = async (cardData: AlteredggCard, prisma: PrismaCli
 export class CommunityDbUniquesCrawler extends UniquesCrawler {
 
   private apiThrottleQueue
+  private git: SimpleGit
 
   constructor(
     private dbRoot: string
@@ -68,6 +70,7 @@ export class CommunityDbUniquesCrawler extends UniquesCrawler {
     }
     super(config);
 
+    this.git = simpleGit(this.dbRoot)
     this.apiThrottleQueue = throttledQueue(config.maxOperationsPerWindow, config.windowMs, true);
   }
 
@@ -131,25 +134,32 @@ export class CommunityDbUniquesCrawler extends UniquesCrawler {
   }
 
 
-  private communityDbPath(id: string) {
+  private communityDbPath(id: string, joinFn: (...args: string[]) => string = (...args) => args.join("/")): string {
     const split = id.split("_")
-    return path.join(split[1], split[3], split[4], `${id}.json`)
+    return joinFn(split[1], split[3], split[4], `${id}.json`)
   }
   private communityDbFullPath(id: string) {
-    return path.join(this.dbRoot, this.communityDbPath(id))
+    return path.join(this.dbRoot, this.communityDbPath(id, path.join))
   }
 
   public async communityDbFileExists(id: string): Promise<boolean> {
     try {
-      await fs.access(this.communityDbFullPath(id), fs.constants.R_OK)
-      return true
+      const path = this.communityDbPath(id)
+      const cat = await this.git.catFile(['-t', `HEAD:${path}`])
+      if (cat.trim() == "blob") {
+        return true 
+      } else {
+        return false
+      }
     } catch (error) {
       return false
     }
   }
 
   public async communityDbRead(id: string): Promise<AlteredggCard> {
-    const content = await fs.readFile(this.communityDbFullPath(id), "utf8")
-    return JSON.parse(content)
+    const path = this.communityDbPath(id)
+    const cat = await this.git.catFile(['-p', `HEAD:${path}`])
+    const json = JSON.parse(cat)
+    return json
   }
 }
