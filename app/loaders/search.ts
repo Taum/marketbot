@@ -230,14 +230,22 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     }
   }
 
+   // (triggerPart == null && conditionPart == null && effectPart == null)
   if (mainEffect != null) {
     const tokens = tokenize(mainEffect);
-    query = query
-      .where(eb => eb(
-        to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
-        '@@',
-        tokens_to_tsquery(tokens),
+    const useFTS = (triggerPart == null && conditionPart == null && effectPart == null) && (tokens.length > 5 || tokens.some(token => token.text.length > 15));
+    if (useFTS) {
+      query = query
+        .where(eb => eb(
+          to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
+            '@@',
+            tokens_to_tsquery(tokens),
+          ))
+    } else {
+      query = query.where((eb) => eb.and(
+        tokens.map(token => eb('mainEffectEn', 'ilike', `%${token.text}%`)),
       ))
+    }
   }
 
   // if (triggerPart != null) {
@@ -328,6 +336,19 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     const compiled = queryWithSelect.compile()
     console.log("Compiled Query:")
     console.log(compiled.sql)
+
+    const params = compiled.parameters
+    const interpolated = compiled.sql.replace(/\$(\d+)/g, (match) => {
+      const paramIndex = parseInt(match.slice(1)) - 1;
+      const param = params[paramIndex];
+      if (typeof param === 'string') {
+        return `'${param}'`;
+      }
+      return `${param}`;
+    })
+    console.log("Interpolated: --------------------------------")
+    console.log(interpolated)
+    console.log("--------------------------------")
 
     console.log("Explain Analyze:")
     const explainAnalyze = await queryWithSelect.explain(undefined, sql`analyze`)
