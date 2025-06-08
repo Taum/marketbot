@@ -1,5 +1,15 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+
+generator kysely {
+    provider = "prisma-kysely"
+
+    // Optionally provide a destination directory for the generated file
+    // and a filename of your choice
+    output = "../generated/kysely-db"
+    fileName = "types.ts"
 }
 
 datasource db {
@@ -23,8 +33,9 @@ model UniqueInfo {
   imageUrlEs    String?
   imageUrlFr    String?
   imageUrlIt    String?
-  mainEffectEn  String?
-  echoEffectEn  String?
+
+  mainEffectEn  String? // Indexed for full text search managed outside of Prisma
+  echoEffectEn  String? // Indexed for full text search managed outside of Prisma
   cardSubTypes  String[]
 
   fetchedDetails   Boolean   @default(false)
@@ -33,6 +44,7 @@ model UniqueInfo {
   firstSeenGenerationId Int?
   lastSeenGenerationId  Int?
   lastSeenInSaleAt      DateTime?
+  /// @kyselyType(number)
   lastSeenInSalePrice   Decimal?
 
   seenInLastGeneration Boolean @default(false)
@@ -48,10 +60,12 @@ model UniqueInfo {
   @@unique([ref])
   @@index([id])
   @@index([ref])
+  @@index([cardSet])
   @@index([cardFamilyId])
-  @@index([lastSeenInSaleAt])
   @@index([nameEn])
   @@index([seenInLastGeneration])
+  @@index([lastSeenInSalePrice])
+  @@index([cardSubTypes]) // GIN index
 }
 
 model UniqueAbilityLine {
@@ -60,6 +74,8 @@ model UniqueAbilityLine {
   uniqueInfo    UniqueInfo @relation(fields: [uniqueInfoId], references: [id])
   lineNumber    Int
   isSupport     Boolean
+  
+  /// @kyselyType(JsonValue)
   characterData Json?
 
   textEn String

@@ -86,6 +86,13 @@ export function groupByAndSort<T, K extends keyof any>(arr: T[], keyFn: (t: T) =
   return asArray.sort((x, y) => sortFn(x, y));
 }
 
+export function partition<T>(arr: T[], predicate: (t: T) => boolean): [T[], T[]] {
+  return arr.reduce((acc, item) => {
+    const [trueItems, falseItems] = acc;
+    return predicate(item) ? [[...trueItems, item], falseItems] : [trueItems, [...falseItems, item]];
+  }, [[], []] as [T[], T[]]);
+}
+
 export function toMap<T, K extends keyof any>(arr: T[], keyFn: (t: T) => K): Record<K, T> {
   return arr.reduce((acc, item) => {
     const key = keyFn(item);

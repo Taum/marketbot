@@ -2,7 +2,6 @@ node_modules
 
 /.cache
 /build
-/generated
 /docker-tmp
 /tmp
 /storage
