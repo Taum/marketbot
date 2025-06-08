@@ -47,7 +47,7 @@ interface LoaderData {
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
-  const mainEffect = nullifyTrim(url.searchParams.get("m"));
+  const cardText = nullifyTrim(url.searchParams.get("text"));
   const characterName = nullifyTrim(url.searchParams.get("cname"));
   const faction = nullifyTrim(url.searchParams.get("f"));
   const set = nullifyTrim(url.searchParams.get("s"));
@@ -74,7 +74,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         faction,
         set,
         characterName,
-        mainEffect,
+        cardText,
         triggerPart,
         conditionPart,
         effectPart,
@@ -104,7 +104,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         faction,
         set,
         characterName,
-        mainEffect,
+        cardText,
         triggerPart,
         conditionPart,
         effectPart,
@@ -127,7 +127,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         faction,
         set,
         characterName,
-        mainEffect,
+        cardText,
         triggerPart,
         conditionPart,
         effectPart,

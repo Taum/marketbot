@@ -5,8 +5,9 @@ import { AbilityCharacterDataV1 } from "@common/models/postprocess";
 import { db } from "@common/utils/kysely.server";
 import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/postgres'
 import { Decimal } from "decimal.js";
-import { Expression, sql } from "kysely";
+import { Expression, SelectQueryBuilder, sql } from "kysely";
 import { partition } from "~/lib/utils";
+import { DB } from "@generated/kysely-db/types";
 
 // Add the type from Prisma namespace
 type UniqueInfoWhereInput = Prisma.UniqueInfoWhereInput;
@@ -17,7 +18,7 @@ export interface SearchQuery {
   faction?: string;
   set?: string;
   characterName?: string;
-  mainEffect?: string;
+  cardText?: string;
   triggerPart?: string;
   conditionPart?: string;
   effectPart?: string;
@@ -89,7 +90,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     faction,
     set,
     characterName,
-    mainEffect,
+    cardText,
     triggerPart,
     conditionPart,
     effectPart,
@@ -109,18 +110,12 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     faction == null &&
     set == null &&
     characterName == null &&
-    mainEffect == null &&
+    cardText == null &&
     triggerPart == null &&
     conditionPart == null &&
     effectPart == null
   ) {
     return { results: [], pagination: undefined }
-  }
-
-  let query2 = db.selectFrom('UniqueAbilityLine')
-
-  if (!partIncludeSupport) {
-    query2 = query2.where('isSupport', '=', false)
   }
 
   const abilityParts = [
@@ -129,8 +124,18 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     { part: AbilityPartType.Effect, text: effectPart }
   ].filter((x) => x.text != null)
 
+  let query: SelectQueryBuilder<DB, "UniqueInfo", {}> = db.selectFrom('UniqueInfo')
+
   if (abilityParts.length > 0) {
-    query2 = query2.where(({ eb, and, or, not, exists, selectFrom }) => {
+    // If our search is based on ability parts, we start from UniqueAbilityLine and join to UniqueInfo instead
+    let abLineQuery = db.selectFrom('UniqueAbilityLine')
+    
+    if (!partIncludeSupport) {
+      abLineQuery = abLineQuery.where('isSupport', '=', false)
+    }
+    
+    // Find all the ability lines that match our search
+    abLineQuery = abLineQuery.where(({ eb, and, or, not, exists, selectFrom }) => {
       const abilityPartFilters = abilityParts.map((part) => {
         const [negatedTokens, tokens] = partition(tokenize(part.text!), (token) => token.negated);
         if (debug) {
@@ -180,18 +185,11 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
       })
       return and(abilityPartFilters)
     })
+
+    query = abLineQuery.innerJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
   }
 
-  let query = query2.innerJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
-
-  // const queryWithLimit = db
-  //   .with('uniques_with_abilities', (db) => {
-
-  // let query = db.selectFrom('UniqueInfo')
-  // .innerJoin('AbilityPartLink', 'UniqueAbilityPart.id', 'AbilityPartLink.partId')
-  // .innerJoin('UniqueAbilityLine', 'AbilityPartLink.abilityId', 'UniqueAbilityLine.id')
-  // .innerJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
-
+  // Now we can add all the filters based on the UniqueInfo table
   if (faction != null) {
     query = query.where('faction', '=', faction)
   }
@@ -213,10 +211,6 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     }
   }
 
-  if (!includeExpiredCards) {
-    query = query.where('seenInLastGeneration', '=', true)
-  }
-
   if (mainCosts && mainCosts.length > 0) {
     query = query.where('mainCost', 'in', mainCosts)
   }
@@ -232,10 +226,16 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     }
   }
 
-   // (triggerPart == null && conditionPart == null && effectPart == null)
-  if (mainEffect != null) {
-    const tokens = tokenize(mainEffect);
-    const useFTS = (triggerPart == null && conditionPart == null && effectPart == null) && (tokens.length > 5 || tokens.some(token => token.text.length > 15));
+  if (cardText != null) {
+    const tokens = tokenize(cardText);
+    // This condition is more art than science:
+    // For some reason I didn't understand, some searches with AbilityLine where much slower when using FTS.
+    // Also when we return a lot of results, the Query Planner prefers doing a full table scan. This is expected, but
+    // at that point we're better off with a simple LIKE. Ideally we would have a way to tell ahead of time or allow
+    // Postgres to use either, but I didn't find a way to do that. Checking the number and length of token is a
+    // crude way to approximate that.
+    const useFTS = (triggerPart == null && conditionPart == null && effectPart == null) &&
+      (tokens.length > 5 || tokens.some(token => token.text.length > 15));
     if (useFTS) {
       query = query
         .where(eb => eb(
@@ -250,43 +250,10 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     }
   }
 
-  // if (triggerPart != null) {
-  //   query = query.where((eb) =>
-  //     eb.and([
-  //       eb('UniqueAbilityPart.partType', '=', AbilityPartType.Trigger),
-  //       eb('UniqueAbilityPart.textEn', 'ilike', `%${triggerPart}%`)
-  //     ])
-  //   )
-  // }
+  if (!includeExpiredCards) {
+    query = query.where('seenInLastGeneration', '=', true)
+  }
 
-  // let queryWithSelect = query
-  //   // .groupBy('UniqueInfo.id')
-  //   // .distinctOn('UniqueInfo.id')
-  //   // .select(() => [
-  //   //   sql`COUNT(*) OVER ()`.as('totalCount')
-  //   // ])
-  //   .select([
-  //     'UniqueInfo.id',
-  //     'UniqueInfo.ref',
-  //     'UniqueInfo.nameEn',
-  //     'UniqueInfo.faction',
-  //     'UniqueInfo.mainEffectEn',
-  //     'UniqueInfo.echoEffectEn',
-  //     'UniqueInfo.lastSeenInSaleAt',
-  //     'UniqueInfo.lastSeenInSalePrice',
-  //     'UniqueInfo.seenInLastGeneration',
-  //     'UniqueInfo.cardSet',
-  //     'UniqueInfo.imageUrlEn',
-  //     'UniqueInfo.oceanPower',
-  //     'UniqueInfo.mountainPower',
-  //     'UniqueInfo.forestPower',
-  //     'UniqueInfo.mainCost',
-  //     'UniqueInfo.recallCost',
-  //   ])
-
-
-  //   return queryWithSelect
-  // })
 
   const queryWithSelect = query
     .select([
@@ -331,6 +298,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     ].filter(x => x != null)))
     .selectAll()
     .orderBy('lastSeenInSalePrice', 'asc')
+    .orderBy('UniqueInfo.id', 'asc') // This ID doesn't really mean anything, it's just here to make the results deterministic
     .limit(PAGE_SIZE)
     .offset(PAGE_SIZE * (page - 1))
 
@@ -359,42 +327,9 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
 
   const results = await queryWithSelect.execute()
 
-  // const results = await prisma.uniqueInfo.findMany({
-  //   where: whereClause,
-  //   orderBy: {
-  //     lastSeenInSalePrice: 'asc'
-  //   },
-  //   include: {
-  //     mainAbilities: {
-  //       include: {
-  //         allParts: true,
-  //       },
-  //     },
-  //   },
-  //   skip: PAGE_SIZE * (page - 1), // Page is 1-indexed
-  //   take: PAGE_SIZE,
-  // });
-
   let pagination: { totalCount: number, pageCount: number } | undefined = undefined
   if (includePagination) {
-
-    if (debug) {
-      // const compiled = queryWithCount.compile()
-      // console.log("Count Query:")
-      // console.log(compiled.sql)
-
-      // console.log("Explain Analyze:")
-      // const explainAnalyze = await queryWithSelect.explain(undefined, sql`analyze`)
-      // console.log(explainAnalyze.map(x => x['QUERY PLAN']).join('\n'))
-    }
-
     const totalCount = Number(results[0].totalCount)
-    // const countQuery = query
-    //   .select((eb) => [
-    //     eb.fn.count('UniqueInfo.id').as('count')
-    //   ])
-    // const totalCount = ((await countQuery.executeTakeFirst())?.count ?? 0) as number
-
     if (debug) {
       console.log('Total count: ' + totalCount)
     }
@@ -404,10 +339,6 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
       pageCount: Math.ceil(totalCount / PAGE_SIZE)
     }
   }
-
-
-  // console.log("Results:")
-  // console.dir(results, { depth: null })
 
   const outResults: DisplayUniqueCard[] = results.map((result) => {
     if (!result.ref || !result.nameEn || !result.faction || !result.mainEffectEn) {
