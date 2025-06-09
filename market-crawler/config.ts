@@ -2,15 +2,18 @@
 export interface ThrottlingConfig {
   maxOperationsPerWindow: number;
   windowMs: number;
+  evenlySpaced?: boolean;
 }
 
 export const throttlingConfig: { [key: string]: ThrottlingConfig } = {
   "market": {
-    maxOperationsPerWindow: 5,
-    windowMs: 5000,
+    maxOperationsPerWindow: 20,
+    windowMs: 10000,
+    evenlySpaced: true,
   },
   "uniques": {
-    maxOperationsPerWindow: 5,
-    windowMs: 5000,
+    maxOperationsPerWindow: 20,
+    windowMs: 15000,
+    evenlySpaced: false,
   },
 }

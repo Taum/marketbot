@@ -11,6 +11,8 @@ import fs from "fs/promises";
 import { UniquesCrawler } from "./uniques.js";
 import throttledQueue from "throttled-queue";
 import { simpleGit, SimpleGit, SimpleGitOptions } from 'simple-git';
+import { sortJsonKeysAlphabetically } from '@common/utils/json.js';
+import os from "node:os";
 
 export interface UniqueRequest {
   id: string;
@@ -60,18 +62,28 @@ export class CommunityDbUniquesCrawler extends UniquesCrawler {
 
   private apiThrottleQueue
   private git: SimpleGit
+  private uniquesAddedToRepo: number = 0
+  private tempDir: string
 
   constructor(
-    private dbRoot: string
+    private dbRoot: string,
+    private authorName: string,
+    private authorEmail: string,
   ) {
+    // We don't use the generic throttling from GenericIndexer because we fetch most of the data 
+    // from the Community DB. We are managing our own ThrottledQueue for the API calls below.
     const config: ThrottlingConfig = {
       maxOperationsPerWindow: 100,
       windowMs: 1000,
     }
     super(config);
 
+    // Create a temporary file to hold the downloaded JSON files
+    this.tempDir = os.tmpdir()
+
     this.git = simpleGit(this.dbRoot)
-    this.apiThrottleQueue = throttledQueue(config.maxOperationsPerWindow, config.windowMs, true);
+    const apiThrottle = throttlingConfig["uniques"]
+    this.apiThrottleQueue = throttledQueue(apiThrottle.maxOperationsPerWindow, apiThrottle.windowMs, apiThrottle.evenlySpaced);
   }
 
   public async fetch(request: UniqueRequest) {
@@ -83,10 +95,18 @@ export class CommunityDbUniquesCrawler extends UniquesCrawler {
       return { card }
     }
 
-    console.log(`Community DB file does not exist for ${id}, fetching from API...`)
-    const response = await this.apiThrottleQueue(() => fetch(`https://api.altered.gg/cards/${request.id}`));
-    const card = await response.json();
-    return { card };
+    // console.log(`Community DB file does not exist for ${id}`)
+    console.log(`Fetching ${request.id} (en-us) from API...`)
+    const responseEn = await this.apiThrottleQueue(() => fetch(`https://api.altered.gg/cards/${request.id}?locale=en-us`));
+    const cardEn = await responseEn.json();
+    console.log(`Fetching ${request.id} (fr-fr) from API...`)
+    const responseFr = await this.apiThrottleQueue(() => fetch(`https://api.altered.gg/cards/${request.id}?locale=fr-fr`));
+    const cardFr = await responseFr.json();
+    const mergedCard = this.mergeCard(cardEn, cardFr)
+
+    await this.communityDbWriteFile(request.id, mergedCard)
+
+    return { card: mergedCard };
   };
 
   public async persist(data: UniqueData, _request: UniqueRequest) {
@@ -94,52 +114,25 @@ export class CommunityDbUniquesCrawler extends UniquesCrawler {
     await recordOneUnique(cardData, prisma);
   };
 
-  public async enqueueUniquesWithId(ids: string[]) {
-    console.log(`Enqueuing by ID ${ids.length} uniques...`)
-    for (const id of ids) {
-      await this.addRequests([{ id }]);
-    }
+  public override async enqueueUniquesWithMissingEffects({ limit }: { limit?: number; }): Promise<void> {
+    await super.enqueueUniquesWithMissingEffects({ limit })
   }
 
-  public async enqueueUniquesWithMissingEffects({ limit = 10 }: { limit?: number } = {}) {
-    const uniques = await prisma.uniqueInfo.findMany({
-      where: {
-        fetchedDetails: false,
+  private mergeCard(cardEn: AlteredggCard, cardFr: AlteredggCard): AlteredggCard & { translations: Record<string, AlteredggCard> } {
+    return {
+      ...cardEn,
+      translations: {
+        "fr-fr": cardFr,
       },
-      orderBy: {
-        lastSeenInSaleAt: 'desc',
-      },
-      take: limit,
-    });
-
-    console.log(`Uniques task enqueueing ${uniques.length} uniques...`)
-    for (const unique of uniques) {
-      await this.addRequests([{ id: unique.ref }]);
     }
   }
-
-  public async enqueueUntil(otherPromise: Promise<void>) {
-    let otherDone = false
-    otherPromise.finally(() => otherDone = true)
-    while (!otherDone) {
-      await this.enqueueUniquesWithMissingEffects()
-      await this.waitForCompletion()
-      if (debugCrawler) {
-        console.log("Uniques task pausing for 10s...")
-        await delay(10_000)
-      } else {
-        await delay(60_000)
-      }
-    }
-  }
-
 
   private communityDbPath(id: string, joinFn: (...args: string[]) => string = (...args) => args.join("/")): string {
     const split = id.split("_")
     return joinFn(split[1], split[3], split[4], `${id}.json`)
   }
   private communityDbFullPath(id: string) {
-    return path.join(this.dbRoot, this.communityDbPath(id, path.join))
+    return path.join('.', 'tmp', this.communityDbPath(id, path.join))
   }
 
   public async communityDbFileExists(id: string): Promise<boolean> {
@@ -161,5 +154,95 @@ export class CommunityDbUniquesCrawler extends UniquesCrawler {
     const cat = await this.git.catFile(['-p', `HEAD:${path}`])
     const json = JSON.parse(cat)
     return json
+  }
+
+  public async communityDbBeginUpdate() {
+    try {
+      // Read the current HEAD tree into the index so we preserve existing files
+      await this.git.raw(['read-tree', 'HEAD'])
+      console.log('Read existing tree from HEAD into index')
+    } catch (error) {
+      // No HEAD means this is the first commit, index remains empty
+      console.error('No existing tree to read (first commit or empty repo)')
+      throw error
+    }
+  }
+
+  public async communityDbWriteFile(id: string, data: AlteredggCard & { translations: Record<string, AlteredggCard> }) {
+    const sortedData = sortJsonKeysAlphabetically(data)
+    const json = JSON.stringify(sortedData, null, 2)
+    const gitPath = this.communityDbPath(id)
+    
+    const tempFilePath = path.join(this.tempDir, `git-temp-${Date.now()}-${id}.json`)
+    await fs.writeFile(tempFilePath, json)
+    
+    try {
+      // Create a blob object from the file content
+      const blobHashResult = await this.git.raw(['hash-object', '-w', tempFilePath])
+      const blobHash = blobHashResult.trim()
+      
+      // Add the blob to the index at the specified path
+      await this.git.raw(['update-index', '--add', '--cacheinfo', '100644', blobHash, gitPath])
+      
+      this.uniquesAddedToRepo++
+    } finally {
+      // Clean up the temporary file
+      await fs.unlink(tempFilePath).catch(() => {}) // Ignore errors when cleaning up
+    }
+  }
+
+    public async communityDbCreateCommit() {
+    // For bare repositories, we need to use plumbing commands to create commits
+    try {
+      // 1. Create a tree object from the current index
+      const treeHashResult = await this.git.raw(['write-tree'])
+      const treeHash = treeHashResult.trim()
+      
+      // 2. Get the current HEAD commit (parent) if it exists
+      let parentCommit: string | null = null
+      try {
+        const headResult = await this.git.raw(['rev-parse', 'HEAD'])
+        parentCommit = headResult.trim()
+      } catch (error) {
+        // No HEAD means this is the first commit (no parent)
+        console.log('Creating initial commit (no parent)')
+      }
+      
+      // 3. Create the commit object with author and committer info
+      const message = `Added ${this.uniquesAddedToRepo} uniques`
+      const commitArgs = ['commit-tree', treeHash, '-m', message]
+      if (parentCommit) {
+        commitArgs.push('-p', parentCommit)
+      }
+      
+      // Set author and committer environment variables for the commit
+      const commitEnv = {
+        ...process.env,
+        GIT_AUTHOR_NAME: this.authorName,
+        GIT_AUTHOR_EMAIL: this.authorEmail,
+        GIT_COMMITTER_NAME: this.authorName,
+        GIT_COMMITTER_EMAIL: this.authorEmail,
+        GIT_AUTHOR_DATE: new Date().toISOString(),
+        GIT_COMMITTER_DATE: new Date().toISOString()
+      }
+      
+      // Execute the commit-tree command with environment variables
+      const gitWithEnv = this.git.env(commitEnv)
+      const commitHashResult = await gitWithEnv.raw(commitArgs)
+      const commitHash = commitHashResult.trim()
+      
+              // 4. Update the HEAD reference to point to the new commit
+        await this.git.raw(['update-ref', 'HEAD', commitHash])
+        
+        // 5. Reset the counter since files are now committed
+        this.uniquesAddedToRepo = 0
+        
+        console.log(`Created commit ${commitHash}: ${message}`)
+        
+        return commitHash
+    } catch (error) {
+      console.error('Failed to create commit:', error)
+      throw error
+    }
   }
 }

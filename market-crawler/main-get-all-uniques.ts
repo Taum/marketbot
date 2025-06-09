@@ -7,6 +7,8 @@ import { delay } from "@common/utils/promise.js";
 const debug = process.env.DEBUG_CRAWLER === "true";
 
 const communityDbPath = getEnv("COMMUNITY_DB_PATH")
+const authorName = getEnv("GIT_AUTHOR_NAME") ?? "Marketbot"
+const authorEmail = getEnv("GIT_AUTHOR_EMAIL") ?? "automated@marketbot.dev"
 
 if (debug) {
   await prisma.uniqueInfo.updateMany({
@@ -31,7 +33,9 @@ if (debug) {
 
 let uniquesCrawler: UniquesCrawler
 if (communityDbPath != null) {
-  uniquesCrawler = new CommunityDbUniquesCrawler(communityDbPath);
+  let com = new CommunityDbUniquesCrawler(communityDbPath, authorName, authorEmail);
+  await com.communityDbBeginUpdate()
+  uniquesCrawler = com
 } else {
   uniquesCrawler = new UniquesCrawler();
 }
@@ -40,5 +44,9 @@ if (communityDbPath != null) {
 await uniquesCrawler.enqueueUniquesWithMissingEffects({ limit: 250 });
 
 await uniquesCrawler.waitForCompletion();
+
+if (uniquesCrawler instanceof CommunityDbUniquesCrawler) {
+  await uniquesCrawler.communityDbCreateCommit();
+}
 
 await prisma.$disconnect();

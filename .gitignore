@@ -7,3 +7,4 @@ node_modules
 /storage
 /deployment
 .env
+.env.crawler-git

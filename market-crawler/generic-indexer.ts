@@ -35,7 +35,8 @@ export abstract class GenericIndexer<Req = any, Data = any, Response = Data, Com
     options: {
       concurrency?: number,
       maxOperationsPerWindow?: number,
-      windowMs?: number
+      windowMs?: number,
+      evenlySpaced?: boolean,
     } = {}
   ) {
     this._completionValue = initialCompletionValue;
@@ -43,7 +44,8 @@ export abstract class GenericIndexer<Req = any, Data = any, Response = Data, Com
     // Create throttle instance for rate limiting
     const maxOps = options.maxOperationsPerWindow || 60;
     const windowTime = options.windowMs || 60000;
-    this.throttle = throttledQueue(maxOps, windowTime, true);
+    const evenlySpaced = options.evenlySpaced ?? true;
+    this.throttle = throttledQueue(maxOps, windowTime, evenlySpaced);
   }
 
   public abstract fetch(request: Req): Promise<Response>;
