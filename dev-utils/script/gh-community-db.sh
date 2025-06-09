@@ -5,10 +5,24 @@
 # GH_REPO=https://github.com/Taum/databases
 # ORIGIN_BRANCH=master
 # GH_TOKEN=github_pat_...
+# NPM_TASK=crawler-all-uniques
 
 
 # Exit on error
 set -e
+
+if [ -z "$GH_TOKEN" ]; then
+    echo "GH_TOKEN is not set"
+    exit 1
+fi
+if [ -z "$GH_REPO" ]; then
+    echo "GH_REPO is not set"
+    exit 1
+fi
+if [ -z "$ORIGIN_BRANCH" ]; then
+    echo "ORIGIN_BRANCH is not set"
+    exit 1
+fi
 
 # Check if gh CLI is installed
 if ! command -v gh &> /dev/null; then
@@ -33,8 +47,8 @@ if ! gh auth status &> /dev/null; then
 fi
 
 gh auth setup-git
-git config --global user.email "automated@marketbot.dev"
-git config --global user.name "Marketbot"
+git config --global user.email "$GIT_AUTHOR_EMAIL"
+git config --global user.name "$GIT_AUTHOR_NAME"
 
 export COMMUNITY_DB_PATH=$(mktemp -d)
 
@@ -49,7 +63,7 @@ git symbolic-ref HEAD refs/heads/$BRANCH_NAME
 cd $CURRENT_DIR
 
 # Run the crawler
-npm run crawler-all-uniques
+npm run $NPM_TASK
 
 cd $COMMUNITY_DB_PATH
 

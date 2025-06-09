@@ -1,4 +1,4 @@
-import { GenericIndexer } from "./generic-indexer.js";
+import { GenericIndexer, TooManyRequestsError } from "./generic-indexer.js";
 import { AlteredggCard } from "@common/models/cards.js";
 import prisma from "@common/utils/prisma.server.js";
 import { delay } from "@common/utils/promise.js";
@@ -98,9 +98,25 @@ export class CommunityDbUniquesCrawler extends UniquesCrawler {
     // console.log(`Community DB file does not exist for ${id}`)
     console.log(`Fetching ${request.id} (en-us) from API...`)
     const responseEn = await this.apiThrottleQueue(() => fetch(`https://api.altered.gg/cards/${request.id}?locale=en-us`));
+    if (!responseEn.ok) {
+      if (responseEn.status == 429) {
+        console.error(`Rate limit exceeded for ${request.id} (en-us)`)
+        throw new TooManyRequestsError(`Rate limit exceeded for ${request.id} (en-us)`)
+      }
+      console.error(`Error fetching ${request.id} (en-us): ${responseEn.status} ${responseEn.statusText}`)
+      throw new Error(`Error fetching ${request.id} (en-us): ${responseEn.status} ${responseEn.statusText}`)
+    }
     const cardEn = await responseEn.json();
     console.log(`Fetching ${request.id} (fr-fr) from API...`)
     const responseFr = await this.apiThrottleQueue(() => fetch(`https://api.altered.gg/cards/${request.id}?locale=fr-fr`));
+    if (!responseFr.ok) {
+      if (responseFr.status == 429) {
+        console.error(`Rate limit exceeded for ${request.id} (fr-fr)`)
+        throw new TooManyRequestsError(`Rate limit exceeded for ${request.id} (fr-fr)`)
+      }
+      console.error(`Error fetching ${request.id} (fr-fr): ${responseFr.status} ${responseFr.statusText}`)
+      throw new Error(`Error fetching ${request.id} (fr-fr): ${responseFr.status} ${responseFr.statusText}`)
+    }
     const cardFr = await responseFr.json();
     const mergedCard = this.mergeCard(cardEn, cardFr)
 
@@ -114,7 +130,7 @@ export class CommunityDbUniquesCrawler extends UniquesCrawler {
     await recordOneUnique(cardData, prisma);
   };
 
-  public override async enqueueUniquesWithMissingEffects({ limit }: { limit?: number; }): Promise<void> {
+  public override async enqueueUniquesWithMissingEffects({ limit = 1000 }: { limit?: number } = {}): Promise<void> {
     await super.enqueueUniquesWithMissingEffects({ limit })
   }
 
@@ -130,9 +146,6 @@ export class CommunityDbUniquesCrawler extends UniquesCrawler {
   private communityDbPath(id: string, joinFn: (...args: string[]) => string = (...args) => args.join("/")): string {
     const split = id.split("_")
     return joinFn(split[1], split[3], split[4], `${id}.json`)
-  }
-  private communityDbFullPath(id: string) {
-    return path.join('.', 'tmp', this.communityDbPath(id, path.join))
   }
 
   public async communityDbFileExists(id: string): Promise<boolean> {

@@ -10,9 +10,12 @@ export interface IdentifiedRequest<T = any> {
   data: T;
 }
 
-export type FetchFunction<Req = any, Data = any> = (request: Req) => Promise<Data>;
-export type PersistFunction<Req = any, Data = any> = (data: Data, request: Req) => Promise<void>;
-
+export class TooManyRequestsError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TooManyRequestsError";
+  }
+}
 export abstract class GenericIndexer<Req = any, Data = any, Response = Data, Comp = any> {
   private queue: Req[] = [];
   private throttle: any;
@@ -128,13 +131,17 @@ export abstract class GenericIndexer<Req = any, Data = any, Response = Data, Com
           })
           break;
         } catch (error) {
-          console.error(`Error processing request (retry=${retries}):`, error);
+          console.error(`Error processing request ${JSON.stringify(request)} (retry=${retries}):`, error);
           if (retries >= 3) {
             this._isProcessing = false;
             this._waitForCompletionReject?.(error);
             return;
           }
-          await delay(5000)
+          if (error instanceof TooManyRequestsError) {
+            await delay(15000)
+          } else {
+            await delay(5000)
+          }
           retries += 1
         }
       }

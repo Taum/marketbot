@@ -26,6 +26,9 @@ RUN npm prune --production
 FROM base
 ENV NODE_ENV=production
 
+# this can be overridden to crawler-all-uniques instead to get uniques without fetching market data
+ENV NPM_TASK=crawler
+
 RUN apk add --no-cache git
 
 RUN mkdir /ghcli
