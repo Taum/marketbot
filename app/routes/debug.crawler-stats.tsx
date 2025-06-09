@@ -7,7 +7,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~
 import { cn } from "~/lib/utils";
 
 export async function loader() {
-  const lastUpdates = await prisma.marketUpdateStats.findMany({
+  const dbLastUpdates = await prisma.marketUpdateStats.findMany({
+    select: {
+      generationId: true,
+      updateStartedAt: true,
+      updateCompletedAt: true,
+      newCardsAdded: true,
+      totalOffersUpdated: true,
+    },
     orderBy: {
       generationId: "desc",
     },
@@ -15,6 +22,17 @@ export async function loader() {
   });
 
   const familyStats = await prisma.cardFamilyStats.findMany({
+    select: {
+      id: true,
+      cardFamilyId: true,
+      name: true,
+      faction: true,
+      totalItems: true,
+      fetchStartedAt: true,
+      fetchCompletedAt: true,
+      fetchStartGeneration: true,
+      fetchCompletedGeneration: true,
+    },
     orderBy: [
       { cardFamilyId: "asc" },
       { faction: "asc" },
@@ -31,6 +49,16 @@ export async function loader() {
     }
   });
 
+  const totalFamiliesCount = familyStats.length;
+
+  const lastUpdates = dbLastUpdates.map((update) => ({
+    generationId: update.generationId,
+    updateStartedAt: update.updateStartedAt,
+    updateCompletedAt: update.updateCompletedAt,
+    familiesCompleted: familyStats.filter((fam) => fam.fetchCompletedGeneration === update.generationId).length,
+    newCardsAdded: update.newCardsAdded,
+    totalOffersUpdated: update.totalOffersUpdated,
+  }));
 
   const uniquesTotal = uniquesCount.reduce((acc, curr) => acc + curr._count, 0);
   const uniquesMissingEffectText = uniquesCount.find((r) => r.fetchedDetails === false)?._count ?? 0;
@@ -38,6 +66,7 @@ export async function loader() {
   return {
     lastUpdates,
     familyStats,
+    totalFamiliesCount,
     uniques: {
       total: uniquesTotal,
       missingEffect: uniquesMissingEffectText,
@@ -47,7 +76,7 @@ export async function loader() {
 }
 
 export default function CrawlerStats() {
-  const { lastUpdates, familyStats, uniques } = useLoaderData<typeof loader>();
+  const { lastUpdates, familyStats, uniques, totalFamiliesCount } = useLoaderData<typeof loader>();
 
   const familiesOver1000 = familyStats.filter((fam) => fam.totalItems && fam.totalItems >= 900);
 
@@ -84,6 +113,7 @@ export default function CrawlerStats() {
             <TableHead>Generation ID</TableHead>
             <TableHead>Started At</TableHead>
             <TableHead>Completed At</TableHead>
+            <TableHead>Families Comp.</TableHead>
             <TableHead>New Cards Added</TableHead>
             <TableHead>Total Offers</TableHead>
           </TableRow>
@@ -94,6 +124,13 @@ export default function CrawlerStats() {
               <TableCell>{update.generationId}</TableCell>
               <TableCell>{update.updateStartedAt.toLocaleString()}</TableCell>
               <TableCell>{update.updateCompletedAt?.toLocaleString()}</TableCell>
+              <TableCell>
+                {update.familiesCompleted > 0 ?
+                  <span className="">{update.familiesCompleted} / {totalFamiliesCount}</span>
+                  :
+                  ""
+                }
+              </TableCell>
               <TableCell>{update.newCardsAdded}</TableCell>
               <TableCell>{update.totalOffersUpdated}</TableCell>
             </TableRow>
@@ -146,7 +183,7 @@ export default function CrawlerStats() {
                 <TableCell className={`text-${fam.faction.toLocaleLowerCase()}-500`}>{fam.faction}</TableCell>
                 <TableCell>
                   <span title={`${fam.fetchStartedAt?.toLocaleString()} -> ${fam.fetchCompletedAt?.toLocaleString()}`}>
-                    {durationStr}
+                    {durationStr ?? fam.fetchCompletedAt?.toLocaleString() ?? "??"}
                   </span>
                 </TableCell>
                 <TableCell>{fam.fetchStartGeneration}</TableCell>
@@ -170,7 +207,7 @@ export default function CrawlerStats() {
                 <TableCell className={`text-faction-${fam.faction.toLowerCase()} text-lg`}><AlteredIcon icon={fam.faction.toLowerCase() as AlteredIconType} /></TableCell>
                 <TableCell>
                   <span title={`${fam.fetchStartedAt?.toLocaleString()} -> ${fam.fetchCompletedAt?.toLocaleString()}`}>
-                    {durationStr}
+                    {durationStr == "" ? "0" : durationStr}
                   </span>
                 </TableCell>
                 <TableCell>{fam.fetchStartGeneration}</TableCell>
