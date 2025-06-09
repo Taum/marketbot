@@ -74,7 +74,7 @@ export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
   public async enqueueUniquesWithId(ids: string[]) {
     console.log(`Enqueuing by ID ${ids.length} uniques...`)
     for (const id of ids) {
-      await this.addRequests([{ id }]);
+      await this.addRequests([{ id }], false, "id");
     }
   }
 
@@ -91,7 +91,7 @@ export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
 
     console.log(`Uniques task enqueueing ${uniques.length} uniques...`)
     for (const unique of uniques) {
-      await this.addRequests([{ id: unique.ref }]);
+      await this.addRequests([{ id: unique.ref }], false, "id");
     }
   }
 

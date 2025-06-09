@@ -59,8 +59,12 @@ export abstract class GenericIndexer<Req = any, Data = any, Response = Data, Com
    * @param requests The requests to add
    * @param toFront If true, add to the front of the queue, otherwise add to the back
    */
-  public addRequests(requests: Req[], toFront = false): void {
+  public addRequests(requests: Req[], toFront = false, dedupKey?: keyof Req): void {
     if (requests.length === 0) return;
+
+    if (dedupKey) {
+      requests = requests.filter((request) => !this.queue.some((q) => q[dedupKey] === request[dedupKey]));
+    }
 
     if (toFront) {
       this.queue.unshift(...requests);

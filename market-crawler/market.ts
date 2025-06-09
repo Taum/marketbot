@@ -1,6 +1,6 @@
 import { CardSet, CardType, Faction, Rarity } from "@common/models/cards.js";
 import { CardDbEntry } from "@common/models/cards.js";
-import { GenericIndexer } from "./generic-indexer.js";
+import { GenericIndexer, TooManyRequestsError } from "./generic-indexer.js";
 import { Prisma } from '@prisma/client';
 import prisma from "@common/utils/prisma.server.js";
 

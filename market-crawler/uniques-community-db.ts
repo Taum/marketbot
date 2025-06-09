@@ -89,6 +89,12 @@ export class CommunityDbUniquesCrawler extends UniquesCrawler {
   public async fetch(request: UniqueRequest) {
     const id = request.id
 
+    const alreadyInDb = await prisma.uniqueInfo.findUnique({ where: { ref: id } })
+    if (alreadyInDb) {
+      console.log(`Unique ${id} already exists in database, skipping...`)
+      return { card: null }
+    }
+
     if (await this.communityDbFileExists(id)) {
       console.log(`Community DB file exists for ${id}, reading from file...`)
       const card = await this.communityDbRead(id)
@@ -126,13 +132,12 @@ export class CommunityDbUniquesCrawler extends UniquesCrawler {
   };
 
   public async persist(data: UniqueData, _request: UniqueRequest) {
+    if (!data || !data.card) {
+      return;
+    }
     const cardData = data.card;
     await recordOneUnique(cardData, prisma);
   };
-
-  public override async enqueueUniquesWithMissingEffects({ limit = 1000 }: { limit?: number } = {}): Promise<void> {
-    await super.enqueueUniquesWithMissingEffects({ limit })
-  }
 
   private mergeCard(cardEn: AlteredggCard, cardFr: AlteredggCard): AlteredggCard & { translations: Record<string, AlteredggCard> } {
     return {
