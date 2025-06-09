@@ -89,7 +89,7 @@ export class CommunityDbUniquesCrawler extends UniquesCrawler {
   public async fetch(request: UniqueRequest) {
     const id = request.id
 
-    const alreadyInDb = await prisma.uniqueInfo.findUnique({ where: { ref: id } })
+    const alreadyInDb = await prisma.uniqueInfo.findUnique({ where: { ref: id, fetchedDetails: true } })
     if (alreadyInDb) {
       console.log(`Unique ${id} already exists in database, skipping...`)
       return { card: null }
@@ -129,14 +129,6 @@ export class CommunityDbUniquesCrawler extends UniquesCrawler {
     await this.communityDbWriteFile(request.id, mergedCard)
 
     return { card: mergedCard };
-  };
-
-  public async persist(data: UniqueData, _request: UniqueRequest) {
-    if (!data || !data.card) {
-      return;
-    }
-    const cardData = data.card;
-    await recordOneUnique(cardData, prisma);
   };
 
   private mergeCard(cardEn: AlteredggCard, cardFr: AlteredggCard): AlteredggCard & { translations: Record<string, AlteredggCard> } {
