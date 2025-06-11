@@ -1,17 +1,16 @@
-import { GenericIndexer, TooManyRequestsError } from "./generic-indexer.js";
+import { TooManyRequestsError } from "./generic-indexer.js";
 import { AlteredggCard } from "@common/models/cards.js";
 import prisma from "@common/utils/prisma.server.js";
-import { delay } from "@common/utils/promise.js";
 import { processAndWriteOneUnique } from "./post-process.js";
 import { ThrottlingConfig, throttlingConfig } from "./config.js";
 import { getEnv } from "./helpers.js";
-import { PrismaClient, UniqueInfo } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import path from "node:path";
 import fs from "fs/promises";
 import { UniquesCrawler } from "./uniques.js";
 import throttledQueue from "throttled-queue";
-import { simpleGit, SimpleGit, SimpleGitOptions } from 'simple-git';
-import { sortJsonKeysAlphabetically } from '@common/utils/json.js';
+import { simpleGit, SimpleGit } from 'simple-git';
+import { sortJsonKeysAlphabeticallyNonRecursive } from '@common/utils/json.js';
 import os from "node:os";
 
 export interface UniqueRequest {
@@ -179,8 +178,8 @@ export class CommunityDbUniquesCrawler extends UniquesCrawler {
   }
 
   public async communityDbWriteFile(id: string, data: AlteredggCard & { translations: Record<string, AlteredggCard> }) {
-    const sortedData = sortJsonKeysAlphabetically(data)
-    const json = JSON.stringify(sortedData, null, 2)
+    const sortedData = sortJsonKeysAlphabeticallyNonRecursive(data)
+    const json = JSON.stringify(sortedData, null, 4)
     const gitPath = this.communityDbPath(id)
     
     const tempFilePath = path.join(this.tempDir, `git-temp-${Date.now()}-${id}.json`)

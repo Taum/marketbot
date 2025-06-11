@@ -26,3 +26,27 @@ export function sortJsonKeysAlphabetically<T>(obj: T): T {
   // For primitives, return as-is
   return obj;
 }
+
+export function sortJsonKeysAlphabeticallyNonRecursive<T>(obj: T): T {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj;
+  }
+
+  if (typeof obj === 'object' && obj.constructor === Object) {
+    const sortedObj: Record<string, any> = {};
+    const keys = Object.keys(obj as Record<string, any>).sort();
+    
+    for (const key of keys) {
+      sortedObj[key] = (obj as Record<string, any>)[key];
+    }
+    
+    return sortedObj as T;
+  }
+
+  // For primitives, return as-is
+  return obj;
+}
