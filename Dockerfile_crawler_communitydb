@@ -1,0 +1,52 @@
+# base node image
+FROM nikolaik/python-nodejs:python3.13-nodejs22-alpine AS base
+
+# Install all node_modules, including dev dependencies
+FROM base AS deps
+RUN mkdir /app && mkdir /app/prisma
+WORKDIR /app
+
+ADD package.json package-lock.json ./
+ADD prisma/schema.prisma ./prisma/schema.prisma
+# This installs the dependencies from package-lock.json
+# (like npm install, but will fail if package.json and package-lock.json are out of sync)
+RUN npm ci
+RUN npx prisma generate
+
+# Setup production node_modules
+FROM base AS production-deps
+RUN mkdir /app
+WORKDIR /app
+
+COPY --from=deps /app/node_modules /app/node_modules
+ADD package.json package-lock.json ./
+RUN npm prune --production
+
+# Build the app
+FROM base
+ENV NODE_ENV=production
+
+# this can be overridden to crawler-all-uniques instead to get uniques without fetching market data
+ENV NPM_TASK=crawler
+
+RUN apk add --no-cache git
+
+RUN mkdir /ghcli
+WORKDIR /ghcli
+RUN wget https://github.com/cli/cli/releases/download/v2.73.0/gh_2.73.0_linux_386.tar.gz -O ghcli.tar.gz
+RUN tar --strip-components=1 -xf ghcli.tar.gz
+RUN ln -s /ghcli/bin/gh /usr/bin/gh
+
+RUN mkdir /app
+WORKDIR /app
+
+COPY --from=deps /app/node_modules /app/node_modules
+ADD common ./common
+ADD market-crawler ./market-crawler
+ADD data ./data
+ADD package.json package-lock.json tsconfig.json ./
+ADD .env.crawler ./.env
+ADD dev-utils/script/gh-community-db.sh /usr/local/bin/gh-community-db
+RUN chmod +x /usr/local/bin/gh-community-db
+
+ENTRYPOINT ["gh-community-db"]

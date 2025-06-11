@@ -1,9 +1,9 @@
-import { GenericIndexer } from "./generic-indexer.js";
+import { GenericIndexer, TooManyRequestsError } from "./generic-indexer.js";
 import { AlteredggCard } from "@common/models/cards.js";
 import prisma from "@common/utils/prisma.server.js";
 import { delay } from "@common/utils/promise.js";
 import { processAndWriteOneUnique } from "./post-process.js";
-import { throttlingConfig } from "./config.js";
+import { ThrottlingConfig, throttlingConfig } from "./config.js";
 import { getEnv } from "./helpers.js";
 import { PrismaClient, UniqueInfo } from "@prisma/client";
 
@@ -52,28 +52,52 @@ export const recordOneUnique = async (cardData: AlteredggCard, prisma: PrismaCli
 }
 
 export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
-  constructor() {
-    // Create fetch and persist functions
-    const fetchUnique = async (request: UniqueRequest) => {
-      const response = await fetch(`https://api.altered.gg/cards/${request.id}`);
-      const card = await response.json();
-      return { card };
-    };
 
-    const persistUnique = async (data: UniqueData, _request: UniqueRequest) => {
-      const cardData = data.card;
-      await recordOneUnique(cardData, prisma);
-    };
-
+  constructor(config: ThrottlingConfig = throttlingConfig["uniques"]) {
     // Call super with the fetch and persist functions, plus any options
-    super(fetchUnique, persistUnique, throttlingConfig["uniques"]);
+    super(null, config);
   }
+
+  // Create fetch and persist functions
+  public async fetch(request: UniqueRequest) {
+    const id = request.id
+    const alreadyInDb = await prisma.uniqueInfo.findUnique({ where: { ref: id, fetchedDetails: true } })
+    if (alreadyInDb) {
+      console.log(`Unique ${id} already exists in database, skipping...`)
+      return { card: null }
+    }
+
+    const response = await fetch(`https://api.altered.gg/cards/${request.id}`);
+    if (!response.ok) {
+      if (response.status == 429) {
+        console.error(`Rate limit exceeded for ${request.id}`)
+        throw new TooManyRequestsError(`Rate limit exceeded for ${request.id}`)
+      }
+      console.error(`Error fetching ${request.id}: ${response.status} ${response.statusText}`)
+      throw new Error(`Error fetching ${request.id}: ${response.status} ${response.statusText}`)
+    }
+    const card = await response.json();
+    return { card };
+  };
+
+  public async persist(data: UniqueData, _request: UniqueRequest) {
+    if (!data || !data.card) {
+      return;
+    }
+
+    const cardData = data.card;
+    await recordOneUnique(cardData, prisma);
+
+    if (this.queueSize % 20 == 0) {
+      console.debug(`UniquesCrawler queue size: ${this.queueSize}`)
+    };
+  };
 
 
   public async enqueueUniquesWithId(ids: string[]) {
     console.log(`Enqueuing by ID ${ids.length} uniques...`)
     for (const id of ids) {
-      await this.addRequests([{ id }]);
+      await this.addRequests([{ id }], false, "id");
     }
   }
 
@@ -90,7 +114,7 @@ export class UniquesCrawler extends GenericIndexer<UniqueRequest, UniqueData> {
 
     console.log(`Uniques task enqueueing ${uniques.length} uniques...`)
     for (const unique of uniques) {
-      await this.addRequests([{ id: unique.ref }]);
+      await this.addRequests([{ id: unique.ref }], false, "id");
     }
   }
 

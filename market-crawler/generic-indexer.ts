@@ -10,13 +10,14 @@ export interface IdentifiedRequest<T = any> {
   data: T;
 }
 
-export type FetchFunction<Req = any, Data = any> = (request: Req) => Promise<Data>;
-export type PersistFunction<Req = any, Data = any> = (data: Data, request: Req) => Promise<void>;
-
-export class GenericIndexer<Req = any, Data = any, Response = Data, Comp = any> {
+export class TooManyRequestsError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TooManyRequestsError";
+  }
+}
+export abstract class GenericIndexer<Req = any, Data = any, Response = Data, Comp = any> {
   private queue: Req[] = [];
-  private fetchFn: FetchFunction<Req, Response>;
-  private persistFn: PersistFunction<Req, Response>;
   private throttle: any;
 
   protected _completionValue: Comp;
@@ -33,33 +34,37 @@ export class GenericIndexer<Req = any, Data = any, Response = Data, Comp = any> 
   private _isProcessing = false;
 
   constructor(
-    fetch: FetchFunction<Req, Response>,
-    persist: PersistFunction<Req, Response>,
     initialCompletionValue: Comp,
     options: {
       concurrency?: number,
       maxOperationsPerWindow?: number,
-      windowMs?: number
+      windowMs?: number,
+      evenlySpaced?: boolean,
     } = {}
   ) {
-    this.fetchFn = fetch;
-    this.persistFn = persist;
-
     this._completionValue = initialCompletionValue;
 
     // Create throttle instance for rate limiting
     const maxOps = options.maxOperationsPerWindow || 60;
     const windowTime = options.windowMs || 60000;
-    this.throttle = throttledQueue(maxOps, windowTime, true);
+    const evenlySpaced = options.evenlySpaced ?? true;
+    this.throttle = throttledQueue(maxOps, windowTime, evenlySpaced);
   }
+
+  public abstract fetch(request: Req): Promise<Response>;
+  public abstract persist(data: Response, request: Req): Promise<void>;
 
   /**
    * Add multiple requests to the queue
    * @param requests The requests to add
    * @param toFront If true, add to the front of the queue, otherwise add to the back
    */
-  public addRequests(requests: Req[], toFront = false): void {
+  public addRequests(requests: Req[], toFront = false, dedupKey?: keyof Req): void {
     if (requests.length === 0) return;
+
+    if (dedupKey) {
+      requests = requests.filter((request) => !this.queue.some((q) => q[dedupKey] === request[dedupKey]));
+    }
 
     if (toFront) {
       this.queue.unshift(...requests);
@@ -124,19 +129,23 @@ export class GenericIndexer<Req = any, Data = any, Response = Data, Comp = any> 
         try {
           await this.throttle(async () => {
             // Process the request
-            const response = await this.fetchFn(request);
+            const response = await this.fetch(request);
             // Persist the data if a persist function is provided
-            await this.persistFn(response, request);
+            await this.persist(response, request);
           })
           break;
         } catch (error) {
-          console.error(`Error processing request (retry=${retries}):`, error);
+          console.error(`Error processing request ${JSON.stringify(request)} (retry=${retries}):`, error);
           if (retries >= 3) {
             this._isProcessing = false;
             this._waitForCompletionReject?.(error);
             return;
           }
-          await delay(5000)
+          if (error instanceof TooManyRequestsError) {
+            await delay(15000)
+          } else {
+            await delay(5000)
+          }
           retries += 1
         }
       }

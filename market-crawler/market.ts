@@ -1,6 +1,6 @@
 import { CardSet, CardType, Faction, Rarity } from "@common/models/cards.js";
 import { CardDbEntry } from "@common/models/cards.js";
-import { GenericIndexer } from "./generic-indexer.js";
+import { GenericIndexer, TooManyRequestsError } from "./generic-indexer.js";
 import { Prisma } from '@prisma/client';
 import prisma from "@common/utils/prisma.server.js";
 
@@ -143,99 +143,106 @@ export async function marketUpdateUniqueTableIsCurrent(fetchGenerationId: number
   */
 }
 
+
 export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, CardFamilyStatsData, Response, MarketUpdateCrawlerStats> {
 
-  constructor(authTokenService: AuthTokenService) {
-    // Create fetch and persist functions
-    const fetchPage = async (request: CardFamilyRequest) => {
-      let url: string;
-      if (request.nextPage) {
-        url = "https://api.altered.gg" + request.nextPage;
-      } else {
-        url = this.buildUrl(request);
-        this.cardFamilyStatsRecordFetchStart(request);
-      }
-
-      const headers = await authTokenService.getAuthorizationHeaders()
-      const response = await fetch(url, { headers });
-      return response;
-    };
-
-    const persistPage = async (response: Response, request: CardFamilyRequest) => {
-      const data = await response.json() as CardFamilyStatsData;
-      try {
-        const pageNumber = data["hydra:view"]["@id"].match(/page=\d+$/)?.[0] ?? "page=1 (undefined)";
-        // const pageNumber = data["hydra:view"]["@id"].match(/page=\d+$/)?.[0];
-        if ("queryParams" in request) {
-          console.log(`Query=${JSON.stringify(request.queryParams)} : ${pageNumber} -> ${data["hydra:member"].length} items`)
-        } else {
-          console.log(`Family=${request.name} (${request.cardFamilyId}) Faction=${request.faction} : ${pageNumber} -> ${data["hydra:member"].length} items`)
-        }
-      } catch (e) {
-        if ("queryParams" in request) {
-          console.error(`Error parsing hydra:view for Query=${JSON.stringify(request.queryParams)}`, e)
-        } else {
-          console.error(`Error parsing hydra:view for Family=${request.name} Faction=${request.faction}`, e)
-        }
-        console.log("Raw response:", data)
-        throw e;
-      }
-
-      const now = new Date();
-      // Prepare the card blobs to be upserted into the database
-      const cardBlobs: UniqueInfoCreateInput[] = data["hydra:member"].map((member) => {
-        const cardBlob = buildCardBlobWithStats(member, request);
-        cardBlob.lastSeenInSaleAt = now;
-        cardBlob.lastSeenGenerationId = request.fetchGenerationId;
-        cardBlob.seenInLastGeneration = true;
-        return cardBlob;
-      })
-
-      // Upsert the card blobs into the database
-      let addedCount = 0;
-      for (const cardBlob of cardBlobs) {
-        const updatedOrCreated = await prisma.uniqueInfo.upsert({
-          where: {
-            ref: cardBlob.ref,
-          },
-          update: cardBlob,
-          create: {
-            ...cardBlob,
-            firstSeenGenerationId: request.fetchGenerationId,
-          },
-        })
-        if (updatedOrCreated.firstSeenGenerationId == request.fetchGenerationId) {
-          addedCount += 1;
-        }
-      }
-      this.statsPagesLoadedIncrement(1);
-      this.statsCardAddedIncrement(addedCount);
-      this.statsOffersUpdatedIncrement(cardBlobs.length);
-
-      const nextPath = data["hydra:view"]["hydra:next"];
-      if (nextPath) {
-        await this.addRequests([
-          {
-            ...request,
-            nextPage: nextPath,
-          }
-        ], true)
-      } else {
-        const totalItems = data["hydra:totalItems"]
-        await this.cardFamilyStatsRecordFetchComplete(request, totalItems)
-      }
-    }
-
+  constructor(private authTokenService: AuthTokenService) {
+    
     const initialCrawlerStats: MarketUpdateCrawlerStats = {
       newCardsAdded: 0,
       totalPagesLoaded: 0,
       totalOffersUpdated: 0,
     }
 
-    // Call super with the fetch and persist functions, plus any options
-    super(fetchPage, persistPage, initialCrawlerStats, throttlingConfig["market"]);
+    super(initialCrawlerStats, throttlingConfig["market"]);
   }
 
+  public override async fetch(request: CardFamilyRequest): Promise<Response> {
+    let url: string;
+    if (request.nextPage) {
+      url = "https://api.altered.gg" + request.nextPage;
+    } else {
+      url = this.buildUrl(request);
+      this.cardFamilyStatsRecordFetchStart(request);
+    }
+
+    const headers = await this.authTokenService.getAuthorizationHeaders()
+    const response = await fetch(url, { headers });
+    if (!response.ok) {
+      if (response.status == 429) {
+        console.error(`Rate limit exceeded for ${url}`)
+        throw new TooManyRequestsError(`Rate limit exceeded for ${url}`)
+      }
+      console.error(`Error fetching ${url}: ${response.status} ${response.statusText}`)
+      throw new Error(`Error fetching ${url}: ${response.status} ${response.statusText}`)
+    }
+    return response;
+  };
+
+  public override async persist(response: Response, request: CardFamilyRequest) {
+    const data = await response.json() as CardFamilyStatsData;
+    try {
+      const pageNumber = data["hydra:view"]["@id"].match(/page=\d+$/)?.[0] ?? "page=1 (undefined)";
+      // const pageNumber = data["hydra:view"]["@id"].match(/page=\d+$/)?.[0];
+      if ("queryParams" in request) {
+        console.log(`Query=${JSON.stringify(request.queryParams)} : ${pageNumber} -> ${data["hydra:member"].length} items`)
+      } else {
+        console.log(`Family=${request.name} (${request.cardFamilyId}) Faction=${request.faction} : ${pageNumber} -> ${data["hydra:member"].length} items`)
+      }
+    } catch (e) {
+      if ("queryParams" in request) {
+        console.error(`Error parsing hydra:view for Query=${JSON.stringify(request.queryParams)}`, e)
+      } else {
+        console.error(`Error parsing hydra:view for Family=${request.name} Faction=${request.faction}`, e)
+      }
+      console.log("Raw response:", data)
+      throw e;
+    }
+
+    const now = new Date();
+    // Prepare the card blobs to be upserted into the database
+    const cardBlobs: UniqueInfoCreateInput[] = data["hydra:member"].map((member) => {
+      const cardBlob = buildCardBlobWithStats(member, request);
+      cardBlob.lastSeenInSaleAt = now;
+      cardBlob.lastSeenGenerationId = request.fetchGenerationId;
+      cardBlob.seenInLastGeneration = true;
+      return cardBlob;
+    })
+
+    // Upsert the card blobs into the database
+    let addedCount = 0;
+    for (const cardBlob of cardBlobs) {
+      const updatedOrCreated = await prisma.uniqueInfo.upsert({
+        where: {
+          ref: cardBlob.ref,
+        },
+        update: cardBlob,
+        create: {
+          ...cardBlob,
+          firstSeenGenerationId: request.fetchGenerationId,
+        },
+      })
+      if (updatedOrCreated.firstSeenGenerationId == request.fetchGenerationId) {
+        addedCount += 1;
+      }
+    }
+    this.statsPagesLoadedIncrement(1);
+    this.statsCardAddedIncrement(addedCount);
+    this.statsOffersUpdatedIncrement(cardBlobs.length);
+
+    const nextPath = data["hydra:view"]["hydra:next"];
+    if (nextPath) {
+      await this.addRequests([
+        {
+          ...request,
+          nextPage: nextPath,
+        }
+      ], true)
+    } else {
+      const totalItems = data["hydra:totalItems"]
+      await this.cardFamilyStatsRecordFetchComplete(request, totalItems)
+    }
+  }
   public async addAllWithFilter(fetchGenerationId: number, filter: ((card: CardDbEntry) => boolean) | undefined = undefined) {
     const cardsDb = cardsJson as unknown as Record<string, CardDbEntry>
 

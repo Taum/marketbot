@@ -3,6 +3,7 @@ import { UniquesCrawler } from './uniques.js';
 import { ExhaustiveInSaleCrawler, MarketUpdateCrawlerStats, marketUpdateStatsComplete, marketUpdateStatsStartAndGetGenerationId, marketUpdateUniqueTableIsCurrent } from './market.js';
 import prisma from '@common/utils/prisma.server.js';
 import { AuthTokenService } from './refresh-token.js';
+import { CommunityDbUniquesCrawler } from './uniques-community-db.js';
 
 const sessionName = getEnv("ALT_SESSION_NAME")
 if (!sessionName) {
@@ -11,11 +12,22 @@ if (!sessionName) {
 
 const debugCrawler = getEnv("DEBUG_CRAWLER") == "true";
 
+const communityDbPath = getEnv("COMMUNITY_DB_PATH")
+const authorName = getEnv("GIT_AUTHOR_NAME") ?? "Marketbot"
+const authorEmail = getEnv("GIT_AUTHOR_EMAIL") ?? "automated@marketbot.dev"
+
 const authTokenService = new AuthTokenService(sessionName);
 
 const exhaustiveInSaleCrawler = new ExhaustiveInSaleCrawler(authTokenService);
 
-const uniquesCrawler = new UniquesCrawler();
+let uniquesCrawler: UniquesCrawler
+if (communityDbPath != null) {
+  let com = new CommunityDbUniquesCrawler(communityDbPath, authorName, authorEmail);
+  await com.communityDbBeginUpdate()
+  uniquesCrawler = com
+} else {
+  uniquesCrawler = new UniquesCrawler();
+}
 
 const fetchGenerationId = await marketUpdateStatsStartAndGetGenerationId();
 
@@ -64,6 +76,10 @@ await (
     .waitForCompletion()
     .then(() => console.log("Uniques task completed"))
 );
+
+if (uniquesCrawler instanceof CommunityDbUniquesCrawler) {
+  await uniquesCrawler.communityDbCreateCommit();
+}
 
 await marketUpdateStatsComplete(fetchGenerationId, g_crawlerStats);
 await marketUpdateUniqueTableIsCurrent(fetchGenerationId);
