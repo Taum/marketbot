@@ -8,84 +8,16 @@ import { Decimal } from "decimal.js";
 import { Expression, SelectQueryBuilder, sql } from "kysely";
 import { partition } from "~/lib/utils";
 import { DB } from "@generated/kysely-db/types";
+import { buildDisplayAbility, PageParams, SearchQuery, SearchResults, to_tsvector2, tokenize, tokens_to_tsquery } from "~/loaders/search";
 
 // Add the type from Prisma namespace
 type UniqueInfoWhereInput = Prisma.UniqueInfoWhereInput;
 
 const debug = process.env.DEBUG_WEB == "true"
 
-export interface SearchQuery {
-  faction?: string;
-  set?: string;
-  characterName?: string;
-  cardText?: string;
-  triggerPart?: string;
-  conditionPart?: string;
-  effectPart?: string;
-  partIncludeSupport?: boolean;
-  mainCosts?: number[];
-  recallCosts?: number[];
-  includeExpiredCards?: boolean;
-  minPrice?: number;
-  maxPrice?: number;
-}
-
-export interface PageParams {
-  page: number;
-  includePagination: boolean;
-}
-
-export interface Token {
-  text: string
-  negated: boolean
-}
-
-export function to_tsvector(expr: Expression<string | null> | string) {
-  return sql`to_tsvector('simple', COALESCE(${expr}, ''))`
-}
-export function to_tsvector2(expr1: Expression<string | null> | string, expr2: Expression<string | null> | string) {
-  return sql`to_tsvector('simple', COALESCE(${expr1}, '') || ' ' || COALESCE(${expr2}, ''))`
-}
-export function plainto_tsquery(expr: Expression<string> | string) {
-  return sql`plainto_tsquery('simple', ${expr})`
-}
-export function phraseto_tsquery(expr: Expression<string> | string) {
-  return sql`phraseto_tsquery('simple', ${expr})`
-}
-export function tokens_to_tsquery(tokens: Token[]) {
-  const tokensAsSql = tokens.map(token => {
-    const neg = token.negated ? (x) => `!!(${x})` : (x) => x
-    if (token.text.indexOf(' ') >= 0) {
-      return neg(sql`phraseto_tsquery('simple', ${token.text})`)
-    }
-    return neg(sql`plainto_tsquery('simple', ${token.text})`)
-  })
-  return sql`(${sql.join(tokensAsSql, sql`&&`)})`
-}
-
-export function tokenize(text: string): Token[] {
-  const quotedRegex = /(-?)(?:"([^"]+)"|(\S+))/g;
-  let match;
-  const tokens: Token[] = [];
-
-  while ((match = quotedRegex.exec(text)) !== null) {
-    // match[1] contains text inside quotes, match[2] contains unquoted text
-    tokens.push({ text: match[2] || match[3], negated: match[1] === "-" });
-  }
-  return tokens;
-}
-
 const PAGE_SIZE = 100
 
-export interface SearchResults {
-  results: DisplayUniqueCard[],
-  pagination?: {
-    totalCount: number,
-    pageCount: number
-  }
-}
-
-export async function search(searchQuery: SearchQuery, pageParams: PageParams): Promise<SearchResults> {
+export async function searchWithJoins(searchQuery: SearchQuery, pageParams: PageParams): Promise<SearchResults> {
   const {
     faction,
     set,
@@ -364,37 +296,4 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
   }).filter((result) => result !== null);
 
   return { results: outResults, pagination };
-}
-
-export function buildDisplayAbility(
-  ability:
-    Pick<UniqueAbilityLine, 'id' | 'lineNumber' | 'isSupport' | 'characterData' | 'textEn'> &
-    { allParts: Pick<AbilityPartLink, 'id' | 'partId' | 'partType'>[] }
-): DisplayAbilityOnCard | undefined {
-  if (ability.characterData == null) {
-    return undefined;
-  }
-  const charData = ability.characterData as unknown as AbilityCharacterDataV1;
-  const line = ability.textEn
-  const displayParts: DisplayPartOnCard[] = charData.parts.map((part) => {
-    const matchingPart = ability.allParts
-      .find((p) => p?.partId == part.partId)
-    if (matchingPart == null) {
-      console.error(`Part ${part.partId} not found in ability ${ability.id}`)
-      return null;
-    }
-    return {
-      partId: part.partId,
-      startIndex: part.startIndex,
-      endIndex: part.endIndex,
-      partType: matchingPart.partType.toString() as AbilityPartType,
-      substituteText: part.substituteText,
-    }
-  }).filter((x) => x != null)
-  return {
-    lineNumber: ability.lineNumber,
-    isSupport: ability.isSupport,
-    text: line,
-    parts: displayParts.sort((a, b) => a.startIndex - b.startIndex)
-  }
 }

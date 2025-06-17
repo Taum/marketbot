@@ -80,8 +80,13 @@ export interface MarketUpdateCrawlerStats {
 const bannedWords = [
   'Lyra', 'Ordis', 'Yzmir', 'Muna', 'Axiom', 'Bravos',
   'The', 'of',
-  'Haven', 'Foundry', 'Ouroboros', 'BLISS', 
+  'Haven', 'Foundry', 'Ouroboros', 'BLISS',
+  'little',
 ]
+
+const forcedMappings: Record<string, string> = {
+  'Moth Larva': 'larva',
+}
 
 const verboseLevel = parseInt(getEnv("VERBOSE_LEVEL") ?? "0")
 const debugCrawler = getEnv("DEBUG_CRAWLER") == "true";
@@ -108,7 +113,7 @@ export async function marketUpdateStatsComplete(
 }
 
 export async function marketUpdateUniqueTableIsCurrent(fetchGenerationId: number) {
-  
+
   await prisma.uniqueInfo.updateMany({
     where: {
       lastSeenGenerationId: {
@@ -147,7 +152,7 @@ export async function marketUpdateUniqueTableIsCurrent(fetchGenerationId: number
 export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, CardFamilyStatsData, Response, MarketUpdateCrawlerStats> {
 
   constructor(private authTokenService: AuthTokenService) {
-    
+
     const initialCrawlerStats: MarketUpdateCrawlerStats = {
       newCardsAdded: 0,
       totalPagesLoaded: 0,
@@ -301,8 +306,12 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
       return url.toString()
     } else {
       let strippedName = request.name.toLocaleLowerCase();
-      for (const word of bannedWords) {
-        strippedName = strippedName.replace(new RegExp(`\\b${word}\\b`, "ig"), '');
+      if (strippedName in forcedMappings) {
+        strippedName = forcedMappings[strippedName];
+      } else {
+        for (const word of bannedWords) {
+          strippedName = strippedName.replace(new RegExp(`\\b${word}\\b`, "ig"), '');
+        }
       }
       if (strippedName != request.name.toLocaleLowerCase()) {
         console.debug(`Stripped name from ${request.name} -> ${strippedName}`)
