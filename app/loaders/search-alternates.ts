@@ -54,69 +54,61 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
     { part: AbilityPartType.Trigger, text: triggerPart },
     { part: AbilityPartType.Condition, text: conditionPart },
     { part: AbilityPartType.Effect, text: effectPart }
-  ].filter((x) => x.text != null)
+  ]
 
   let query: SelectQueryBuilder<DB, "UniqueInfo", {}> = db.selectFrom('UniqueInfo')
 
-  if (abilityParts.length > 0) {
+  if (abilityParts.some(x => x.text != null)) {
     // If our search is based on ability parts, we start from UniqueAbilityLine and join to UniqueInfo instead
     let abLineQuery = db.selectFrom('UniqueAbilityLine')
-    
-    if (!partIncludeSupport) {
-      abLineQuery = abLineQuery.where('isSupport', '=', false)
-    }
-    
-    // Find all the ability lines that match our search
-    abLineQuery = abLineQuery.where(({ eb, and, or, not, exists, selectFrom }) => {
-      const abilityPartFilters = abilityParts.map((part) => {
-        const [negatedTokens, tokens] = partition(tokenize(part.text!), (token) => token.negated);
-        if (debug) {
-          console.log(`Part ${part.part}: ${part.text}`)
-          console.dir(tokens, { depth: null })
-          console.dir(negatedTokens, { depth: null })
-        }
 
-        return exists(
-          selectFrom('AbilityPartLink')
-            .where(({ eb, and, or, not, exists, selectFrom }) => {
-              return and([
-                tokens.length > 0 ?
-                  exists(
-                    selectFrom('UniqueAbilityPart')
-                      .where(({ eb, and, or, not, exists, selectFrom }) => {
-                        return and([
-                          eb('UniqueAbilityPart.partType', '=', part.part),
-                          !partIncludeSupport ? eb('UniqueAbilityPart.isSupport', '=', false) : null,
-                          ...tokens.map(token => eb('UniqueAbilityPart.textEn', 'ilike', `%${token.text}%`)),
-                        ].filter(x => x != null))
-                      })
-                      .whereRef('UniqueAbilityPart.id', '=', 'AbilityPartLink.partId')
-                    )
-                    : null,
-                negatedTokens.length > 0 ?
-                  not(
-                    exists(
-                      selectFrom('UniqueAbilityPart')
-                        .where(({ eb, and, or, not, exists, selectFrom }) => {
-                          return and([
-                            eb('UniqueAbilityPart.partType', '=', part.part),
-                            !partIncludeSupport ? eb('UniqueAbilityPart.isSupport', '=', false) : null,
-                            or(
-                              negatedTokens.map(token => eb('UniqueAbilityPart.textEn', 'ilike', `%${token.text}%`)),
-                            )
-                          ].filter(x => x != null))
-                        })
-                        .whereRef('UniqueAbilityPart.id', '=', 'AbilityPartLink.partId')
-                    )
-                  )
-                  : null,
-              ].filter(x => x != null))
-            })
-            .whereRef('AbilityPartLink.abilityId', '=', 'UniqueAbilityLine.id')
-        )
-      })
-      return and(abilityPartFilters)
-    })
+    if (abilityParts[0].text != null) {
+      abLineQuery = abLineQuery
+        .innerJoin('AbilityPartLink as apl1', 'UniqueAbilityLine.id', 'apl1.abilityId')
+        .innerJoin('UniqueAbilityPart as upa1', 'apl1.partId', 'upa1.id')
+        .where(({ eb, and }) => {
+          const [negatedTokens0, tokens0] = partition(tokenize(abilityParts[0].text!), (token) => token.negated);
+          return and([
+            eb(`upa1.partType`, '=', abilityParts[0].part),
+            !partIncludeSupport ? eb(`upa1.isSupport`, '=', false) : null,
+            ...tokens0.map(token => eb('upa1.textEn', 'ilike', `%${token.text}%`)),
+            ...negatedTokens0.map(token => eb('upa1.textEn', 'not ilike', `%${token.text}%`)),
+          ].filter(x => x != null))
+        })
+    }
+    if (abilityParts[1].text != null) {
+      abLineQuery = abLineQuery
+        .innerJoin('AbilityPartLink as apl2', 'UniqueAbilityLine.id', 'apl2.abilityId')
+        .innerJoin('UniqueAbilityPart as upa2', 'apl2.partId', 'upa2.id')
+        .where(({ eb, and }) => {
+          const [negatedTokens1, tokens1] = partition(tokenize(abilityParts[1].text!), (token) => token.negated);
+          return and([
+            eb(`upa2.partType`, '=', abilityParts[1].part),
+            !partIncludeSupport ? eb(`upa2.isSupport`, '=', false) : null,
+            ...tokens1.map(token => eb('upa2.textEn', 'ilike', `%${token.text}%`)),
+            ...negatedTokens1.map(token => eb('upa2.textEn', 'not ilike', `%${token.text}%`)),
+          ].filter(x => x != null))
+        })
+    }
+    if (abilityParts[2].text != null) {
+      abLineQuery = abLineQuery
+        .innerJoin('AbilityPartLink as apl3', 'UniqueAbilityLine.id', 'apl3.abilityId')
+        .innerJoin('UniqueAbilityPart as upa3', 'apl3.partId', 'upa3.id')
+        .where(({ eb, and }) => {
+          const [negatedTokens2, tokens2] = partition(tokenize(abilityParts[2].text!), (token) => token.negated);
+
+          return and([
+            eb(`upa3.partType`, '=', abilityParts[2].part),
+            !partIncludeSupport ? eb(`upa3.isSupport`, '=', false) : null,
+            ...tokens2.map(token => eb('upa3.textEn', 'ilike', `%${token.text}%`)),
+            ...negatedTokens2.map(token => eb('upa3.textEn', 'not ilike', `%${token.text}%`)),
+          ].filter(x => x != null))
+        })
+    }
+
+    // if (!partIncludeSupport) {
+    //   abLineQuery = abLineQuery.where('UniqueAbilityLine.isSupport', '=', false)
+    // }
 
     query = abLineQuery.innerJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
   }
@@ -172,9 +164,9 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
       query = query
         .where(eb => eb(
           to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
-            '@@',
-            tokens_to_tsquery(tokens),
-          ))
+          '@@',
+          tokens_to_tsquery(tokens),
+        ))
     } else {
       query = query.where((eb) => eb.and(
         tokens.map(token => eb('mainEffectEn', 'ilike', `%${token.text}%`)),
@@ -228,7 +220,6 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
       minPrice ? eb('lastSeenInSalePrice', '>=', minPrice) : null,
       maxPrice ? eb('lastSeenInSalePrice', '<=', maxPrice) : null,
     ].filter(x => x != null)))
-    .selectAll()
     .orderBy('lastSeenInSalePrice', 'asc')
     .orderBy('UniqueInfo.id', 'asc') // This ID doesn't really mean anything, it's just here to make the results deterministic
     .limit(PAGE_SIZE)

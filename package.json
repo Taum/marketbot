@@ -16,8 +16,8 @@
     "dev:backfill-family-ids": "tsx --env-file=.env dev-utils/backfill-family-ids.ts",
     "dev:backfill-subtypes": "tsx --env-file=.env dev-utils/backfill-subtypes.ts",
     "dev:check-uniques": "tsx --env-file=.env dev-utils/check-uniques.ts",
-    "dev:db-perf-test": "tsx --env-file=.env dev-utils/db-perf-test/test.ts",
-    "dev:side-load-uniques": "tsx --env-file=.env dev-utils/side-load-uniques.ts"
+    "dev:side-load-uniques": "tsx --env-file=.env dev-utils/side-load-uniques.ts",
+    "test:db-perf": "tsx --env-file=.env.test dev-utils/db-perf-test/test.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",

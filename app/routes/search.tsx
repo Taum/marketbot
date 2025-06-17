@@ -12,6 +12,7 @@ import { ResultGrid } from "~/components/altered/ResultGrid";
 import { ResultsPagination } from "~/components/common/pagination";
 import { DisplayUniqueCard } from "~/models/cards";
 import { Checkbox } from "~/components/ui/checkbox";
+import { searchWithJoins } from "~/loaders/search-alternates";
 
 
 interface SearchQuery {
@@ -69,7 +70,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const startTs = performance.now()
 
-    const { results, pagination } = await search(
+    const { results, pagination } = await searchWithJoins(
       {
         faction,
         set,

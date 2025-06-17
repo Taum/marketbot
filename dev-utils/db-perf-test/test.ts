@@ -51,9 +51,32 @@ const testCases: TestCase[] = [
       faction: "LY",
       mainCosts: [1, 2, 3],
       cardText: undefined,
-      triggerPart: "\"when\"",
+      triggerPart: "when",
       conditionPart: "-landmark",
       effectPart: "boost",
+    },
+  },
+  {
+    name: "Positive+Negative search",
+    query: {
+      faction: "MU",
+      cardText: undefined,
+      triggerPart: "when",
+      conditionPart: "reserve -discard",
+      effectPart: "anchored",
+    },
+  },
+  {
+    name: "Ability + Character name",
+    query: {
+      faction: "OR",
+      mainCosts: [4, 5, 6, 7, 8],
+      recallCosts: [5, 6, 7],
+      cardText: undefined,
+      characterName: "issitoq",
+      triggerPart: "{J}",
+      conditionPart: "[]",
+      effectPart: undefined,
     },
   }
 ];

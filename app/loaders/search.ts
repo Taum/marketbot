@@ -296,7 +296,6 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
       minPrice ? eb('lastSeenInSalePrice', '>=', minPrice) : null,
       maxPrice ? eb('lastSeenInSalePrice', '<=', maxPrice) : null,
     ].filter(x => x != null)))
-    .selectAll()
     .orderBy('lastSeenInSalePrice', 'asc')
     .orderBy('UniqueInfo.id', 'asc') // This ID doesn't really mean anything, it's just here to make the results deterministic
     .limit(PAGE_SIZE)
