@@ -52,7 +52,7 @@ if (url.searchParams.get("host")) {
 const dialect = new PostgresDialect({
   pool: new Pool({
     ...params,
-    max: 10,
+    max: 15,
   })
 })
 

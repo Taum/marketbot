@@ -2,7 +2,7 @@ import { DisplayUniqueCard } from "~/models/cards.js";
 import { PageParams, search, SearchResults } from "../../app/loaders/search.js";
 import { SearchQuery } from "../../app/loaders/search.js";
 import { delay } from "@common/utils/promise.js";
-import { searchWithJoins } from "~/loaders/search-alternates.js";
+import { searchWithCTEs, searchWithCTEsWithExcept, searchWithJoins } from "~/loaders/search-alternates.js";
 
 interface TestCase {
   name: string;
@@ -22,18 +22,18 @@ interface RunResult {
 }
 
 const testCases: TestCase[] = [
-  // {
-  //   name: "Short text search",
-  //   query: {
-  //     cardText: "When you play a spell",
-  //   },
-  // },
-  // {
-  //   name: "Long text search",
-  //   query: {
-  //     cardText: "When you play a spell I gain 1 boost",
-  //   },
-  // },
+  {
+    name: "Short text search",
+    query: {
+      cardText: "When you play a spell",
+    },
+  },
+  {
+    name: "Long text search",
+    query: {
+      cardText: "When you play a spell I gain 1 boost",
+    },
+  },
   {
     name: "Complex Search",
     query: {
@@ -54,6 +54,26 @@ const testCases: TestCase[] = [
       triggerPart: "when",
       conditionPart: "-landmark",
       effectPart: "boost",
+    },
+  },
+  {
+    name: "Negative Trigger",
+    query: {
+      mainCosts: [1, 2, 3],
+      cardText: undefined,
+      triggerPart: "-when",
+      conditionPart: undefined,
+      effectPart: "boost",
+    },
+  },
+  {
+    name: "Negative all",
+    query: {
+      mainCosts: [1, 2, 3],
+      cardText: undefined,
+      triggerPart: "-when",
+      conditionPart: "-landmark",
+      effectPart: "-boost",
     },
   },
   {
@@ -108,8 +128,8 @@ async function runAllTests() {
   console.log("Starting performance tests...\n");
 
   const results: TestResult[] = [];
-  const implNames = ["searchWithJoins", "search"];
-  const searchFunctions: SearchFunction[] = [searchWithJoins, search];
+  const implNames = ["searchWithCTEs", "searchWithCTEsWithExcept", "searchWithJoins", "search"];
+  const searchFunctions: SearchFunction[] = [searchWithCTEs, searchWithCTEsWithExcept, searchWithJoins, search];
   
   for (const testCase of testCases) {
     console.log(`Running test: ${testCase.name}`);
@@ -121,7 +141,7 @@ async function runAllTests() {
     results.push(result);
     
     // Run each test 4 times. discard the first result, then take the average
-    const RUNS_COUNT = 4;
+    const RUNS_COUNT = 10;
     for (let i = 0; i < RUNS_COUNT; i++) {
       for (let j = 0; j < searchFunctions.length; j++) {
         const searchFn = searchFunctions[j];
