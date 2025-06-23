@@ -65,6 +65,7 @@ model UniqueInfo {
   @@index([nameEn])
   @@index([seenInLastGeneration])
   @@index([lastSeenInSalePrice])
+  @@index([fetchedDetails])
   @@index([cardSubTypes]) // GIN index
 }
 

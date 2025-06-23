@@ -17,7 +17,8 @@
     "dev:backfill-subtypes": "tsx --env-file=.env dev-utils/backfill-subtypes.ts",
     "dev:check-uniques": "tsx --env-file=.env dev-utils/check-uniques.ts",
     "dev:side-load-uniques": "tsx --env-file=.env dev-utils/side-load-uniques.ts",
-    "test:db-perf": "tsx --env-file=.env.test dev-utils/db-perf-test/test.ts"
+    "test:db-perf": "tsx --env-file=.env.test dev-utils/db-perf-test/test.ts",
+    "test:logs-analysis": "tsx dev-utils/gcp-perf-analysis/analysis.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",

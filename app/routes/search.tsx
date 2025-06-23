@@ -12,7 +12,7 @@ import { ResultGrid } from "~/components/altered/ResultGrid";
 import { ResultsPagination } from "~/components/common/pagination";
 import { DisplayUniqueCard } from "~/models/cards";
 import { Checkbox } from "~/components/ui/checkbox";
-import { searchWithCTEsWithExcept } from "~/loaders/search-alternates";
+import { searchWithCTEsIndexingCharacterNames, searchWithCTEsWithExcept } from "~/loaders/search-alternates";
 
 
 interface SearchQuery {
@@ -70,7 +70,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const startTs = performance.now()
 
-    const { results, pagination } = await searchWithCTEsWithExcept(
+    const { results, pagination } = await searchWithCTEsIndexingCharacterNames(
       {
         faction,
         set,

@@ -194,7 +194,15 @@ export class CommunityDbUniquesCrawler extends UniquesCrawler {
       await this.git.raw(['update-index', '--add', '--cacheinfo', '100644', blobHash, gitPath])
       
       this.uniquesAddedToRepo++
-    } finally {
+    }
+    catch (error) {
+      if (error instanceof Error && error.message.includes("index.lock")) {
+        console.error('index.lock already exists, ignoring this file', error)
+        return
+      }
+      throw error
+    }
+    finally {
       // Clean up the temporary file
       await fs.unlink(tempFilePath).catch(() => {}) // Ignore errors when cleaning up
     }

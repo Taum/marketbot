@@ -8,7 +8,7 @@ import { Decimal } from "decimal.js";
 import { Expression, SelectQueryBuilder, sql } from "kysely";
 import { partition } from "~/lib/utils";
 import { DB } from "@generated/kysely-db/types";
-import { buildDisplayAbility, PageParams, SearchQuery, SearchResults, to_tsvector2, tokenize, tokens_to_tsquery } from "~/loaders/search";
+import { buildDisplayAbility, PageParams, SearchQuery, SearchResults, to_tsvector2, Token, tokenize, tokens_to_tsquery } from "~/loaders/search";
 
 // Add the type from Prisma namespace
 type UniqueInfoWhereInput = Prisma.UniqueInfoWhereInput;
@@ -16,6 +16,10 @@ type UniqueInfoWhereInput = Prisma.UniqueInfoWhereInput;
 const debug = process.env.DEBUG_WEB == "true"
 
 const PAGE_SIZE = 100
+
+export const websearch_to_tsquery = (str: string) => {
+  return sql`ts_rewrite(websearch_to_tsquery('simple', ${str}), 'SELECT "from","to" FROM "FtsAlias"')`   
+}
 
 export async function searchWithJoins(searchQuery: SearchQuery, pageParams: PageParams): Promise<SearchResults> {
   const {
@@ -252,7 +256,7 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
 
   let pagination: { totalCount: number, pageCount: number } | undefined = undefined
   if (includePagination) {
-    const totalCount = Number(results[0].totalCount)
+    const totalCount = results.length > 0 ? Number(results[0].totalCount) : 0
     if (debug) {
       console.log('Total count: ' + totalCount)
     }
@@ -568,7 +572,7 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
 
   let pagination: { totalCount: number, pageCount: number } | undefined = undefined
   if (includePagination) {
-    const totalCount = Number(results[0].totalCount)
+    const totalCount = results.length > 0 ? Number(results[0].totalCount) : 0
     if (debug) {
       console.log('Total count: ' + totalCount)
     }
@@ -607,7 +611,7 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
 
 
 
-export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pageParams: PageParams): Promise<SearchResults> {
+export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQuery, pageParams: PageParams): Promise<SearchResults> {
   const {
     faction,
     set,
@@ -833,6 +837,398 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
     const [negatedTokens, normalTokens] = partition(tokenize(characterName), t => t.negated);
 
     if (normalTokens.length > 0) {
+      const charNameQuery = db.selectFrom('CardFamilyStats')
+        .select('name')
+        .distinct()
+        .where((eb) => eb.or(
+          normalTokens.map(token => eb('name', 'ilike', `%${token.text}%`))
+        ))
+        .$if(negatedTokens.length > 0, (eb) => eb.where((eb) => eb.and(
+          negatedTokens.map(token => eb('name', 'not ilike', `%${token.text}%`))
+        )))
+      const matchingCharacterNames = await charNameQuery.execute()
+      // console.log("Matching character names:", matchingCharacterNames.map(x => x.name).join(', '))
+      query = query.where(
+        'UniqueInfo.nameEn', 'in', matchingCharacterNames.map(x => x.name)
+      )
+    }
+    else if (negatedTokens.length > 0) {
+      query = query.where((eb) => eb.and(
+        negatedTokens.map(token => eb('nameEn', 'not ilike', `%${token.text}%`))
+      ))
+    }
+    else {
+      throw new Error("Character name search did not generate any tokens")
+    }
+  }
+
+  if (mainCosts && mainCosts.length > 0) {
+    query = query.where('mainCost', 'in', mainCosts)
+  }
+  if (recallCosts && recallCosts.length > 0) {
+    query = query.where('recallCost', 'in', recallCosts)
+  }
+
+  if (set != null) {
+    if (set == CardSet.Core) {
+      query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
+    } else {
+      query = query.where('cardSet', '=', set)
+    }
+  }
+
+  if (cardText != null) {
+    query = query
+      .where(eb => eb(
+        to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
+        '@@',
+        websearch_to_tsquery(cardText),
+      ))
+  }
+
+  if (!includeExpiredCards) {
+    query = query.where('seenInLastGeneration', '=', true)
+  }
+
+
+  const queryWithSelect = query
+    .select([
+      'UniqueInfo.id',
+      'UniqueInfo.ref',
+      'UniqueInfo.nameEn',
+      'UniqueInfo.faction',
+      'UniqueInfo.mainEffectEn',
+      'UniqueInfo.echoEffectEn',
+      'UniqueInfo.lastSeenInSaleAt',
+      'UniqueInfo.lastSeenInSalePrice',
+      'UniqueInfo.seenInLastGeneration',
+      'UniqueInfo.cardSet',
+      'UniqueInfo.imageUrlEn',
+      'UniqueInfo.oceanPower',
+      'UniqueInfo.mountainPower',
+      'UniqueInfo.forestPower',
+      'UniqueInfo.mainCost',
+      'UniqueInfo.recallCost',
+    ])
+    .select(() => [
+      sql`COUNT(*) OVER ()`.as('totalCount')
+    ])
+    .select((eb) => [
+      jsonArrayFrom(
+        eb.selectFrom('UniqueAbilityLine')
+          .select(['UniqueAbilityLine.id', 'UniqueAbilityLine.lineNumber', 'UniqueAbilityLine.textEn', 'UniqueAbilityLine.isSupport', 'UniqueAbilityLine.characterData'])
+          .select((eb2) => [
+            jsonArrayFrom(
+              eb2.selectFrom('AbilityPartLink')
+                .select(['AbilityPartLink.id', 'AbilityPartLink.partId', 'AbilityPartLink.partType'])
+                .whereRef('AbilityPartLink.abilityId', '=', 'UniqueAbilityLine.id')
+            ).as('allParts')
+          ])
+          .whereRef('UniqueAbilityLine.uniqueInfoId', '=', 'UniqueInfo.id')
+          .orderBy('UniqueAbilityLine.lineNumber')
+      ).as('mainAbilities'),
+    ])
+    .$if(minPrice != null || maxPrice != null, (eb) => eb.where((eb) => eb.and([
+      minPrice ? eb('lastSeenInSalePrice', '>=', minPrice) : null,
+      maxPrice ? eb('lastSeenInSalePrice', '<=', maxPrice) : null,
+    ].filter(x => x != null))))
+    .orderBy('lastSeenInSalePrice', 'asc')
+    .orderBy('UniqueInfo.id', 'asc') // This ID doesn't really mean anything, it's just here to make the results deterministic
+    .limit(PAGE_SIZE)
+    .offset(PAGE_SIZE * (page - 1))
+
+  if (debug) {
+    const compiled = queryWithSelect.compile()
+    console.log("Compiled Query:")
+    console.log(compiled.sql)
+
+    const params = compiled.parameters
+    const interpolated = compiled.sql.replace(/\$(\d+)/g, (match) => {
+      const paramIndex = parseInt(match.slice(1)) - 1;
+      const param = params[paramIndex];
+      if (typeof param === 'string') {
+        return `'${param}'`;
+      }
+      return `${param}`;
+    })
+    console.log("Interpolated: --------------------------------")
+    console.log(interpolated)
+    console.log("--------------------------------")
+
+    console.log("Explain Analyze:")
+    const explainAnalyze = await queryWithSelect.explain(undefined, sql`analyze`)
+    console.log(explainAnalyze.map(x => x['QUERY PLAN']).join('\n'))
+  }
+
+  const results = await queryWithSelect.execute()
+
+  let pagination: { totalCount: number, pageCount: number } | undefined = undefined
+  if (includePagination) {
+    const totalCount = results.length > 0 ? Number(results[0].totalCount) : 0
+    if (debug) {
+      console.log('Total count: ' + totalCount)
+    }
+
+    pagination = {
+      totalCount: totalCount,
+      pageCount: Math.ceil(totalCount / PAGE_SIZE)
+    }
+  }
+
+  const outResults: DisplayUniqueCard[] = results.map((result) => {
+    if (!result.ref || !result.nameEn || !result.faction || !result.mainEffectEn) {
+      return null;
+    }
+
+    let displayAbilities: DisplayAbilityOnCard[] = result.mainAbilities
+      .map((a) => buildDisplayAbility(a))
+      .filter((x) => x != null)
+
+    return {
+      ref: result.ref,
+      name: result.nameEn,
+      faction: result.faction as Faction,
+      cardSet: result.cardSet!,
+      imageUrl: result.imageUrlEn!,
+      mainEffect: result.mainEffectEn,
+      echoEffect: result.echoEffectEn,
+      lastSeenInSaleAt: result.lastSeenInSaleAt?.toISOString(),
+      lastSeenInSalePrice: Decimal(result.lastSeenInSalePrice ?? 0).toFixed(2).toString(),
+      mainAbilities: displayAbilities.sort((a, b) => a.lineNumber - b.lineNumber),
+    }
+  }).filter((result) => result !== null);
+
+  return { results: outResults, pagination };
+}
+
+
+export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pageParams: PageParams): Promise<SearchResults> {
+  const {
+    faction,
+    set,
+    characterName,
+    cardText,
+    triggerPart,
+    conditionPart,
+    effectPart,
+    mainCosts,
+    recallCosts,
+    includeExpiredCards,
+    minPrice,
+    maxPrice,
+  } = searchQuery
+  const {
+    page,
+    includePagination,
+  } = pageParams
+
+  if (
+    faction == null &&
+    set == null &&
+    characterName == null &&
+    cardText == null &&
+    triggerPart == null &&
+    conditionPart == null &&
+    effectPart == null
+  ) {
+    return { results: [], pagination: undefined }
+  }
+
+  const abilityParts = [
+    { part: AbilityPartType.Trigger, text: triggerPart },
+    { part: AbilityPartType.Condition, text: conditionPart },
+    { part: AbilityPartType.Effect, text: effectPart }
+  ]
+
+  const partIncludeSupport = searchQuery.partIncludeSupport ?? false
+
+  const nonNullAbilityParts = abilityParts.filter(x => x.text != null)
+    .map(x => {
+      const [neg, pos] = partition(tokenize(x.text!), (token) => token.negated)
+      return { part: x.part, neg, pos }
+    })
+    .sort((a, b) => {
+      if (a.pos.length > 0 && b.pos.length <= 0) {
+        return -1;
+      }
+      if (a.pos.length <= 0 && b.pos.length > 0) {
+        return 1;
+      }
+      return 0;
+    })
+
+  if (debug) {
+    console.log("Ability Parts (tokenized):")
+    console.dir(nonNullAbilityParts)
+  }
+
+  let except0 = false
+  let except1 = false
+  let except2 = false
+
+  let withQuery = db
+    .with('apl0_ids', (eb) => {
+      if (nonNullAbilityParts.length > 0) {
+        const ap = nonNullAbilityParts[0]
+        if (ap.pos.length > 0) {
+          return eb.selectFrom('AbilityPartLink')
+            .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
+            .select('AbilityPartLink.abilityId')
+            .where(({ eb, and }) => {
+              return and([
+                eb(`upa.partType`, '=', ap.part),
+                !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
+                ...ap.pos.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
+                ...ap.neg.map(token => eb('upa.textEn', 'not ilike', `%${token.text}%`)),
+              ].filter(x => x != null))
+            })
+        } else {
+          except0 = true
+          return eb.selectFrom('AbilityPartLink')
+            .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
+            .select('AbilityPartLink.abilityId')
+            .where(({ eb, and }) => {
+              return and([
+                eb(`upa.partType`, '=', ap.part),
+                !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
+                ...ap.neg.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
+              ].filter(x => x != null))
+            })
+        }
+      } else {
+        return eb.selectFrom('AbilityPartLink')
+          .select('AbilityPartLink.abilityId')
+          .where('AbilityPartLink.id', '=', 0)
+      }
+    })
+    .with('apl1_ids', (eb) => {
+      if (nonNullAbilityParts.length > 1) {
+        const ap = nonNullAbilityParts[1]
+        if (ap.pos.length > 0) {
+          return eb.selectFrom('AbilityPartLink')
+            .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
+            .select('AbilityPartLink.abilityId')
+            .where(({ eb, and }) => {
+              return and([
+                eb(`upa.partType`, '=', ap.part),
+                !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
+                ...ap.pos.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
+                ...ap.neg.map(token => eb('upa.textEn', 'not ilike', `%${token.text}%`)),
+              ].filter(x => x != null))
+            })
+        } else {
+          except1 = true
+          return eb.selectFrom('AbilityPartLink')
+            .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
+            .select('AbilityPartLink.abilityId')
+            .where(({ eb, and }) => {
+              return and([
+                eb(`upa.partType`, '=', ap.part),
+                !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
+                ...ap.neg.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
+              ].filter(x => x != null))
+            })
+        }
+      } else {
+        return eb.selectFrom('AbilityPartLink')
+          .select('AbilityPartLink.abilityId')
+          .where('AbilityPartLink.id', '=', 0)
+      }
+    })
+    .with('apl2_ids', (eb) => {
+      if (nonNullAbilityParts.length > 2) {
+        const ap = nonNullAbilityParts[2]
+        if (ap.pos.length > 0) {
+          return eb.selectFrom('AbilityPartLink')
+            .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
+            .select('AbilityPartLink.abilityId')
+            .where(({ eb, and }) => {
+              return and([
+                eb(`upa.partType`, '=', ap.part),
+                !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
+                ...ap.pos.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
+                ...ap.neg.map(token => eb('upa.textEn', 'not ilike', `%${token.text}%`)),
+              ].filter(x => x != null))
+            })
+        } else {
+          except2 = true
+          return eb.selectFrom('AbilityPartLink')
+            .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
+            .select('AbilityPartLink.abilityId')
+            .where(({ eb, and }) => {
+              return and([
+                eb(`upa.partType`, '=', ap.part),
+                !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
+                ...ap.neg.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
+              ].filter(x => x != null))
+            })
+        }
+      } else {
+        return eb.selectFrom('AbilityPartLink')
+          .select('AbilityPartLink.abilityId')
+          .where('AbilityPartLink.id', '=', 0)
+      }
+    })
+    .with('unique_ability_lines', (eb) => {
+      if (except0) {
+        let q = eb
+          .selectFrom('apl0_ids').selectAll()
+        if (nonNullAbilityParts.length > 1) {
+          q = q.union(eb.selectFrom('apl1_ids').selectAll())
+        }
+        if (nonNullAbilityParts.length > 2) {
+          q = q.union(eb.selectFrom('apl2_ids').selectAll())
+        }
+        return q
+      }
+      
+      let q = eb.selectFrom('apl0_ids').selectAll()
+      if (nonNullAbilityParts.length > 1) {
+        if (except1) {
+          q = q.except(eb.selectFrom('apl1_ids').selectAll())
+        } else {
+          q = q.intersect(eb.selectFrom('apl1_ids').selectAll())
+        }
+      }
+      if (nonNullAbilityParts.length > 2) {
+        if (except2) {
+          q = q.except(eb.selectFrom('apl2_ids').selectAll())
+        } else {
+          q = q.intersect(eb.selectFrom('apl2_ids').selectAll())
+        }
+      }
+      return q
+    })
+
+  let query: SelectQueryBuilder<DB, "UniqueInfo", {}> = withQuery.selectFrom('UniqueInfo')
+
+  // If our search is based on ability parts, we start from UniqueAbilityLine and join to UniqueInfo instead
+  if (nonNullAbilityParts.length > 0) {
+    // If we only have negative parts, we have inverted the `unique_ability_lines` CTE and need to invert the query here
+    if (except0) {
+      query = db.selectFrom('UniqueAbilityLine')
+        .where('UniqueAbilityLine.id', 'not in', withQuery.selectFrom('unique_ability_lines').select('abilityId'))
+        .$if(!partIncludeSupport, (eb) => eb.where('UniqueAbilityLine.isSupport', '=', false))
+        .innerJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
+    } else {
+      query = db.selectFrom('UniqueAbilityLine')
+        .where('UniqueAbilityLine.id', 'in', withQuery.selectFrom('unique_ability_lines').select('abilityId'))
+        .$if(!partIncludeSupport, (eb) => eb.where('UniqueAbilityLine.isSupport', '=', false))
+        .innerJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
+    }
+  }
+
+  // Now we can add all the filters based on the UniqueInfo table
+  if (faction != null) {
+    query = query.where('faction', '=', faction)
+  }
+
+  if (characterName != null) {
+    // Character name should default to a OR, not AND
+    // but negation of OR is NAND, so we need to handle that
+    const [negatedTokens, normalTokens] = partition(tokenize(characterName), t => t.negated);
+
+    if (normalTokens.length > 0) {
       query = query.where((eb) => eb.or(
         normalTokens.map(token => eb('nameEn', 'ilike', `%${token.text}%`))
       ))
@@ -961,7 +1357,7 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
 
   let pagination: { totalCount: number, pageCount: number } | undefined = undefined
   if (includePagination) {
-    const totalCount = Number(results[0].totalCount)
+    const totalCount = results.length > 0 ? Number(results[0].totalCount) : 0
     if (debug) {
       console.log('Total count: ' + totalCount)
     }

@@ -328,7 +328,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
 
   let pagination: { totalCount: number, pageCount: number } | undefined = undefined
   if (includePagination) {
-    const totalCount = Number(results[0].totalCount)
+    const totalCount = results.length > 0 ? Number(results[0].totalCount) : 0
     if (debug) {
       console.log('Total count: ' + totalCount)
     }
