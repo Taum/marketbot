@@ -18,6 +18,7 @@ const debug = process.env.DEBUG_WEB == "true"
 const PAGE_SIZE = 100
 
 export const websearch_to_tsquery = (str: string) => {
+  // return sql`websearch_to_tsquery('simple', ${str})`
   return sql`ts_rewrite(websearch_to_tsquery('simple', ${str}), 'SELECT "from","to" FROM "FtsAlias"')`   
 }
 
@@ -878,11 +879,15 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
   }
 
   if (cardText != null) {
+    const { tsQuery } = await db.selectNoFrom(
+      websearch_to_tsquery(cardText).as('tsQuery')
+    ).executeTakeFirstOrThrow()
+
     query = query
       .where(eb => eb(
         to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
         '@@',
-        websearch_to_tsquery(cardText),
+        tsQuery,
       ))
   }
 
