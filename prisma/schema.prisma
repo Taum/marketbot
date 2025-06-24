@@ -75,36 +75,29 @@ model UniqueAbilityLine {
   uniqueInfo    UniqueInfo @relation(fields: [uniqueInfoId], references: [id])
   lineNumber    Int
   isSupport     Boolean
-  
+
+  triggerPartId Int?
+  triggerPart   UniqueAbilityPart? @relation("TriggerPart", fields: [triggerPartId], references: [id])
+  conditionPartId Int?
+  conditionPart   UniqueAbilityPart? @relation("ConditionPart", fields: [conditionPartId], references: [id])
+  effectPartId Int?
+  effectPart   UniqueAbilityPart? @relation("EffectPart", fields: [effectPartId], references: [id])
+  extraEffectPartIds Int[]
+  allPartIds Int[]
+
   /// @kyselyType(JsonValue)
   characterData Json?
 
   textEn String
 
-  allParts AbilityPartLink[]
-
   @@unique([id])
   @@unique([uniqueInfoId, lineNumber, isSupport])
   @@index([id])
   @@index([uniqueInfoId, lineNumber, isSupport])
-  // @@index([isSupport])
-}
-
-model AbilityPartLink {
-  id Int @id @default(autoincrement())
-
-  partId Int
-  part UniqueAbilityPart @relation(fields: [partId], references: [id])
-  abilityId Int
-  ability UniqueAbilityLine @relation(fields: [abilityId], references: [id])
-
-  partType AbilityPartType
-
-  @@unique([id])
-  @@unique([partId, abilityId])
-
-  @@index([partId])
-  @@index([abilityId])
+  @@index([isSupport])
+  @@index([triggerPartId])
+  @@index([conditionPartId])
+  @@index([effectPartId])
 }
 
 model UniqueAbilityPart {
@@ -113,8 +106,10 @@ model UniqueAbilityPart {
 
   partType  AbilityPartType
   isSupport Boolean
-
-  allAbilities AbilityPartLink[]
+  
+  triggerLines   UniqueAbilityLine[] @relation("TriggerPart")
+  conditionLines UniqueAbilityLine[] @relation("ConditionPart")
+  effectLines    UniqueAbilityLine[] @relation("EffectPart")
 
   @@unique([id])
   @@unique([textEn, partType, isSupport])

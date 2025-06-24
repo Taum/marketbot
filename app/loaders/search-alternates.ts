@@ -9,6 +9,7 @@ import { Expression, SelectQueryBuilder, sql } from "kysely";
 import { partition } from "~/lib/utils";
 import { DB } from "@generated/kysely-db/types";
 import { buildDisplayAbility, PageParams, SearchQuery, SearchResults, to_tsvector2, Token, tokenize, tokens_to_tsquery } from "~/loaders/search";
+import fs from "fs/promises";
 
 // Add the type from Prisma namespace
 type UniqueInfoWhereInput = Prisma.UniqueInfoWhereInput;
@@ -19,7 +20,18 @@ const PAGE_SIZE = 100
 
 export const websearch_to_tsquery = (str: string) => {
   // return sql`websearch_to_tsquery('simple', ${str})`
-  return sql`ts_rewrite(websearch_to_tsquery('simple', ${str}), 'SELECT "from","to" FROM "FtsAlias"')`   
+  return sql`
+    ts_rewrite(
+    ts_rewrite(
+    ts_rewrite(
+    ts_rewrite(
+    ts_rewrite(
+      websearch_to_tsquery('simple', ${str}),
+      'card', 'card|cards'),
+      'character', 'character|characters'),
+      'boost', 'boost|boosts'),
+      'landmark', 'landmark|landmarks'),
+      'permanent', 'permanent|permanents')`
 }
 
 export async function searchWithJoins(searchQuery: SearchQuery, pageParams: PageParams): Promise<SearchResults> {
@@ -69,8 +81,7 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
 
     if (abilityParts[0].text != null) {
       abLineQuery = abLineQuery
-        .innerJoin('AbilityPartLink as apl1', 'UniqueAbilityLine.id', 'apl1.abilityId')
-        .innerJoin('UniqueAbilityPart as upa1', 'apl1.partId', 'upa1.id')
+        .innerJoin('UniqueAbilityPart as upa1', 'UniqueAbilityLine.triggerPartId', 'upa1.id')
         .where(({ eb, and }) => {
           const [negatedTokens0, tokens0] = partition(tokenize(abilityParts[0].text!), (token) => token.negated);
           return and([
@@ -83,8 +94,7 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
     }
     if (abilityParts[1].text != null) {
       abLineQuery = abLineQuery
-        .innerJoin('AbilityPartLink as apl2', 'UniqueAbilityLine.id', 'apl2.abilityId')
-        .innerJoin('UniqueAbilityPart as upa2', 'apl2.partId', 'upa2.id')
+        .innerJoin('UniqueAbilityPart as upa2', 'UniqueAbilityLine.conditionPartId', 'upa2.id')
         .where(({ eb, and }) => {
           const [negatedTokens1, tokens1] = partition(tokenize(abilityParts[1].text!), (token) => token.negated);
           return and([
@@ -97,8 +107,7 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
     }
     if (abilityParts[2].text != null) {
       abLineQuery = abLineQuery
-        .innerJoin('AbilityPartLink as apl3', 'UniqueAbilityLine.id', 'apl3.abilityId')
-        .innerJoin('UniqueAbilityPart as upa3', 'apl3.partId', 'upa3.id')
+        .innerJoin('UniqueAbilityPart as upa3', 'UniqueAbilityLine.effectPartId', 'upa3.id')
         .where(({ eb, and }) => {
           const [negatedTokens2, tokens2] = partition(tokenize(abilityParts[2].text!), (token) => token.negated);
 
@@ -123,20 +132,35 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
     query = query.where('faction', '=', faction)
   }
 
+
   if (characterName != null) {
     // Character name should default to a OR, not AND
     // but negation of OR is NAND, so we need to handle that
     const [negatedTokens, normalTokens] = partition(tokenize(characterName), t => t.negated);
 
     if (normalTokens.length > 0) {
-      query = query.where((eb) => eb.or(
-        normalTokens.map(token => eb('nameEn', 'ilike', `%${token.text}%`))
-      ))
+      const charNameQuery = db.selectFrom('CardFamilyStats')
+        .select('name')
+        .distinct()
+        .where((eb) => eb.or(
+          normalTokens.map(token => eb('name', 'ilike', `%${token.text}%`))
+        ))
+        .$if(negatedTokens.length > 0, (eb) => eb.where((eb) => eb.and(
+          negatedTokens.map(token => eb('name', 'not ilike', `%${token.text}%`))
+        )))
+      const matchingCharacterNames = await charNameQuery.execute()
+      // console.log("Matching character names:", matchingCharacterNames.map(x => x.name).join(', '))
+      query = query.where(
+        'UniqueInfo.nameEn', 'in', matchingCharacterNames.map(x => x.name)
+      )
     }
-    if (negatedTokens.length > 0) {
+    else if (negatedTokens.length > 0) {
       query = query.where((eb) => eb.and(
         negatedTokens.map(token => eb('nameEn', 'not ilike', `%${token.text}%`))
       ))
+    }
+    else {
+      throw new Error("Character name search did not generate any tokens")
     }
   }
 
@@ -156,28 +180,19 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
   }
 
   if (cardText != null) {
-    const tokens = tokenize(cardText);
-    // This condition is more art than science:
-    // For some reason I didn't understand, some searches with AbilityLine where much slower when using FTS.
-    // Also when we return a lot of results, the Query Planner prefers doing a full table scan. This is expected, but
-    // at that point we're better off with a simple LIKE. Ideally we would have a way to tell ahead of time or allow
-    // Postgres to use either, but I didn't find a way to do that. Checking the number and length of token is a
-    // crude way to approximate that.
-    const useFTS = (triggerPart == null && conditionPart == null && effectPart == null) &&
-      (tokens.length > 5 || tokens.some(token => token.text.length > 15));
-    if (useFTS) {
-      query = query
-        .where(eb => eb(
-          to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
-          '@@',
-          tokens_to_tsquery(tokens),
-        ))
-    } else {
-      query = query.where((eb) => eb.and(
-        tokens.map(token => eb('mainEffectEn', 'ilike', `%${token.text}%`)),
+    // We execute the ts_rewrite separately to help the Query Planner
+    const { tsQuery } = await db.selectNoFrom(
+      websearch_to_tsquery(cardText).as('tsQuery')
+    ).executeTakeFirstOrThrow()
+
+    query = query
+      .where(eb => eb(
+        to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
+        '@@',
+        tsQuery,
       ))
-    }
   }
+
 
   if (!includeExpiredCards) {
     query = query.where('seenInLastGeneration', '=', true)
@@ -204,21 +219,21 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
       'UniqueInfo.recallCost',
     ])
     .select(() => [
-      sql`COUNT(*) OVER ()`.as('totalCount')
+      sql`COUNT(*) OVER()`.as('totalCount')
     ])
     .select((eb) => [
       jsonArrayFrom(
-        eb.selectFrom('UniqueAbilityLine')
-          .select(['UniqueAbilityLine.id', 'UniqueAbilityLine.lineNumber', 'UniqueAbilityLine.textEn', 'UniqueAbilityLine.isSupport', 'UniqueAbilityLine.characterData'])
+        eb.selectFrom('UniqueAbilityLine as ual')
+          .select(['ual.id', 'ual.lineNumber', 'ual.textEn', 'ual.isSupport', 'ual.characterData'])
           .select((eb2) => [
             jsonArrayFrom(
-              eb2.selectFrom('AbilityPartLink')
-                .select(['AbilityPartLink.id', 'AbilityPartLink.partId', 'AbilityPartLink.partType'])
-                .whereRef('AbilityPartLink.abilityId', '=', 'UniqueAbilityLine.id')
+              eb2.selectFrom('UniqueAbilityPart as uap')
+                .select(['uap.id', 'uap.partType'])
+                .whereRef('uap.id', '=', sql`ANY("ual"."allPartIds")`)
             ).as('allParts')
           ])
-          .whereRef('UniqueAbilityLine.uniqueInfoId', '=', 'UniqueInfo.id')
-          .orderBy('UniqueAbilityLine.lineNumber')
+          .whereRef('ual.uniqueInfoId', '=', 'UniqueInfo.id')
+          .orderBy('ual.lineNumber')
       ).as('mainAbilities'),
     ])
     .where((eb) => eb.and([
@@ -242,15 +257,20 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
       if (typeof param === 'string') {
         return `'${param}'`;
       }
-      return `${param}`;
+      return `${param} `;
     })
     console.log("Interpolated: --------------------------------")
     console.log(interpolated)
     console.log("--------------------------------")
 
     console.log("Explain Analyze:")
-    const explainAnalyze = await queryWithSelect.explain(undefined, sql`analyze`)
-    console.log(explainAnalyze.map(x => x['QUERY PLAN']).join('\n'))
+    const explainAnalyze = await queryWithSelect.explain(undefined, sql`analyze, buffers`)
+    // console.log(explainAnalyze.map(x => x['QUERY PLAN']).join('\n'))
+    // console.dir(explainAnalyze, { depth: null })
+    // await fs.writeFile('tmp/explain-analyze.json', JSON.stringify(explainAnalyze, null, 2))
+    const explainAnalyzeText = explainAnalyze.map(x => x['QUERY PLAN']).filter(x => x.match(/Time\:/)).join('\n')
+    console.log(explainAnalyzeText)
+    await fs.writeFile('tmp/explain-analyze-joins.txt', explainAnalyze.map(x => x['QUERY PLAN']).join('\n'))
   }
 
   const results = await queryWithSelect.execute()
@@ -294,8 +314,7 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
   return { results: outResults, pagination };
 }
 
-
-
+/*
 export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageParams): Promise<SearchResults> {
   const {
     faction,
@@ -353,8 +372,8 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
             return and([
               eb(`upa.partType`, '=', abilityParts[0].part),
               !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
-              ...tokens0.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
-              ...negatedTokens0.map(token => eb('upa.textEn', 'not ilike', `%${token.text}%`)),
+              ...tokens0.map(token => eb('upa.textEn', 'ilike', `% ${ token.text }% `)),
+              ...negatedTokens0.map(token => eb('upa.textEn', 'not ilike', `% ${ token.text }% `)),
             ].filter(x => x != null))
           })
       } else {
@@ -372,8 +391,8 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
             return and([
               eb(`upa.partType`, '=', abilityParts[1].part),
               !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
-              ...tokens1.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
-              ...negatedTokens1.map(token => eb('upa.textEn', 'not ilike', `%${token.text}%`)),
+              ...tokens1.map(token => eb('upa.textEn', 'ilike', `% ${ token.text }% `)),
+              ...negatedTokens1.map(token => eb('upa.textEn', 'not ilike', `% ${ token.text }% `)),
             ].filter(x => x != null))
           })
       } else {
@@ -391,8 +410,8 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
             return and([
               eb(`upa.partType`, '=', abilityParts[2].part),
               !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
-              ...tokens2.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
-              ...negatedTokens2.map(token => eb('upa.textEn', 'not ilike', `%${token.text}%`)),
+              ...tokens2.map(token => eb('upa.textEn', 'ilike', `% ${ token.text }% `)),
+              ...negatedTokens2.map(token => eb('upa.textEn', 'not ilike', `% ${ token.text }% `)),
             ].filter(x => x != null))
           })
       } else {
@@ -446,12 +465,12 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
 
     if (normalTokens.length > 0) {
       query = query.where((eb) => eb.or(
-        normalTokens.map(token => eb('nameEn', 'ilike', `%${token.text}%`))
+        normalTokens.map(token => eb('nameEn', 'ilike', `% ${ token.text }% `))
       ))
     }
     if (negatedTokens.length > 0) {
       query = query.where((eb) => eb.and(
-        negatedTokens.map(token => eb('nameEn', 'not ilike', `%${token.text}%`))
+        negatedTokens.map(token => eb('nameEn', 'not ilike', `% ${ token.text }% `))
       ))
     }
   }
@@ -490,7 +509,7 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
         ))
     } else {
       query = query.where((eb) => eb.and(
-        tokens.map(token => eb('mainEffectEn', 'ilike', `%${token.text}%`)),
+        tokens.map(token => eb('mainEffectEn', 'ilike', `% ${ token.text }% `)),
       ))
     }
   }
@@ -520,7 +539,7 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
       'UniqueInfo.recallCost',
     ])
     .select(() => [
-      sql`COUNT(*) OVER ()`.as('totalCount')
+      sql`COUNT(*) OVER()`.as('totalCount')
     ])
     .select((eb) => [
       jsonArrayFrom(
@@ -558,7 +577,7 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
       if (typeof param === 'string') {
         return `'${param}'`;
       }
-      return `${param}`;
+      return `${ param } `;
     })
     console.log("Interpolated: --------------------------------")
     console.log(interpolated)
@@ -609,7 +628,7 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
 
   return { results: outResults, pagination };
 }
-
+*/
 
 
 export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQuery, pageParams: PageParams): Promise<SearchResults> {
@@ -652,38 +671,52 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
 
   const partIncludeSupport = searchQuery.partIncludeSupport ?? false
 
-  const nonNullAbilityParts = abilityParts.filter(x => x.text != null)
+  const tokenizedParts = abilityParts
     .map(x => {
-      const [neg, pos] = partition(tokenize(x.text!), (token) => token.negated)
-      return { part: x.part, neg, pos }
-    })
-    .sort((a, b) => {
-      if (a.pos.length > 0 && b.pos.length <= 0) {
-        return -1;
+      if (x.text != null) {
+        const [neg, pos] = partition(tokenize(x.text!), (token) => token.negated)
+        return { part: x.part, neg, pos }
+      } else {
+        return { part: x.part, neg: [], pos: [] }
       }
-      if (a.pos.length <= 0 && b.pos.length > 0) {
-        return 1;
-      }
-      return 0;
     })
 
   if (debug) {
     console.log("Ability Parts (tokenized):")
-    console.dir(nonNullAbilityParts)
+    console.dir(tokenizedParts)
   }
 
-  let except0 = false
-  let except1 = false
-  let except2 = false
+  // let setSeqscan = sql<any>`SET SESSION enable_seqscan = off`
+  // await db.executeQuery(setSeqscan.compile(db))
+
+  const hasTrigger = tokenizedParts[0].pos.length > 0 || tokenizedParts[0].neg.length > 0
+  const hasCondition = tokenizedParts[1].pos.length > 0 || tokenizedParts[1].neg.length > 0
+  const hasEffect = tokenizedParts[2].pos.length > 0 || tokenizedParts[2].neg.length > 0
+  // const triggerAllNegated = tokenizedParts[0].neg.length > 0 && tokenizedParts[0].pos.length == 0
+  // const conditionAllNegated = tokenizedParts[1].neg.length > 0 && tokenizedParts[1].pos.length == 0
+  // const effectAllNegated = tokenizedParts[2].neg.length > 0 && tokenizedParts[2].pos.length == 0
+
+  const triggerAllNegated = false
+  const conditionAllNegated = false
+  const effectAllNegated = false
 
   let withQuery = db
-    .with('apl0_ids', (eb) => {
-      if (nonNullAbilityParts.length > 0) {
-        const ap = nonNullAbilityParts[0]
-        if (ap.pos.length > 0) {
-          return eb.selectFrom('AbilityPartLink')
-            .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
-            .select('AbilityPartLink.abilityId')
+    .with('apl_trigger_ids', (eb) => {
+      const ap = tokenizedParts[0]
+      if (hasTrigger) {
+        if (triggerAllNegated) {
+          return eb.selectFrom('UniqueAbilityPart as upa')
+            .select('upa.id')
+            .where(({ eb, and }) => {
+              return and([
+                eb(`upa.partType`, '=', ap.part),
+                !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
+                ...ap.neg.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
+              ].filter(x => x != null))
+            })
+        } else {
+          return eb.selectFrom('UniqueAbilityPart as upa')
+            .select('upa.id')
             .where(({ eb, and }) => {
               return and([
                 eb(`upa.partType`, '=', ap.part),
@@ -692,11 +725,17 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
                 ...ap.neg.map(token => eb('upa.textEn', 'not ilike', `%${token.text}%`)),
               ].filter(x => x != null))
             })
-        } else {
-          except0 = true
-          return eb.selectFrom('AbilityPartLink')
-            .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
-            .select('AbilityPartLink.abilityId')
+        }
+      } else {
+        return eb.selectFrom('UniqueAbilityPart').select('id').where('id', '=', 0)
+      }
+    })
+    .with('apl_condition_ids', (eb) => {
+      const ap = tokenizedParts[1]
+      if (hasCondition) {
+        if (conditionAllNegated) {
+          return eb.selectFrom('UniqueAbilityPart as upa')
+            .select('upa.id')
             .where(({ eb, and }) => {
               return and([
                 eb(`upa.partType`, '=', ap.part),
@@ -704,20 +743,9 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
                 ...ap.neg.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
               ].filter(x => x != null))
             })
-        }
-      } else {
-        return eb.selectFrom('AbilityPartLink')
-          .select('AbilityPartLink.abilityId')
-          .where('AbilityPartLink.id', '=', 0)
-      }
-    })
-    .with('apl1_ids', (eb) => {
-      if (nonNullAbilityParts.length > 1) {
-        const ap = nonNullAbilityParts[1]
-        if (ap.pos.length > 0) {
-          return eb.selectFrom('AbilityPartLink')
-            .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
-            .select('AbilityPartLink.abilityId')
+        } else {
+          return eb.selectFrom('UniqueAbilityPart as upa')
+            .select('upa.id')
             .where(({ eb, and }) => {
               return and([
                 eb(`upa.partType`, '=', ap.part),
@@ -726,11 +754,17 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
                 ...ap.neg.map(token => eb('upa.textEn', 'not ilike', `%${token.text}%`)),
               ].filter(x => x != null))
             })
-        } else {
-          except1 = true
-          return eb.selectFrom('AbilityPartLink')
-            .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
-            .select('AbilityPartLink.abilityId')
+        }
+      } else {
+        return eb.selectFrom('UniqueAbilityPart').select('id').where('id', '=', 0)
+      }
+    })
+    .with('apl_effect_ids', (eb) => {
+      const ap = tokenizedParts[2]
+      if (hasEffect) {
+        if (effectAllNegated) {
+          return eb.selectFrom('UniqueAbilityPart as upa')
+            .select('upa.id')
             .where(({ eb, and }) => {
               return and([
                 eb(`upa.partType`, '=', ap.part),
@@ -738,20 +772,9 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
                 ...ap.neg.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
               ].filter(x => x != null))
             })
-        }
-      } else {
-        return eb.selectFrom('AbilityPartLink')
-          .select('AbilityPartLink.abilityId')
-          .where('AbilityPartLink.id', '=', 0)
-      }
-    })
-    .with('apl2_ids', (eb) => {
-      if (nonNullAbilityParts.length > 2) {
-        const ap = nonNullAbilityParts[2]
-        if (ap.pos.length > 0) {
-          return eb.selectFrom('AbilityPartLink')
-            .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
-            .select('AbilityPartLink.abilityId')
+        } else {
+          return eb.selectFrom('UniqueAbilityPart as upa')
+            .select('upa.id')
             .where(({ eb, and }) => {
               return and([
                 eb(`upa.partType`, '=', ap.part),
@@ -760,71 +783,30 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
                 ...ap.neg.map(token => eb('upa.textEn', 'not ilike', `%${token.text}%`)),
               ].filter(x => x != null))
             })
-        } else {
-          except2 = true
-          return eb.selectFrom('AbilityPartLink')
-            .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
-            .select('AbilityPartLink.abilityId')
-            .where(({ eb, and }) => {
-              return and([
-                eb(`upa.partType`, '=', ap.part),
-                !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
-                ...ap.neg.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
-              ].filter(x => x != null))
-            })
         }
       } else {
-        return eb.selectFrom('AbilityPartLink')
-          .select('AbilityPartLink.abilityId')
-          .where('AbilityPartLink.id', '=', 0)
+        return eb.selectFrom('UniqueAbilityPart').select('id').where('id', '=', 0)
       }
-    })
-    .with('unique_ability_lines', (eb) => {
-      if (except0) {
-        let q = eb
-          .selectFrom('apl0_ids').selectAll()
-        if (nonNullAbilityParts.length > 1) {
-          q = q.union(eb.selectFrom('apl1_ids').selectAll())
-        }
-        if (nonNullAbilityParts.length > 2) {
-          q = q.union(eb.selectFrom('apl2_ids').selectAll())
-        }
-        return q
-      }
-      
-      let q = eb.selectFrom('apl0_ids').selectAll()
-      if (nonNullAbilityParts.length > 1) {
-        if (except1) {
-          q = q.except(eb.selectFrom('apl1_ids').selectAll())
-        } else {
-          q = q.intersect(eb.selectFrom('apl1_ids').selectAll())
-        }
-      }
-      if (nonNullAbilityParts.length > 2) {
-        if (except2) {
-          q = q.except(eb.selectFrom('apl2_ids').selectAll())
-        } else {
-          q = q.intersect(eb.selectFrom('apl2_ids').selectAll())
-        }
-      }
-      return q
     })
 
   let query: SelectQueryBuilder<DB, "UniqueInfo", {}> = withQuery.selectFrom('UniqueInfo')
 
   // If our search is based on ability parts, we start from UniqueAbilityLine and join to UniqueInfo instead
-  if (nonNullAbilityParts.length > 0) {
-    // If we only have negative parts, we have inverted the `unique_ability_lines` CTE and need to invert the query here
-    if (except0) {
-      query = db.selectFrom('UniqueAbilityLine')
-        .where('UniqueAbilityLine.id', 'not in', withQuery.selectFrom('unique_ability_lines').select('abilityId'))
-        .$if(!partIncludeSupport, (eb) => eb.where('UniqueAbilityLine.isSupport', '=', false))
-        .innerJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
-    } else {
-      query = db.selectFrom('UniqueAbilityLine')
-        .where('UniqueAbilityLine.id', 'in', withQuery.selectFrom('unique_ability_lines').select('abilityId'))
-        .innerJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
-    }
+  if (hasTrigger || hasCondition || hasEffect) {
+    query = query
+      .where(({ eb, exists, selectFrom }) => {
+        return exists(
+          selectFrom('UniqueAbilityLine as ual')
+            .select('ual.id')
+            .where(({ eb, and }) => {
+              return and([
+                hasTrigger ? eb('ual.triggerPartId', (triggerAllNegated ? 'not in' : 'in'), withQuery.selectFrom('apl_trigger_ids').select('id')) : null,
+                hasCondition ? eb('ual.conditionPartId', (conditionAllNegated ? 'not in' : 'in'), withQuery.selectFrom('apl_condition_ids').select('id')) : null,
+                hasEffect ? eb('ual.effectPartId', (effectAllNegated ? 'not in' : 'in'), withQuery.selectFrom('apl_effect_ids').select('id')) : null,
+              ].filter(x => x != null))
+            })
+            .whereRef('ual.uniqueInfoId', '=', 'UniqueInfo.id'))
+      })
   }
 
   // Now we can add all the filters based on the UniqueInfo table
@@ -879,6 +861,7 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
   }
 
   if (cardText != null) {
+    // We execute the ts_rewrite separately to help the Query Planner
     const { tsQuery } = await db.selectNoFrom(
       websearch_to_tsquery(cardText).as('tsQuery')
     ).executeTakeFirstOrThrow()
@@ -916,21 +899,21 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
       'UniqueInfo.recallCost',
     ])
     .select(() => [
-      sql`COUNT(*) OVER ()`.as('totalCount')
+      sql`COUNT(*) OVER()`.as('totalCount')
     ])
     .select((eb) => [
       jsonArrayFrom(
-        eb.selectFrom('UniqueAbilityLine')
-          .select(['UniqueAbilityLine.id', 'UniqueAbilityLine.lineNumber', 'UniqueAbilityLine.textEn', 'UniqueAbilityLine.isSupport', 'UniqueAbilityLine.characterData'])
+        eb.selectFrom('UniqueAbilityLine as ual')
+          .select(['ual.id', 'ual.lineNumber', 'ual.textEn', 'ual.isSupport', 'ual.characterData'])
           .select((eb2) => [
             jsonArrayFrom(
-              eb2.selectFrom('AbilityPartLink')
-                .select(['AbilityPartLink.id', 'AbilityPartLink.partId', 'AbilityPartLink.partType'])
-                .whereRef('AbilityPartLink.abilityId', '=', 'UniqueAbilityLine.id')
+              eb2.selectFrom('UniqueAbilityPart as uap')
+                .select(['uap.id', 'uap.partType'])
+                .whereRef('uap.id', '=', sql`ANY("ual"."allPartIds")`)
             ).as('allParts')
           ])
-          .whereRef('UniqueAbilityLine.uniqueInfoId', '=', 'UniqueInfo.id')
-          .orderBy('UniqueAbilityLine.lineNumber')
+          .whereRef('ual.uniqueInfoId', '=', 'UniqueInfo.id')
+          .orderBy('ual.lineNumber')
       ).as('mainAbilities'),
     ])
     .$if(minPrice != null || maxPrice != null, (eb) => eb.where((eb) => eb.and([
@@ -954,15 +937,18 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
       if (typeof param === 'string') {
         return `'${param}'`;
       }
-      return `${param}`;
+      return `${param} `;
     })
     console.log("Interpolated: --------------------------------")
     console.log(interpolated)
     console.log("--------------------------------")
 
     console.log("Explain Analyze:")
-    const explainAnalyze = await queryWithSelect.explain(undefined, sql`analyze`)
-    console.log(explainAnalyze.map(x => x['QUERY PLAN']).join('\n'))
+    const explainAnalyze = await queryWithSelect.explain(undefined, sql`analyze, buffers`)
+    // console.log(explainAnalyze.map(x => x['QUERY PLAN']).join('\n'))
+    // console.dir(explainAnalyze, { depth: null })
+    // await fs.writeFile('tmp/explain-analyze.json', JSON.stringify(explainAnalyze, null, 2))
+    await fs.writeFile('tmp/explain-analyze.txt', explainAnalyze.map(x => x['QUERY PLAN']).join('\n'))
   }
 
   const results = await queryWithSelect.execute()
@@ -1006,7 +992,7 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
   return { results: outResults, pagination };
 }
 
-
+/*
 export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pageParams: PageParams): Promise<SearchResults> {
   const {
     faction,
@@ -1186,7 +1172,7 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
         }
         return q
       }
-      
+
       let q = eb.selectFrom('apl0_ids').selectAll()
       if (nonNullAbilityParts.length > 1) {
         if (except1) {
@@ -1309,7 +1295,7 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
       'UniqueInfo.recallCost',
     ])
     .select(() => [
-      sql`COUNT(*) OVER ()`.as('totalCount')
+      sql`COUNT(*) OVER()`.as('totalCount')
     ])
     .select((eb) => [
       jsonArrayFrom(
@@ -1347,7 +1333,7 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
       if (typeof param === 'string') {
         return `'${param}'`;
       }
-      return `${param}`;
+      return `${param} `;
     })
     console.log("Interpolated: --------------------------------")
     console.log(interpolated)
@@ -1398,3 +1384,4 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
 
   return { results: outResults, pagination };
 }
+  */

@@ -368,7 +368,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
 export function buildDisplayAbility(
   ability:
     Pick<UniqueAbilityLine, 'id' | 'lineNumber' | 'isSupport' | 'characterData' | 'textEn'> &
-    { allParts: Pick<AbilityPartLink, 'id' | 'partId' | 'partType'>[] }
+    { allParts: Pick<UniqueAbilityPart, 'id' | 'partType'>[] }
 ): DisplayAbilityOnCard | undefined {
   if (ability.characterData == null) {
     return undefined;
@@ -377,7 +377,7 @@ export function buildDisplayAbility(
   const line = ability.textEn
   const displayParts: DisplayPartOnCard[] = charData.parts.map((part) => {
     const matchingPart = ability.allParts
-      .find((p) => p?.partId == part.partId)
+      .find((p) => p?.id == part.partId)
     if (matchingPart == null) {
       console.error(`Part ${part.partId} not found in ability ${ability.id}`)
       return null;

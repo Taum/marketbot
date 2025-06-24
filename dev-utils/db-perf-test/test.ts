@@ -174,8 +174,8 @@ async function runAllTests() {
   console.log("Starting performance tests...\n");
 
   const results: TestResult[] = [];
-  const implNames = ["searchWithCTEs", "searchWithCTEsWithExcept", "searchWithCTEsIndexingCharacterNames", "searchWithJoins", "search"];
-  const searchFunctions: SearchFunction[] = [searchWithCTEs, searchWithCTEsWithExcept, searchWithCTEsIndexingCharacterNames, searchWithJoins, search];
+  const implNames = ["searchWithCTEsIndexingCharacterNames", "searchWithJoins"];
+  const searchFunctions: SearchFunction[] = [searchWithCTEsIndexingCharacterNames, searchWithJoins];
   
   for (const testCase of testCases) {
     console.log(`Running test: ${testCase.name}`);
@@ -198,7 +198,7 @@ async function runAllTests() {
         const runResult = await runTest(testCase, searchFn);
         
         if (runResult.error) {
-          console.error(`Error in test: ${runResult.error}`);
+          console.error(`Error in test ${i} of ${RUNS_COUNT} for ${implNames[j]}: ${runResult.error}`);
           if (runResult.stack) {
             console.log(runResult.stack)
           }
