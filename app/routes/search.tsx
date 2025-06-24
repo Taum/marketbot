@@ -28,6 +28,9 @@ interface SearchQuery {
   includeExpiredCards?: boolean;
   minPrice?: number;
   maxPrice?: number;
+  forestPowerRange?: string;
+  mountainPowerRange?: string;
+  oceanPowerRange?: string;
 }
 
 interface LoaderData {
@@ -60,11 +63,36 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const includeExpiredCards = nullifyTrim(url.searchParams.get("exp")) == "1";
   const minPrice = nullifyParseInt(url.searchParams.get("minpr"));
   const maxPrice = nullifyParseInt(url.searchParams.get("maxpr"));
+  const forestPowerRange = nullifyTrim(url.searchParams.get("fp"));
+  const mountainPowerRange = nullifyTrim(url.searchParams.get("mp"));
+  const oceanPowerRange = nullifyTrim(url.searchParams.get("op"));
+
+  const originalQuery = {
+    faction,
+    set,
+    characterName,
+    cardText,
+    triggerPart,
+    conditionPart,
+    effectPart,
+    partIncludeSupport,
+    mainCostRange,
+    recallCostRange,
+    includeExpiredCards,
+    minPrice,
+    maxPrice,
+    forestPowerRange,
+    mountainPowerRange,
+    oceanPowerRange
+  }
 
   const currentPage = nullifyParseInt(url.searchParams.get("p")) ?? 1;
 
   const mainCosts = parseRange(mainCostRange)
   const recallCosts = parseRange(recallCostRange)
+  const forestPowers = parseRange(forestPowerRange)
+  const mountainPowers = parseRange(mountainPowerRange)
+  const oceanPowers = parseRange(oceanPowerRange)
 
   try {
     const startTs = performance.now()
@@ -84,6 +112,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
         includeExpiredCards,
         minPrice,
         maxPrice,
+        forestPowers,
+        mountainPowers,
+        oceanPowers
       },
       {
         page: currentPage,
@@ -93,28 +124,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     const endTs = performance.now()
     const duration = endTs - startTs
-    
+
     return {
       results,
       pagination: { ...pagination, currentPage },
       metrics: {
         duration,
       },
-      query: {
-        faction,
-        set,
-        characterName,
-        cardText,
-        triggerPart,
-        conditionPart,
-        effectPart,
-        partIncludeSupport,
-        mainCostRange,
-        recallCostRange,
-        includeExpiredCards,
-        minPrice,
-        maxPrice,
-      },
+      query: originalQuery,
     };
   } catch (e) {
     console.error("Search error: ", e);
@@ -123,21 +140,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       results: [],
       pagination: undefined,
       metrics: undefined,
-      query: {
-        faction,
-        set,
-        characterName,
-        cardText,
-        triggerPart,
-        conditionPart,
-        effectPart,
-        partIncludeSupport,
-        mainCostRange,
-        recallCostRange,
-        includeExpiredCards,
-        minPrice,
-        maxPrice,
-      },
+      query: originalQuery,
     }
   }
 }
@@ -178,14 +181,14 @@ export default function SearchPage() {
                   </span>
                 )}
               </div>
-            {pagination.pageCount && pagination.pageCount > 1 ? (
-              <div>
-                <ResultsPagination
-                  currentPage={currentPage ?? 1}
-                  totalPages={pagination.pageCount ?? 1}
-                  onPageChange={handlePageChange}
-                />
-              </div>
+              {pagination.pageCount && pagination.pageCount > 1 ? (
+                <div>
+                  <ResultsPagination
+                    currentPage={currentPage ?? 1}
+                    totalPages={pagination.pageCount ?? 1}
+                    onPageChange={handlePageChange}
+                  />
+                </div>
               ) : null}
             </div>
           ) : null}
@@ -215,6 +218,9 @@ const SearchForm: FC<SearchQuery> = ({
   includeExpiredCards,
   minPrice,
   maxPrice,
+  forestPowerRange,
+  mountainPowerRange,
+  oceanPowerRange
 }: SearchQuery) => {
   const [selectedFaction, setSelectedFaction] = useState(faction ?? undefined);
   const [selectedSet, setSelectedSet] = useState(set ?? undefined);
@@ -237,9 +243,9 @@ const SearchForm: FC<SearchQuery> = ({
     }
     window.location.search = searchParams.toString();
   }
-  
+
   return (
-    <Form method="get" id="search-form"className="mb-8">
+    <Form method="get" id="search-form" className="mb-8">
       <div className="flex flex-col gap-2">
         <div className="flex flex-row gap-8">
           <div>
@@ -281,6 +287,35 @@ const SearchForm: FC<SearchQuery> = ({
               name="rc"
               defaultValue={recallCostRange ?? ""}
               placeholder="4,6"
+            />
+          </div>
+        </div>
+        <div className="flex flex-row gap-8">
+          <div>
+            <Label htmlFor="fp">Forest power</Label>
+            <Input
+              type="text"
+              name="fp"
+              defaultValue={forestPowerRange ?? ""}
+              placeholder="1-4"
+            />
+          </div>
+          <div>
+            <Label htmlFor="mp">Mountain power</Label>
+            <Input
+              type="text"
+              name="mp"
+              defaultValue={mountainPowerRange ?? ""}
+              placeholder="1-4"
+            />
+          </div>
+          <div>
+            <Label htmlFor="op">Forest power</Label>
+            <Input
+              type="text"
+              name="op"
+              defaultValue={oceanPowerRange ?? ""}
+              placeholder="1-4"
             />
           </div>
         </div>
