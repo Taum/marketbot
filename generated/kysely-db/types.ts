@@ -55,6 +55,22 @@ export type UniqueAbilityLine = {
     characterData: JsonValue | null;
     textEn: string;
 };
+export type UniqueAbilityLineFlat = {
+    id: Generated<number>;
+    uniqueInfoId: number;
+    lineNumber: number;
+    isSupport: boolean;
+    triggerPartId: number | null;
+    conditionPartId: number | null;
+    effectPartId: number | null;
+    extraEffectPartIds: number[];
+    allPartIds: number[];
+    /**
+     * @kyselyType(JsonValue)
+     */
+    characterData: JsonValue | null;
+    textEn: string;
+};
 export type UniqueAbilityPart = {
     id: Generated<number>;
     textEn: string;
@@ -98,6 +114,7 @@ export type DB = {
     CardFamilyStats: CardFamilyStats;
     MarketUpdateStats: MarketUpdateStats;
     UniqueAbilityLine: UniqueAbilityLine;
+    UniqueAbilityLineFlat: UniqueAbilityLineFlat;
     UniqueAbilityPart: UniqueAbilityPart;
     UniqueInfo: UniqueInfo;
 };

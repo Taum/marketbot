@@ -56,6 +56,8 @@ model UniqueInfo {
 
   mainAbilities UniqueAbilityLine[]
 
+  mainAbilitiesFlat UniqueAbilityLineFlat[]
+
   @@unique([id])
   @@unique([ref])
   @@index([id])
@@ -70,6 +72,28 @@ model UniqueInfo {
 }
 
 model UniqueAbilityLine {
+  id            Int        @id @default(autoincrement())
+  uniqueInfoId  Int
+  uniqueInfo    UniqueInfo @relation(fields: [uniqueInfoId], references: [id])
+  lineNumber    Int
+  isSupport     Boolean
+
+  /// @kyselyType(JsonValue)
+  characterData Json?
+
+  textEn String
+
+  allParts AbilityPartLink[]
+
+  @@unique([id])
+  @@unique([uniqueInfoId, lineNumber, isSupport])
+  @@index([id])
+  @@index([uniqueInfoId, lineNumber, isSupport])
+  @@index([isSupport])
+}
+
+
+model UniqueAbilityLineFlat {
   id            Int        @id @default(autoincrement())
   uniqueInfoId  Int
   uniqueInfo    UniqueInfo @relation(fields: [uniqueInfoId], references: [id])
@@ -100,6 +124,7 @@ model UniqueAbilityLine {
   @@index([effectPartId])
 }
 
+
 model UniqueAbilityPart {
   id     Int    @id @default(autoincrement())
   textEn String
@@ -107,14 +132,33 @@ model UniqueAbilityPart {
   partType  AbilityPartType
   isSupport Boolean
   
-  triggerLines   UniqueAbilityLine[] @relation("TriggerPart")
-  conditionLines UniqueAbilityLine[] @relation("ConditionPart")
-  effectLines    UniqueAbilityLine[] @relation("EffectPart")
+  triggerLines   UniqueAbilityLineFlat[] @relation("TriggerPart")
+  conditionLines UniqueAbilityLineFlat[] @relation("ConditionPart")
+  effectLines    UniqueAbilityLineFlat[] @relation("EffectPart")
+
+  abilityPartLinks AbilityPartLink[]
 
   @@unique([id])
   @@unique([textEn, partType, isSupport])
   @@index([id])
   @@index([textEn])
+}
+
+model AbilityPartLink {
+  id Int @id @default(autoincrement())
+
+  partId Int
+  part UniqueAbilityPart @relation(fields: [partId], references: [id])
+  abilityId Int
+  ability UniqueAbilityLine @relation(fields: [abilityId], references: [id])
+
+  partType AbilityPartType
+
+  @@unique([id])
+  @@unique([partId, abilityId])
+
+  @@index([partId])
+  @@index([abilityId])
 }
 
 // This will be a singleton entry

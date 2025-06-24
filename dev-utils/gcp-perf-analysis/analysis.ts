@@ -133,7 +133,7 @@ function formatQueryParams(queryParams: Record<string, string>): string {
 }
 
 async function main() {
-  const logFilePath = path.join('dev-utils', 'gcp-perf-analysis', 'downloaded-logs-20250622-212225.json');
+  const logFilePath = path.join('dev-utils', 'gcp-perf-analysis', 'downloaded-logs-20250623-121624.json');
   
   console.log('Reading log file...');
   const rawData = fs.readFileSync(logFilePath, 'utf-8');

@@ -631,7 +631,7 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
 */
 
 
-export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQuery, pageParams: PageParams): Promise<SearchResults> {
+export async function searchFlattened(searchQuery: SearchQuery, pageParams: PageParams): Promise<SearchResults> {
   const {
     faction,
     set,
@@ -796,7 +796,7 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
     query = query
       .where(({ eb, exists, selectFrom }) => {
         return exists(
-          selectFrom('UniqueAbilityLine as ual')
+          selectFrom('UniqueAbilityLineFlat as ual')
             .select('ual.id')
             .where(({ eb, and }) => {
               return and([
@@ -903,7 +903,7 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
     ])
     .select((eb) => [
       jsonArrayFrom(
-        eb.selectFrom('UniqueAbilityLine as ual')
+        eb.selectFrom('UniqueAbilityLineFlat as ual')
           .select(['ual.id', 'ual.lineNumber', 'ual.textEn', 'ual.isSupport', 'ual.characterData'])
           .select((eb2) => [
             jsonArrayFrom(
