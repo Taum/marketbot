@@ -12,7 +12,7 @@ import { ResultGrid } from "~/components/altered/ResultGrid";
 import { ResultsPagination } from "~/components/common/pagination";
 import { DisplayUniqueCard } from "~/models/cards";
 import { Checkbox } from "~/components/ui/checkbox";
-import { searchWithCTEsIndexingCharacterNames, searchWithCTEsWithExcept, searchWithJoins } from "~/loaders/search-alternates";
+import { searchFlattened, searchWithCTEsIndexingCharacterNames, searchWithCTEsWithExcept, searchWithJoins, searchWithJoinsFlat, searchWithJoinsFlatCTECharName, searchWithJoinsPrefilteredFTS } from "~/loaders/search-alternates";
 
 
 interface SearchQuery {
@@ -70,7 +70,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const startTs = performance.now()
 
-    const { results, pagination } = await searchWithJoins(
+    const { results, pagination } = await searchWithJoinsFlatCTECharName(
       {
         faction,
         set,
@@ -91,32 +91,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
         includePagination: true
       }
     );
-
-    // const { results: results2, pagination: pagination2 } = await searchWithJoins(
-    //   {
-    //     faction,
-    //     set,
-    //     characterName,
-    //     cardText,
-    //     triggerPart,
-    //     conditionPart,
-    //     effectPart,
-    //     partIncludeSupport,
-    //     mainCosts,
-    //     recallCosts,
-    //     includeExpiredCards,
-    //     minPrice,
-    //     maxPrice,
-    //   },
-    //   {
-    //     page: currentPage,
-    //     includePagination: true
-    //   }
-    // )
-
-    // if (results.length != results2.length) {
-    //   console.error("Results length mismatch: " + results.length + " != " + results2.length)
-    // }
 
     const endTs = performance.now()
     const duration = endTs - startTs

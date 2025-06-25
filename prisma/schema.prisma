@@ -122,6 +122,10 @@ model UniqueAbilityLineFlat {
   @@index([triggerPartId])
   @@index([conditionPartId])
   @@index([effectPartId])
+  @@index([triggerPartId, isSupport])
+  @@index([conditionPartId, isSupport])
+  @@index([effectPartId, isSupport])
+  @@index([triggerPartId, conditionPartId, effectPartId, isSupport])
 }
 
 

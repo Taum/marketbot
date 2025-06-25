@@ -2,7 +2,7 @@ import { DisplayUniqueCard } from "~/models/cards.js";
 import { PageParams, search, SearchResults } from "../../app/loaders/search.js";
 import { SearchQuery } from "../../app/loaders/search.js";
 import { delay } from "@common/utils/promise.js";
-import { searchWithCTEs, searchWithCTEsIndexingCharacterNames, searchWithCTEsWithExcept, searchWithJoins } from "~/loaders/search-alternates.js";
+import { searchFlattened, searchWithCTEsIndexingCharacterNames, searchWithJoins, searchWithJoinsFlat, searchWithJoinsFlatCTECharName, searchWithJoinsPrefilteredFTS } from "~/loaders/search-alternates.js";
 
 interface TestCase {
   name: string;
@@ -23,14 +23,14 @@ interface RunResult {
   stack?: string;
 }
 
-const testCases: TestCase[] = [
-  {
-    name: "Short text search",
-    url: "http://localhost:5173/search?f=YZ&s=&cname=&mc=1-2&rc=1-3&text=When+you+play+a+spell&tr=&cond=&eff=&minpr=&maxpr=",
-    query: {
-      cardText: "When you play a spell",
-    },
-  },
+const testCasesDefs: TestCase[] = [
+  // {
+  //   name: "Short text search",
+  //   url: "http://localhost:5173/search?f=YZ&s=&cname=&mc=1-2&rc=1-3&text=When+you+play+a+spell&tr=&cond=&eff=&minpr=&maxpr=",
+  //   query: {
+  //     cardText: "When you play a spell",
+  //   },
+  // },
   {
     name: "Long text search",
     url: "http://localhost:5173/search?f=YZ&s=&cname=&mc=1-2&rc=1-3&text=When+you+play+a+spell+I+gain+1+boost&tr=&cond=&eff=&minpr=&maxpr=",
@@ -49,16 +49,16 @@ const testCases: TestCase[] = [
       conditionPart: "[]",
     },
   },
-  {
-    name: "Complex Search 2",
-    url: "http://localhost:5173/search?f=BR&s=&cname=&mc=1-3&rc=&text=landmark&tr=%7Bj%7D&cond=&eff=&minpr=&maxpr=",
-    query: {
-      faction: "BR",
-      mainCosts: [1, 2, 3],
-      cardText: "landmark",
-      triggerPart: "{j}",
-    },
-  },
+  // {
+  //   name: "Complex Search 2",
+  //   url: "http://localhost:5173/search?f=BR&s=&cname=&mc=1-3&rc=&text=landmark&tr=%7Bj%7D&cond=&eff=&minpr=&maxpr=",
+  //   query: {
+  //     faction: "BR",
+  //     mainCosts: [1, 2, 3],
+  //     cardText: "landmark",
+  //     triggerPart: "{j}",
+  //   },
+  // },
   {
     name: "Negative Card Text Search",
     url: "http://localhost:5173/search?f=BR&s=&cname=&mc=1-3&rc=&text=-landmark&tr=%7Bj%7D&cond=&eff=&minpr=&maxpr=",
@@ -66,7 +66,7 @@ const testCases: TestCase[] = [
       faction: "BR",
       mainCosts: [1, 2, 3],
       cardText: "-landmark",
-      triggerPart: "{j}",
+      triggerPart: "when another character",
     },
   },
   {
@@ -81,28 +81,28 @@ const testCases: TestCase[] = [
       effectPart: "boost",
     },
   },
-  {
-    name: "Negative Trigger",
-    url: "http://localhost:5173/search?f=&s=&cname=&mc=1-3&rc=&text=&tr=-when&cond=&eff=boost&minpr=&maxpr=",
-    query: {
-      mainCosts: [1, 2, 3],
-      cardText: undefined,
-      triggerPart: "-when",
-      conditionPart: undefined,
-      effectPart: "boost",
-    },
-  },
-  {
-    name: "Negative all",
-    url: "http://localhost:5173/search?f=&s=&cname=&mc=1-3&rc=&text=&tr=-when&cond=-landmark&eff=-boost&minpr=&maxpr=",
-    query: {
-      mainCosts: [1, 2, 3],
-      cardText: undefined,
-      triggerPart: "-when",
-      conditionPart: "-landmark",
-      effectPart: "-boost",
-    },
-  },
+  // {
+  //   name: "Negative Trigger",
+  //   url: "http://localhost:5173/search?f=&s=&cname=&mc=1-3&rc=&text=&tr=-when&cond=&eff=boost&minpr=&maxpr=",
+  //   query: {
+  //     mainCosts: [1, 2, 3],
+  //     cardText: undefined,
+  //     triggerPart: "-when",
+  //     conditionPart: undefined,
+  //     effectPart: "boost",
+  //   },
+  // },
+  // {
+  //   name: "Negative all",
+  //   url: "http://localhost:5173/search?f=&s=&cname=&mc=1-3&rc=&text=&tr=-when&cond=-landmark&eff=-boost&minpr=&maxpr=",
+  //   query: {
+  //     mainCosts: [1, 2, 3],
+  //     cardText: undefined,
+  //     triggerPart: "-when",
+  //     conditionPart: "-landmark",
+  //     effectPart: "-boost",
+  //   },
+  // },
   {
     name: "Positive+Negative search",
     url: "http://localhost:5173/search?f=MU&s=&cname=&mc=&rc=&text=&tr=when&cond=reserve+-discard&eff=anchored&minpr=&maxpr=",
@@ -141,7 +141,16 @@ const testCases: TestCase[] = [
     url: "http://localhost:5173/search?f=&s=&cname=ordis&mc=&rc=&text=&tr=%7Bj%7D&cond=&eff=&minpr=&maxpr=",
     query: {
       characterName: "ordis",
-      triggerPart: "{J}",
+      triggerPart: "{j}",
+    },
+  },
+  {
+    name: "Multiple matches on same card",
+    url: "http://localhost:5173/search?f=YZ&s=&cname=dispatcher&mc=&rc=&text=&tr=&cond=you+may&eff=&minpr=&maxpr=",
+    query: {
+      conditionPart: "you may",
+      faction: "YZ",
+      characterName: "dispatcher",
     },
   }
 ];
@@ -173,9 +182,15 @@ async function runTest(testCase: TestCase, searchFn: SearchFunction): Promise<Ru
 async function runAllTests() {
   console.log("Starting performance tests...\n");
 
+  const filterNames = process.argv.slice(2);
+  let testCases = [...testCasesDefs];
+  if (filterNames.length > 0) {
+    testCases = testCases.filter(testCase => filterNames.some(filterName => testCase.name.toLocaleLowerCase().match(filterName.toLocaleLowerCase())));
+  }
+
   const results: TestResult[] = [];
-  const implNames = ["searchWithCTEsIndexingCharacterNames", "searchWithJoins"];
-  const searchFunctions: SearchFunction[] = [searchWithCTEsIndexingCharacterNames, searchWithJoins];
+  const implNames = ["searchFlattened", "searchWithCTEsIndexingCharacterNames", "searchWithJoins", "searchWithJoinsPrefilteredFTS", "searchWithJoinsFlat", "searchWithJoinsFlatCTECharName"];
+  const searchFunctions: SearchFunction[] = [searchFlattened, searchWithCTEsIndexingCharacterNames, searchWithJoins, searchWithJoinsPrefilteredFTS, searchWithJoinsFlat, searchWithJoinsFlatCTECharName];
   
   for (const testCase of testCases) {
     console.log(`Running test: ${testCase.name}`);
@@ -188,8 +203,8 @@ async function runAllTests() {
     
     // Run each test 4 times. discard the first result, then take the average
     const RUNS_COUNT = 4;
-    for (let i = 0; i < RUNS_COUNT; i++) {
-      for (let j = 0; j < searchFunctions.length; j++) {
+    for (let j = 0; j < searchFunctions.length; j++) {
+      for (let i = 0; i < RUNS_COUNT; i++) {
         const searchFn = searchFunctions[j];
         if (i === 0) {
           result.durations[implNames[j]] = 0;
@@ -198,7 +213,7 @@ async function runAllTests() {
         const runResult = await runTest(testCase, searchFn);
         
         if (runResult.error) {
-          console.error(`Error in test ${i} of ${RUNS_COUNT} for ${implNames[j]}: ${runResult.error}`);
+          console.error(`Error in test: ${runResult.error}`);
           if (runResult.stack) {
             console.log(runResult.stack)
           }
@@ -215,7 +230,7 @@ async function runAllTests() {
         }
 
         
-        await delay(100);
+        await delay(10);
       }
     }
 
