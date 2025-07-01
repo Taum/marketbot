@@ -10,7 +10,7 @@ import fs from "fs/promises";
 import { UniquesCrawler } from "./uniques.js";
 import throttledQueue from "throttled-queue";
 import { simpleGit, SimpleGit } from 'simple-git';
-import { sortJsonKeysAlphabeticallyNonRecursive } from '@common/utils/json.js';
+import { sortJsonKeysAlphabetically } from '@common/utils/json.js';
 import os from "node:os";
 
 export interface UniqueRequest {
@@ -178,7 +178,7 @@ export class CommunityDbUniquesCrawler extends UniquesCrawler {
   }
 
   public async communityDbWriteFile(id: string, data: AlteredggCard & { translations: Record<string, AlteredggCard> }) {
-    const sortedData = sortJsonKeysAlphabeticallyNonRecursive(data)
+    const sortedData = sortJsonKeysAlphabetically(data)
     const json = JSON.stringify(sortedData, null, 4)
     const gitPath = this.communityDbPath(id)
     

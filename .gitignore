@@ -8,3 +8,4 @@ node_modules
 /deployment
 .env
 .env.crawler-git
+dev-utils/gcp-perf-analysis/*.json

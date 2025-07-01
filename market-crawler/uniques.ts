@@ -27,7 +27,7 @@ export const recordOneUnique = async (cardData: AlteredggCard, prisma: PrismaCli
     mountainPower: parseInt(cardData!.elements.MOUNTAIN_POWER || "0", 10),
     forestPower: parseInt(cardData!.elements.FOREST_POWER || "0", 10),
     nameEn: cardData!.name,
-    imageUrlEn: cardData!.imagePath,
+    imageUrlEn: cardData!.allImagePath['en-us'],
     mainEffectEn: cardData!.elements.MAIN_EFFECT,
     echoEffectEn: cardData!.elements.ECHO_EFFECT,
     cardSet: cardData!.cardSet.reference,
