@@ -28,6 +28,9 @@ export interface SearchQuery {
   includeExpiredCards?: boolean;
   minPrice?: number;
   maxPrice?: number;
+  forestPowers?: number[];
+  mountainPowers?: number[];
+  oceanPowers?: number[];
 }
 
 export interface PageParams {
@@ -100,6 +103,9 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     includeExpiredCards,
     minPrice,
     maxPrice,
+    forestPowers,
+    mountainPowers,
+    oceanPowers
   } = searchQuery
   const {
     page,
@@ -129,11 +135,11 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
   if (abilityParts.length > 0) {
     // If our search is based on ability parts, we start from UniqueAbilityLine and join to UniqueInfo instead
     let abLineQuery = db.selectFrom('UniqueAbilityLine')
-    
+
     if (!partIncludeSupport) {
       abLineQuery = abLineQuery.where('isSupport', '=', false)
     }
-    
+
     // Find all the ability lines that match our search
     abLineQuery = abLineQuery.where(({ eb, and, or, not, exists, selectFrom }) => {
       const abilityPartFilters = abilityParts.map((part) => {
@@ -159,8 +165,8 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
                         ].filter(x => x != null))
                       })
                       .whereRef('UniqueAbilityPart.id', '=', 'AbilityPartLink.partId')
-                    )
-                    : null,
+                  )
+                  : null,
                 negatedTokens.length > 0 ?
                   not(
                     exists(
@@ -211,11 +217,25 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     }
   }
 
+  // I just discovered that the postgres planner will actually optimize this
+  // to `mainCost = X` if the list is just one element. So no need to manually
+  // address that fairly common case
   if (mainCosts && mainCosts.length > 0) {
     query = query.where('mainCost', 'in', mainCosts)
   }
   if (recallCosts && recallCosts.length > 0) {
     query = query.where('recallCost', 'in', recallCosts)
+  }
+
+  if (forestPowers && forestPowers.length > 0) {
+    console.log(forestPowers)
+    query = query.where('forestPower', 'in', forestPowers)
+  }
+  if (mountainPowers && mountainPowers.length > 0) {
+    query = query.where('mountainPower', 'in', mountainPowers)
+  }
+  if (oceanPowers && oceanPowers.length > 0) {
+    query = query.where('oceanPower', 'in', oceanPowers)
   }
 
   if (set != null) {
@@ -240,9 +260,9 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
       query = query
         .where(eb => eb(
           to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
-            '@@',
-            tokens_to_tsquery(tokens),
-          ))
+          '@@',
+          tokens_to_tsquery(tokens),
+        ))
     } else {
       query = query.where((eb) => eb.and(
         tokens.map(token => eb('mainEffectEn', 'ilike', `%${token.text}%`)),
