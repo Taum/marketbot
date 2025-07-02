@@ -27,6 +27,7 @@ export const recordOneUnique = async (cardData: AlteredggCard, prisma: PrismaCli
   const blob = {
     ref: cardData.reference,
     faction: cardData.mainFaction.reference,
+    cardSubTypes: cardData.cardSubTypes.map(subtype => subtype.reference),
     mainCost: parseInt(cardData!.elements.MAIN_COST || "0", 10),
     recallCost: parseInt(cardData!.elements.RECALL_COST || "0", 10),
     oceanPower: parseInt(cardData!.elements.OCEAN_POWER || "0", 10),

@@ -59,6 +59,9 @@ export interface AlteredggCard {
   cardType: {
     reference: CardType;
   };
+  cardSubTypes: {
+    reference: string;
+  }[];
   imagePath: string;
   allImagePath: { [key: string]: string };
   name: string;
