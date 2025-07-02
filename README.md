@@ -59,7 +59,7 @@ createdb -p 5411 -U test -h localhost -W mydatabase
 
 > This will allow you to test the UI with a full dataset without having to run the crawler manually.
 >
-> Download it from [Google Drive : marketbot_export_2025-06-04_clean.7z]https://drive.google.com/file/d/1Y8beYTkE_qxlWtyoeua6yb2CmCfLpPMk/view?usp=sharing) and decompress it.
+> Download it from [Google Drive : marketbot_export_2025-07-01_clean.7z](https://drive.google.com/file/d/1wRJf68S5ax_Z1zrcRFh0w6VkApbgvcPy/view?usp=drive_link) and decompress it.
 
 Once you have the file, you can import using the `psql` CLI:
 
