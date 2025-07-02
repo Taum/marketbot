@@ -1,5 +1,5 @@
 import prisma from "@common/utils/prisma.server.js";
-import { CardSet, DisplayAbilityOnCard, DisplayPartOnCard, DisplayUniqueCard, AbilityPartType, Faction } from "~/models/cards";
+import { CardSet, DisplayAbilityOnCard, DisplayPartOnCard, DisplayUniqueCard, AbilityPartType, Faction, allCardSubTypes, CardSubType } from "~/models/cards";
 import { UniqueAbilityLine, Prisma, UniqueInfo, UniqueAbilityPart, AbilityPartType as DbAbilityPartType, AbilityPartLink } from '@prisma/client';
 import { AbilityCharacterDataV1 } from "@common/models/postprocess";
 import { db } from "@common/utils/kysely.server";
@@ -27,6 +27,7 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
     faction,
     set,
     characterName,
+    cardSubTypes,
     cardText,
     triggerPart,
     conditionPart,
@@ -141,6 +142,12 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
         negatedTokens.map(token => eb('nameEn', 'not ilike', `%${token.text}%`))
       ))
     }
+  }
+  
+  if (cardSubTypes && cardSubTypes.length > 0) {
+    // This may be a little paranoid, but there isn't a point in allowing random strings to be passed in here anyway.
+    const validSubtypes = cardSubTypes.filter(subtype => allCardSubTypes.map(x => x.value).includes(subtype as CardSubType))
+    query = query.where('cardSubTypes', '&&', sql<string[]>`ARRAY[${sql.join(validSubtypes)}]`)
   }
 
   if (mainCosts && mainCosts.length > 0) {
@@ -314,6 +321,7 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
     faction,
     set,
     characterName,
+    cardSubTypes,
     cardText,
     triggerPart,
     conditionPart,
@@ -470,6 +478,12 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
         negatedTokens.map(token => eb('nameEn', 'not ilike', `%${token.text}%`))
       ))
     }
+  }
+
+  if (cardSubTypes && cardSubTypes.length > 0) {
+    // This may be a little paranoid, but there isn't a point in allowing random strings to be passed in here anyway.
+    const validSubtypes = cardSubTypes.filter(subtype => allCardSubTypes.map(x => x.value).includes(subtype as CardSubType))
+    query = query.where('cardSubTypes', '&&', sql<string[]>`ARRAY[${sql.join(validSubtypes)}]`)
   }
 
   if (mainCosts && mainCosts.length > 0) {
@@ -642,6 +656,7 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
     faction,
     set,
     characterName,
+    cardSubTypes,
     cardText,
     triggerPart,
     conditionPart,
@@ -891,6 +906,12 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
     }
   }
 
+  if (cardSubTypes && cardSubTypes.length > 0) {
+    // This may be a little paranoid, but there isn't a point in allowing random strings to be passed in here anyway.
+    const validSubtypes = cardSubTypes.filter(subtype => allCardSubTypes.map(x => x.value).includes(subtype as CardSubType))
+    query = query.where('cardSubTypes', '&&', sql<string[]>`ARRAY[${sql.join(validSubtypes)}]`)
+  }
+
   if (mainCosts && mainCosts.length > 0) {
     query = query.where('mainCost', 'in', mainCosts)
   }
@@ -1049,6 +1070,7 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
     faction,
     set,
     characterName,
+    cardSubTypes,
     cardText,
     triggerPart,
     conditionPart,
@@ -1283,6 +1305,12 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
         negatedTokens.map(token => eb('nameEn', 'not ilike', `%${token.text}%`))
       ))
     }
+  }
+
+  if (cardSubTypes && cardSubTypes.length > 0) {
+    // This may be a little paranoid, but there isn't a point in allowing random strings to be passed in here anyway.
+    const validSubtypes = cardSubTypes.filter(subtype => allCardSubTypes.map(x => x.value).includes(subtype as CardSubType))
+    query = query.where('cardSubTypes', '&&', sql<string[]>`ARRAY[${sql.join(validSubtypes)}]`)
   }
 
   if (mainCosts && mainCosts.length > 0) {

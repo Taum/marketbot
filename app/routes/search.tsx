@@ -1,6 +1,5 @@
 import { type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useLoaderData, useSearchParams } from "@remix-run/react";
-import { search } from "~/loaders/search.js";
 import { FC, useState } from "react";
 import { FactionSelect } from "~/components/altered/FactionSelect";
 import { SetSelect } from "~/components/altered/SetSelect";
@@ -10,15 +9,17 @@ import { Label } from "~/components/ui/label";
 import { nullifyParseInt, nullifyTrim, parseRange } from "~/lib/utils";
 import { ResultGrid } from "~/components/altered/ResultGrid";
 import { ResultsPagination } from "~/components/common/pagination";
-import { DisplayUniqueCard } from "~/models/cards";
+import { allCardSubTypes, CardSubType, DisplayUniqueCard } from "~/models/cards";
 import { Checkbox } from "~/components/ui/checkbox";
-import { searchWithCTEsIndexingCharacterNames, searchWithCTEsWithExcept } from "~/loaders/search-alternates";
+import { searchWithCTEsIndexingCharacterNames } from "~/loaders/search-alternates";
+import { MultiSelect } from "~/components/ui-ext/multi-select";
 
 
 interface SearchQuery {
   faction?: string;
   set?: string;
   characterName?: string;
+  cardSubTypes?: string[];
   cardText?: string;
   triggerPart?: string;
   conditionPart?: string;
@@ -53,6 +54,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const cardText = nullifyTrim(url.searchParams.get("text"));
   const characterName = nullifyTrim(url.searchParams.get("cname"));
+  const cardSubTypes = nullifyTrim(url.searchParams.get("types"))?.split(",") ?? [];
   const faction = nullifyTrim(url.searchParams.get("f"));
   const set = nullifyTrim(url.searchParams.get("s"));
   const triggerPart = nullifyTrim(url.searchParams.get("tr"));
@@ -68,10 +70,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const mountainPowerRange = nullifyTrim(url.searchParams.get("mp"));
   const oceanPowerRange = nullifyTrim(url.searchParams.get("op"));
 
+  const validSubtypes = cardSubTypes.filter(subtype => allCardSubTypes.map(x => x.value).includes(subtype as CardSubType))
+
   const originalQuery = {
     faction,
     set,
     characterName,
+    cardSubTypes: validSubtypes,
     cardText,
     triggerPart,
     conditionPart,
@@ -103,6 +108,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         faction,
         set,
         characterName,
+        cardSubTypes: validSubtypes,
         cardText,
         triggerPart,
         conditionPart,
@@ -204,11 +210,11 @@ export default function SearchPage() {
   );
 }
 
-
 const SearchForm: FC<SearchQuery> = ({
   faction,
   set,
   characterName,
+  cardSubTypes,
   cardText,
   triggerPart,
   conditionPart,
@@ -225,6 +231,8 @@ const SearchForm: FC<SearchQuery> = ({
 }: SearchQuery) => {
   const [selectedFaction, setSelectedFaction] = useState(faction ?? undefined);
   const [selectedSet, setSelectedSet] = useState(set ?? undefined);
+  const [selectedCardSubTypes, setSelectedCardSubTypes] = useState<string[]>(cardSubTypes ?? []);
+
 
   const [searchParams] = useSearchParams();
   const handleExpiredCardsChange = (newValue: boolean) => {
@@ -242,6 +250,12 @@ const SearchForm: FC<SearchQuery> = ({
     } else {
       searchParams.delete("inclSup");
     }
+    window.location.search = searchParams.toString();
+  }
+
+  const handleCardSubTypesChange = (newValues: string[]) => {
+    setSelectedCardSubTypes(newValues);
+    searchParams.set("types", newValues.join(","));
     window.location.search = searchParams.toString();
   }
 
@@ -292,6 +306,19 @@ const SearchForm: FC<SearchQuery> = ({
           </div>
         </div>
         <div className="flex flex-row gap-8">
+          <div>
+            <Label htmlFor="cname">Character type</Label>
+            <MultiSelect
+              options={allCardSubTypes}
+              onValueChange={handleCardSubTypesChange}
+              defaultValue={selectedCardSubTypes}
+              placeholder="Select character types"
+              variant="secondary"
+              animation={0.5}
+              maxCount={3}
+            />
+            <input type="hidden" name="types" value={selectedCardSubTypes.join(",")} />
+          </div>
           <div>
             <Label htmlFor="fp">Forest power</Label>
             <Input

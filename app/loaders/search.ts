@@ -18,6 +18,7 @@ export interface SearchQuery {
   faction?: string;
   set?: string;
   characterName?: string;
+  cardSubTypes?: string[];
   cardText?: string;
   triggerPart?: string;
   conditionPart?: string;
@@ -93,6 +94,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     faction,
     set,
     characterName,
+    cardSubTypes,
     cardText,
     triggerPart,
     conditionPart,

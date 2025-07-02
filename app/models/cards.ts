@@ -65,3 +65,34 @@ export const titleForCardSet = (set: CardSet, locale: string) => {
     }
   }
 }
+
+export enum CardSubType {
+  Adventurer = "ADVENTURER",
+  Animal = "ANIMAL",
+  Apprentice = "APPRENTICE",
+  Artist = "ARTIST",
+  Bureaucrat = "BUREAUCRAT",
+  Citizen = "CITIZEN",
+  Deity = "DEITY",
+  Dragon = "DRAGON",
+  Druid = "DRUID",
+  Elemental = "ELEMENTAL",
+  Engineer = "ENGINEER",
+  Fairy = "FAIRY",
+  Leviathan = "LEVIATHAN",
+  Mage = "MAGE",
+  Messenger = "MESSENGER",
+  Noble = "NOBLE",
+  Plant = "PLANT",
+  Robot = "ROBOT",
+  Scholar = "SCHOLAR",
+  Soldier = "SOLDIER",
+  Spirit = "SPIRIT",
+  Titan = "TITAN",
+  Trainer = "TRAINER",
+}
+
+export const allCardSubTypes = Object.values(CardSubType).map(subType => ({
+  label: subType.charAt(0).toUpperCase() + subType.slice(1).toLowerCase(),
+  value: subType,
+}))
