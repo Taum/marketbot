@@ -37,6 +37,9 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
     includeExpiredCards,
     minPrice,
     maxPrice,
+    forestPowers,
+    mountainPowers,
+    oceanPowers,
   } = searchQuery
   const {
     page,
@@ -145,6 +148,16 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
   }
   if (recallCosts && recallCosts.length > 0) {
     query = query.where('recallCost', 'in', recallCosts)
+  }
+  
+  if (forestPowers && forestPowers.length > 0) {
+    query = query.where('forestPower', 'in', forestPowers)
+  }
+  if (mountainPowers && mountainPowers.length > 0) {
+    query = query.where('mountainPower', 'in', mountainPowers)
+  }
+  if (oceanPowers && oceanPowers.length > 0) {
+    query = query.where('oceanPower', 'in', oceanPowers)
   }
 
   if (set != null) {
@@ -308,6 +321,9 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
     partIncludeSupport,
     mainCosts,
     recallCosts,
+    forestPowers,
+    mountainPowers,
+    oceanPowers,
     includeExpiredCards,
     minPrice,
     maxPrice,
@@ -461,6 +477,15 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
   }
   if (recallCosts && recallCosts.length > 0) {
     query = query.where('recallCost', 'in', recallCosts)
+  }
+  if (forestPowers && forestPowers.length > 0) {
+    query = query.where('forestPower', 'in', forestPowers)
+  }
+  if (mountainPowers && mountainPowers.length > 0) {
+    query = query.where('mountainPower', 'in', mountainPowers)
+  }
+  if (oceanPowers && oceanPowers.length > 0) {
+    query = query.where('oceanPower', 'in', oceanPowers)
   }
 
   if (set != null) {
@@ -623,6 +648,9 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
     effectPart,
     mainCosts,
     recallCosts,
+    forestPowers,
+    mountainPowers,
+    oceanPowers,
     includeExpiredCards,
     minPrice,
     maxPrice,
@@ -869,6 +897,15 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
   if (recallCosts && recallCosts.length > 0) {
     query = query.where('recallCost', 'in', recallCosts)
   }
+  if (forestPowers && forestPowers.length > 0) {
+    query = query.where('forestPower', 'in', forestPowers)
+  }
+  if (mountainPowers && mountainPowers.length > 0) {
+    query = query.where('mountainPower', 'in', mountainPowers)
+  }
+  if (oceanPowers && oceanPowers.length > 0) {
+    query = query.where('oceanPower', 'in', oceanPowers)
+  }
 
   if (set != null) {
     if (set == CardSet.Core) {
@@ -1018,6 +1055,9 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
     effectPart,
     mainCosts,
     recallCosts,
+    forestPowers,
+    mountainPowers,
+    oceanPowers,
     includeExpiredCards,
     minPrice,
     maxPrice,
@@ -1250,6 +1290,15 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
   }
   if (recallCosts && recallCosts.length > 0) {
     query = query.where('recallCost', 'in', recallCosts)
+  }
+  if (forestPowers && forestPowers.length > 0) {
+    query = query.where('forestPower', 'in', forestPowers)
+  }
+  if (mountainPowers && mountainPowers.length > 0) {
+    query = query.where('mountainPower', 'in', mountainPowers)
+  }
+  if (oceanPowers && oceanPowers.length > 0) {
+    query = query.where('oceanPower', 'in', oceanPowers)
   }
 
   if (set != null) {

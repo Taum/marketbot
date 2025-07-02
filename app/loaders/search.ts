@@ -228,7 +228,6 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
   }
 
   if (forestPowers && forestPowers.length > 0) {
-    console.log(forestPowers)
     query = query.where('forestPower', 'in', forestPowers)
   }
   if (mountainPowers && mountainPowers.length > 0) {
