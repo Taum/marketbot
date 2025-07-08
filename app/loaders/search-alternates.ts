@@ -740,11 +740,11 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
           return eb.selectFrom('AbilityPartLink')
             .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
             .select('AbilityPartLink.abilityId')
-            .where(({ eb, and }) => {
+            .where(({ eb, and, or }) => {
               return and([
                 eb(`upa.partType`, '=', ap.part),
                 !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
-                ...ap.neg.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
+                or(ap.neg.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`))),
               ].filter(x => x != null))
             })
         }
@@ -774,11 +774,11 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
           return eb.selectFrom('AbilityPartLink')
             .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
             .select('AbilityPartLink.abilityId')
-            .where(({ eb, and }) => {
+            .where(({ eb, and, or }) => {
               return and([
                 eb(`upa.partType`, '=', ap.part),
                 !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
-                ...ap.neg.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
+                or(ap.neg.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`))),
               ].filter(x => x != null))
             })
         }
@@ -808,11 +808,11 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
           return eb.selectFrom('AbilityPartLink')
             .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
             .select('AbilityPartLink.abilityId')
-            .where(({ eb, and }) => {
+            .where(({ eb, and, or }) => {
               return and([
                 eb(`upa.partType`, '=', ap.part),
                 !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
-                ...ap.neg.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
+                or(ap.neg.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`))),
               ].filter(x => x != null))
             })
         }
