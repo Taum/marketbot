@@ -82,11 +82,10 @@ const bannedWords = [
   'The', 'of',
   'Haven', 'Foundry', 'Ouroboros', 'BLISS',
   'little',
+  'Moth',
 ]
 
-const forcedMappings: Record<string, string> = {
-  'Moth Larva': 'larva',
-}
+const forcedMappings: Record<string, string> = {}
 
 const verboseLevel = parseInt(getEnv("VERBOSE_LEVEL") ?? "0")
 const debugCrawler = getEnv("DEBUG_CRAWLER") == "true";
@@ -320,7 +319,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
 
       const url = new URL("https://api.altered.gg/cards/stats")
       url.searchParams.set("factions[]", request.faction)
-      url.searchParams.set("translations.name", strippedName)
+      url.searchParams.set("query", `"${strippedName}"`)
       url.searchParams.set("inSale", "true")
       url.searchParams.set("rarity[]", "UNIQUE")
       url.searchParams.set("itemsPerPage", "36")
