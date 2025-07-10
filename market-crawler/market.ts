@@ -319,7 +319,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
 
       const url = new URL("https://api.altered.gg/cards/stats")
       url.searchParams.set("factions[]", request.faction)
-      url.searchParams.set("query", `"${strippedName}"`)
+      url.searchParams.set("query", `${strippedName}`)
       url.searchParams.set("inSale", "true")
       url.searchParams.set("rarity[]", "UNIQUE")
       url.searchParams.set("itemsPerPage", "36")
