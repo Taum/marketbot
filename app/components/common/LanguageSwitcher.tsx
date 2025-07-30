@@ -31,7 +31,7 @@ export const LanguageSwitcher: React.FC = () => {
     }
   }
 
-  const currentFlag = current === "en" ? "/assets/eng.png" : "/assets/fr.png";
+  const currentFlag = current === "en" ? "/assets/eng.svg" : "/assets/fr.svg";
   const currentLabel = current === "en" ? "English" : "Français";
   const nextLabel = current === "en" ? "Français" : "English";
 

@@ -193,9 +193,25 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  savedSearches SavedSearch[]
+
   @@unique([id])
   @@unique([email])
   @@index([email])
+}
+
+model SavedSearch {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  searchParams String  // URL search parameters as string
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([id])
+  @@unique([userId, name]) // Each user can have unique search names
+  @@index([userId])
 }
 
 enum AbilityPartType {

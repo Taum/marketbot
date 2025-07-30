@@ -1,9 +1,8 @@
-import prisma from "@common/utils/prisma.server.js";
 import { CardSet, DisplayAbilityOnCard, DisplayPartOnCard, DisplayUniqueCard, AbilityPartType, Faction } from "~/models/cards";
 import { UniqueAbilityLine, Prisma, UniqueInfo, UniqueAbilityPart, AbilityPartType as DbAbilityPartType, AbilityPartLink } from '@prisma/client';
 import { AbilityCharacterDataV1 } from "@common/models/postprocess";
 import { db } from "@common/utils/kysely.server";
-import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/postgres'
+import { jsonArrayFrom } from 'kysely/helpers/postgres'
 import { Decimal } from "decimal.js";
 import { Expression, SelectQueryBuilder, sql } from "kysely";
 import { partition } from "~/lib/utils";
@@ -24,6 +23,11 @@ export interface SearchQuery {
   conditionPart?: string;
   effectPart?: string;
   partIncludeSupport?: boolean;
+  partFilterArrow?: boolean;
+  partFilterHand?: boolean;
+  partFilterReserve?: boolean;
+  filterTextless?: boolean;
+  filterZeroStat?: boolean;
   mainCosts?: number[];
   recallCosts?: number[];
   includeExpiredCards?: boolean;
@@ -101,6 +105,11 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     conditionPart,
     effectPart,
     partIncludeSupport,
+    partFilterArrow,
+    partFilterHand,
+    partFilterReserve,
+    filterTextless,
+    filterZeroStat,
     mainCosts,
     recallCosts,
     includeExpiredCards,

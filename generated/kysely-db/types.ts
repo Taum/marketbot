@@ -49,6 +49,14 @@ export type MarketUpdateStats = {
     totalOffersUpdated: number | null;
     totalPagesLoaded: number | null;
 };
+export type SavedSearch = {
+    id: Generated<number>;
+    userId: number;
+    name: string;
+    searchParams: string;
+    createdAt: Generated<Timestamp>;
+    updatedAt: Timestamp;
+};
 export type UniqueAbilityLine = {
     id: Generated<number>;
     uniqueInfoId: number;
@@ -116,6 +124,7 @@ export type DB = {
     CardFamilyStats: CardFamilyStats;
     FtsAlias: FtsAlias;
     MarketUpdateStats: MarketUpdateStats;
+    SavedSearch: SavedSearch;
     UniqueAbilityLine: UniqueAbilityLine;
     UniqueAbilityPart: UniqueAbilityPart;
     UniqueInfo: UniqueInfo;
