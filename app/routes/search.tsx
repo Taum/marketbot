@@ -1,6 +1,6 @@
 import { type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useLoaderData, useSearchParams } from "@remix-run/react";
-import { FC, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import { FactionSelect } from "~/components/altered/FactionSelect";
 import { SetSelect } from "~/components/altered/SetSelect";
 import { Button } from "~/components/ui/button";
@@ -13,6 +13,8 @@ import { allCardSubTypes, CardSubType, DisplayUniqueCard } from "~/models/cards"
 import { Checkbox } from "~/components/ui/checkbox";
 import { searchWithCTEsIndexingCharacterNames } from "~/loaders/search-alternates";
 import { MultiSelect } from "~/components/ui-ext/multi-select";
+import { SaveSelect } from "~/components/save/SaveSelect";
+import { search } from "~/loaders/search";
 
 
 interface SearchQuery {
@@ -25,6 +27,11 @@ interface SearchQuery {
   conditionPart?: string;
   effectPart?: string;
   partIncludeSupport?: boolean;
+  partFilterArrow?: boolean;
+  partFilterHand?: boolean;
+  partFilterReserve?: boolean;
+  filterZeroStat?: boolean;
+  filterTextless?: boolean;
   mainCostRange?: string;
   recallCostRange?: string;
   includeExpiredCards?: boolean;
@@ -60,10 +67,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const triggerPart = nullifyTrim(url.searchParams.get("tr"));
   const conditionPart = nullifyTrim(url.searchParams.get("cond"));
   const effectPart = nullifyTrim(url.searchParams.get("eff"));
-  const partIncludeSupport = nullifyTrim(url.searchParams.get("inclSup")) == "1";
+  const partIncludeSupport = nullifyTrim(url.searchParams.get("inclSup")) === "1";
+  const partFilterArrow = nullifyTrim(url.searchParams.get("arrow")) === "1";
+  const partFilterHand = nullifyTrim(url.searchParams.get("hand")) === "1";
+  const partFilterReserve = nullifyTrim(url.searchParams.get("reserve")) === "1";
+  const filterTextless = nullifyTrim(url.searchParams.get("textless")) === "1";
+  const filterZeroStat = nullifyTrim(url.searchParams.get("zeroStat")) === "1";
   const mainCostRange = nullifyTrim(url.searchParams.get("mc"));
   const recallCostRange = nullifyTrim(url.searchParams.get("rc"));
-  const includeExpiredCards = nullifyTrim(url.searchParams.get("exp")) == "1";
+  const includeExpiredCards = nullifyTrim(url.searchParams.get("exp")) === "1";
   const minPrice = nullifyParseInt(url.searchParams.get("minpr"));
   const maxPrice = nullifyParseInt(url.searchParams.get("maxpr"));
   const forestPowerRange = nullifyTrim(url.searchParams.get("fp"));
@@ -82,6 +94,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
     conditionPart,
     effectPart,
     partIncludeSupport,
+    partFilterArrow,
+    partFilterHand,
+    partFilterReserve,
+    filterTextless,
+    filterZeroStat,
     mainCostRange,
     recallCostRange,
     includeExpiredCards,
@@ -114,6 +131,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
         conditionPart,
         effectPart,
         partIncludeSupport,
+        partFilterArrow,
+        partFilterHand,
+        partFilterReserve,
+        filterTextless,
+        filterZeroStat,
         mainCosts,
         recallCosts,
         includeExpiredCards,
@@ -220,6 +242,11 @@ const SearchForm: FC<SearchQuery> = ({
   conditionPart,
   effectPart,
   partIncludeSupport,
+  partFilterArrow,
+  partFilterHand,
+  partFilterReserve,
+  filterZeroStat,
+  filterTextless,
   mainCostRange,
   recallCostRange,
   includeExpiredCards,
@@ -232,9 +259,22 @@ const SearchForm: FC<SearchQuery> = ({
   const [selectedFaction, setSelectedFaction] = useState(faction ?? undefined);
   const [selectedSet, setSelectedSet] = useState(set ?? undefined);
   const [selectedCardSubTypes, setSelectedCardSubTypes] = useState<string[]>(cardSubTypes ?? []);
-
+  const [isAdvSearchOpen, setIsAdvSearchOpen] = useState(false);
+  const [isSaveLoadOpen, setIsSaveLoadOpen] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [saveName, setSaveName] = useState('');
+  const [loadingSave, setLoadingSave] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState(false);
 
   const [searchParams] = useSearchParams();
+  const [additionalSearchParams, setAdditionalSearchParams] = useState<URLSearchParams | undefined>(undefined);
+
+  useEffect(() => {
+    setAdditionalSearchParams(searchParams);
+    setIsAdvSearchOpen(searchParams.has("arrow") || searchParams.has("hand") || searchParams.has("reserve") || searchParams.has("inclSup") || searchParams.has("zeroStat") || searchParams.has("textless"));
+  }, [searchParams]);
+
   const handleExpiredCardsChange = (newValue: boolean) => {
     if (newValue) {
       searchParams.set("exp", "1");
@@ -243,20 +283,142 @@ const SearchForm: FC<SearchQuery> = ({
     }
     window.location.search = searchParams.toString();
   }
+  
+  const handleArrow = (newValue: boolean) => {
+    setAdditionalSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      if (newValue) {
+        newParams.set("arrow", "1");
+      } else {
+        newParams.delete("arrow");
+      }
+      return newParams;
+    });
+  }
+  
+  const handleHand = (newValue: boolean) => {
+    setAdditionalSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      if (newValue) {
+        newParams.set("hand", "1");
+      } else {
+        newParams.delete("hand");
+      }
+      return newParams;
+    });
+  }
+  
+  const handleReserve = (newValue: boolean) => {
+    setAdditionalSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      if (newValue) {
+        newParams.set("reserve", "1");
+      } else {
+        newParams.delete("reserve");
+      }
+      return newParams;
+    });
+  }
 
   const handleIncludeSupport = (newValue: boolean) => {
-    if (newValue) {
-      searchParams.set("inclSup", "1");
-    } else {
-      searchParams.delete("inclSup");
-    }
-    window.location.search = searchParams.toString();
+    setAdditionalSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      if (newValue) {
+        newParams.set("inclSup", "1");
+      } else {
+        newParams.delete("inclSup");
+      }
+      return newParams;
+    });
+  }
+  
+  const handleSearchZero = (newValue: boolean) => {
+    setAdditionalSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      if (newValue) {
+        newParams.set("zeroStat", "1");
+      } else {
+        newParams.delete("zeroStat");
+      }
+      return newParams;
+    });
+  }
+  
+  const handleTextless = (newValue: boolean) => {
+    setAdditionalSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      if (newValue) {
+        newParams.set("textless", "1");
+      } else {
+        newParams.delete("textless");
+      }
+      return newParams;
+    });
   }
 
   const handleCardSubTypesChange = (newValues: string[]) => {
     setSelectedCardSubTypes(newValues);
     searchParams.set("types", newValues.join(","));
     window.location.search = searchParams.toString();
+  }
+
+  const deleteSave = () => {
+    setError(false);
+    setMessage('');
+    if(!loadingSave) {
+      setMessage('You must select a save to delete.');
+      setError(true);
+    }
+    else if(!showConfirm) {
+      setError(true);
+      setMessage(`The save "${loadingSave}" will be deleted permanently. Are you sure?`);
+      setShowConfirm(true);
+    }
+    else {
+      // save search to cookie
+      deleteCookie(`save-market-${loadingSave}`);
+    }
+  };
+
+  const loadSearch = () => {
+    setMessage('');
+    if (loadingSave) {
+      const savedSearch = document.cookie
+        .split('; ')
+        .find(cookie => cookie.startsWith(`save-market-${loadingSave}`))
+        ?.split('=')[1];
+      if (savedSearch) {
+        const loadedSaveParams = decodeURIComponent(savedSearch);
+        window.location.search = loadedSaveParams;
+      }
+    }
+  }
+
+  const saveSearch = () => {
+    setError(false);
+    setMessage('');
+    if(!saveName) {
+      setMessage('You must provide a name to save this research.');
+      setError(true);
+    }
+    else {
+      // save search to cookie
+      setCookie(`save-market-${saveName}`, window.location.search, 30);
+      setMessage('Your search has been saved and can be reloaded for 1 month');
+    }
+  } 
+
+  function setCookie(name: string, value: string, days: number) {
+    const expires = new Date(Date.now() + days * 864e5).toUTCString();
+    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+  }
+
+  function deleteCookie(name: string) {
+    const expires = new Date(0).toUTCString();
+    document.cookie = `${name}=; expires=${expires}; path=/`;
+    setLoadingSave('');
+    setShowConfirm(false);
+    setMessage(`The save "${loadingSave}" has been deleted.`);
   }
 
   return (
@@ -386,23 +548,187 @@ const SearchForm: FC<SearchQuery> = ({
               placeholder="Effect text..."
             />
           </div>
-          <div className="grow-1 flex-[10%] pt-4 flex flex-row gap-2 items-center">
-            <Checkbox
-              value="1"
-              name="inclSup"
-              defaultChecked={partIncludeSupport ?? false}
-              onCheckedChange={handleIncludeSupport}
-            />
-            <Label htmlFor="inclSup" className="text-xs/3 inline-block">Also match support abilities</Label>
-          </div>
         </div>
+        
+        <Button type="button" className="bg-accent/80 text-foreground hover:bg-accent" onClick={() => {
+          setIsAdvSearchOpen(!isAdvSearchOpen);
+        }}>
+          Advanced Filters
+        </Button>
+        {isAdvSearchOpen && (
+          <>
+            <div className="flex flex-row gap-4">
+              <div>
+                <div className="grow-1 flex-[10%] pt-4 flex flex-row gap-2 items-center">
+                  <Checkbox
+                    value="1"
+                    name="arrow"
+                    defaultChecked={partFilterArrow ?? false}
+                    onCheckedChange={handleArrow}
+                  />
+                  <Label htmlFor="arrow" className="text-xs/3 inline-block">Filter by arrow effect</Label>
+                </div>
+              </div>
+              <div>
+                <div className="grow-1 flex-[10%] pt-4 flex flex-row gap-2 items-center">
+                  <Checkbox
+                    value="1"
+                    name="hand"
+                    defaultChecked={partFilterHand ?? false}
+                    onCheckedChange={handleHand}
+                  />
+                  <Label htmlFor="hand" className="text-xs/3 inline-block">Filter by hand effect</Label>
+                </div>
+              </div>
+              <div>
+                <div className="grow-1 flex-[10%] pt-4 flex flex-row gap-2 items-center">
+                  <Checkbox
+                    value="1"
+                    name="reserve"
+                    defaultChecked={partFilterReserve ?? false}
+                    onCheckedChange={handleReserve}
+                  />
+                  <Label htmlFor="reserve" className="text-xs/3 inline-block">Filter by reserve effect</Label>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-row gap-4">
+              <div>
+                <div className="grow-1 flex-[10%] pt-4 flex flex-row gap-2 items-center">
+                  <Checkbox
+                    value="1"
+                    name="inclSup"
+                    defaultChecked={partIncludeSupport ?? false}
+                    onCheckedChange={handleIncludeSupport}
+                  />
+                  <Label htmlFor="inclSup" className="text-xs/3 inline-block">Also match support abilities</Label>
+                </div>
+              </div>
+              <div>
+                <div className="grow-1 flex-[10%] pt-4 flex flex-row gap-2 items-center">
+                  <Checkbox
+                    value="1"
+                    name="zeroStat"
+                    defaultChecked={filterZeroStat ?? false}
+                    onCheckedChange={handleSearchZero}
+                  />
+                  <Label htmlFor="zeroStat" className="text-xs/3 inline-block">Search for at least one 0 stat</Label>
+                </div>
+              </div>
+              <div>
+                <div className="grow-1 flex-[10%] pt-4 flex flex-row gap-2 items-center">
+                  <Checkbox
+                    value="1"
+                    name="textless"
+                    defaultChecked={filterTextless ?? false}
+                    onCheckedChange={handleTextless}
+                  />
+                  <Label htmlFor="textless" className="text-xs/3 inline-block">Search for cards without text (only support)</Label>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+        <Button type="button" className="bg-accent/80 text-foreground hover:bg-accent" onClick={() => {
+          setIsSaveLoadOpen(!isSaveLoadOpen);
+        }}>
+          Save/Load Search
+        </Button>
+        {isSaveLoadOpen && (
+          <>
+            <div className="flex flex-row gap-4">
+              <div className="flex flex-column gap-1 align-self-start">
+                <Input
+                  type="search"
+                  name="save"
+                  defaultValue={saveName}
+                  onChange={(e) => setSaveName(e.target.value)}
+                  placeholder="Name to save this search"
+                />
+              </div>
+              <Button
+                name="saveBtn"
+                onClick={() => { 
+                  saveSearch();
+                }}
+                className="bg-accent/80 text-foreground hover:bg-accent"
+              >
+                Save
+              </Button>
+            </div>
+             <div className="flex flex-row gap-4">
+              <div className="flex flex-column gap-1 align-self-start">
+                <SaveSelect
+                  name="loadSelect"
+                  value={loadingSave}
+                  options={document.cookie.split('; ')
+                    .filter(cookie => cookie.startsWith('save-market-'))
+                    .map(cookie => cookie.split('=')[0].replace('save-market-', ''))}
+                  onValueChange={(value) => {
+                    setLoadingSave(value ?? '');
+                  }}
+                />
+              </div>
+              <Button
+                name="loadBtn"
+                onClick={() => { 
+                  loadSearch();
+                }}
+                className="bg-accent/80 text-foreground hover:bg-accent"
+                disabled={loadingSave === '' || showConfirm}
+              >
+                Load
+              </Button>
+              <Button
+                name="deleteBtn"
+                onClick={() => { 
+                  deleteSave();
+                }}
+                className="bg-accent/80 text-foreground hover:bg-accent"
+                disabled={loadingSave === ''}
+              >
+                {!showConfirm ? 'Delete' : 'Confirm'}
+              </Button>
+              {showConfirm && <Button
+                  name="cancelBtn"
+                  onClick={() => { 
+                    setShowConfirm(false);
+                    setMessage('');
+                    setError(false);
+                  }}
+                  className="bg-accent/80 text-foreground hover:bg-accent"
+                >
+                  Cancel
+                </Button>
+              }
+            </div>
+            {message && <Label id="message" style={{color: error ? 'red' : 'green', paddingTop: '5px'}}>{message}</Label>}
+          </>
+        )}
         <div className="flex flex-row gap-8 align-self-start justify-between items-end">
-          <Button
-            type="submit"
-            className="bg-accent/80 text-foreground hover:bg-accent"
-          >
-            Search
-          </Button>
+          <div className="flex flex-row gap-4 align-self-start">
+            <Button
+              onClick={() => {
+                const temporarySearchParamsStr = additionalSearchParams?.toString();
+                if(temporarySearchParamsStr) {
+                  window.location.search = temporarySearchParamsStr;
+                }
+              }}
+              type="submit"
+              className="bg-accent/80 text-foreground hover:bg-accent"
+            >
+              Search
+            </Button>
+            <Button
+              onClick={() => {
+                window.location.search = "";
+              }}
+              type="reset"
+              className="bg-accent/80 text-foreground hover:bg-accent"
+            >
+              Clear
+            </Button>
+          </div>
           <div className="flex flex-row gap-2">
             <div className="flex flex-row gap-2 items-center mt-6 mr-2">
               <Checkbox

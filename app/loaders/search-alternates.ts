@@ -33,6 +33,8 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
     conditionPart,
     effectPart,
     partIncludeSupport,
+    filterZeroStat,
+    filterTextless,
     mainCosts,
     recallCosts,
     includeExpiredCards,
@@ -166,6 +168,13 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
   if (oceanPowers && oceanPowers.length > 0) {
     query = query.where('oceanPower', 'in', oceanPowers)
   }
+  if(filterZeroStat) {
+      query = query.where((eb) => eb.or([
+      eb('forestPower', '=', 0),
+      eb('mountainPower', '=', 0),
+      eb('oceanPower', '=', 0)
+    ]))
+  }
 
   if (set != null) {
     if (set == CardSet.Core) {
@@ -203,6 +212,9 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
     query = query.where('seenInLastGeneration', '=', true)
   }
 
+  if (filterTextless) {
+    query = query.where('mainEffectEn', '=', "")
+  }
 
   const queryWithSelect = query
     .select([
@@ -327,6 +339,8 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
     conditionPart,
     effectPart,
     partIncludeSupport,
+    filterZeroStat,
+    filterTextless,
     mainCosts,
     recallCosts,
     forestPowers,
@@ -501,6 +515,13 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
   if (oceanPowers && oceanPowers.length > 0) {
     query = query.where('oceanPower', 'in', oceanPowers)
   }
+  if(filterZeroStat) {
+      query = query.where((eb) => eb.or([
+      eb('forestPower', '=', 0),
+      eb('mountainPower', '=', 0),
+      eb('oceanPower', '=', 0)
+    ]))
+  }
 
   if (set != null) {
     if (set == CardSet.Core) {
@@ -538,6 +559,9 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
     query = query.where('seenInLastGeneration', '=', true)
   }
 
+  if (filterTextless) {
+    query = query.where('mainEffectEn', '=', "")
+  }
 
   const queryWithSelect = query
     .select([
@@ -694,6 +718,11 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
   ]
 
   const partIncludeSupport = searchQuery.partIncludeSupport ?? false
+  const partFilterArrow = searchQuery.partFilterArrow ?? false
+  const partFilterHand = searchQuery.partFilterHand ?? false
+  const partFilterReserve = searchQuery.partFilterReserve ?? false
+  const filterZeroStat = searchQuery.filterZeroStat ?? false
+  const filterTextless = searchQuery.filterTextless ?? false
 
   const nonNullAbilityParts = abilityParts.filter(x => x.text != null)
     .map(x => {
@@ -761,7 +790,7 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
           return eb.selectFrom('AbilityPartLink')
             .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
             .select('AbilityPartLink.abilityId')
-            .where(({ eb, and }) => {
+            .where(({ eb, and, or }) => {
               return and([
                 eb(`upa.partType`, '=', ap.part),
                 !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
@@ -795,7 +824,7 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
           return eb.selectFrom('AbilityPartLink')
             .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
             .select('AbilityPartLink.abilityId')
-            .where(({ eb, and }) => {
+            .where(({ eb, and, or }) => {
               return and([
                 eb(`upa.partType`, '=', ap.part),
                 !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
@@ -927,6 +956,13 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
   if (oceanPowers && oceanPowers.length > 0) {
     query = query.where('oceanPower', 'in', oceanPowers)
   }
+  if(filterZeroStat) {
+      query = query.where((eb) => eb.or([
+      eb('forestPower', '=', 0),
+      eb('mountainPower', '=', 0),
+      eb('oceanPower', '=', 0)
+    ]))
+  }
 
   if (set != null) {
     if (set == CardSet.Core) {
@@ -953,6 +989,48 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
     query = query.where('seenInLastGeneration', '=', true)
   }
 
+  if (filterTextless) {
+    query = query.where('mainEffectEn', '=', "")
+  }
+
+  if(partFilterHand) {
+    const { tsQuery } = await db.selectNoFrom(
+      websearch_to_tsquery("{H}").as('tsQuery')
+    ).executeTakeFirstOrThrow()
+
+    query = query
+      .where(eb => eb(
+        to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
+        '@@',
+        tsQuery,
+      ))  
+  }
+  
+  if(partFilterReserve) {
+    const { tsQuery } = await db.selectNoFrom(
+      websearch_to_tsquery("{R}").as('tsQuery')
+    ).executeTakeFirstOrThrow()
+
+    query = query
+      .where(eb => eb(
+        to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
+        '@@',
+        tsQuery,
+      ))  
+  }
+  
+  if(partFilterArrow) {
+    const { tsQuery } = await db.selectNoFrom(
+      websearch_to_tsquery("{J}").as('tsQuery')
+    ).executeTakeFirstOrThrow()
+
+    query = query
+      .where(eb => eb(
+        to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
+        '@@',
+        tsQuery,
+      ))  
+  }
 
   const queryWithSelect = query
     .select([
@@ -1108,6 +1186,8 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
   ]
 
   const partIncludeSupport = searchQuery.partIncludeSupport ?? false
+  const filterZeroStat = searchQuery.filterZeroStat ?? false
+  const filterTextless = searchQuery.filterTextless ?? false
 
   const nonNullAbilityParts = abilityParts.filter(x => x.text != null)
     .map(x => {
@@ -1328,6 +1408,13 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
   if (oceanPowers && oceanPowers.length > 0) {
     query = query.where('oceanPower', 'in', oceanPowers)
   }
+  if(filterZeroStat) {
+      query = query.where((eb) => eb.or([
+      eb('forestPower', '=', 0),
+      eb('mountainPower', '=', 0),
+      eb('oceanPower', '=', 0)
+    ]))
+  }
 
   if (set != null) {
     if (set == CardSet.Core) {
@@ -1364,7 +1451,10 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
   if (!includeExpiredCards) {
     query = query.where('seenInLastGeneration', '=', true)
   }
-
+  
+  if (filterTextless) {
+    query = query.where('mainEffectEn', '=', "")
+  }
 
   const queryWithSelect = query
     .select([
