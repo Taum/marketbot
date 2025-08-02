@@ -33,6 +33,7 @@ interface SearchQuery {
   forestPowerRange?: string;
   mountainPowerRange?: string;
   oceanPowerRange?: string;
+  includeZeroPower?: boolean;
 }
 
 interface LoaderData {
@@ -69,6 +70,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const forestPowerRange = nullifyTrim(url.searchParams.get("fp"));
   const mountainPowerRange = nullifyTrim(url.searchParams.get("mp"));
   const oceanPowerRange = nullifyTrim(url.searchParams.get("op"));
+  const includeZeroPower = nullifyTrim(url.searchParams.get("zp")) == "1";
 
   const validSubtypes = cardSubTypes.filter(subtype => allCardSubTypes.map(x => x.value).includes(subtype as CardSubType))
 
@@ -89,7 +91,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     maxPrice,
     forestPowerRange,
     mountainPowerRange,
-    oceanPowerRange
+    oceanPowerRange,
+    includeZeroPower
   }
 
   const currentPage = nullifyParseInt(url.searchParams.get("p")) ?? 1;
@@ -121,7 +124,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
         maxPrice,
         forestPowers,
         mountainPowers,
-        oceanPowers
+        oceanPowers,
+        includeZeroPower
       },
       {
         page: currentPage,
@@ -227,7 +231,8 @@ const SearchForm: FC<SearchQuery> = ({
   maxPrice,
   forestPowerRange,
   mountainPowerRange,
-  oceanPowerRange
+  oceanPowerRange,
+  includeZeroPower
 }: SearchQuery) => {
   const [selectedFaction, setSelectedFaction] = useState(faction ?? undefined);
   const [selectedSet, setSelectedSet] = useState(set ?? undefined);
@@ -249,6 +254,15 @@ const SearchForm: FC<SearchQuery> = ({
       searchParams.set("inclSup", "1");
     } else {
       searchParams.delete("inclSup");
+    }
+    window.location.search = searchParams.toString();
+  }
+
+  const handleIncludeZeroPower = (newValue: boolean) => {
+    if (newValue) {
+      searchParams.set("zp", "1");
+    } else {
+      searchParams.delete("zp");
     }
     window.location.search = searchParams.toString();
   }
@@ -345,6 +359,15 @@ const SearchForm: FC<SearchQuery> = ({
               defaultValue={oceanPowerRange ?? ""}
               placeholder="1-4"
             />
+          </div>
+          <div className="grow-1 flex-[10%] pt-4 flex flex-row gap-2 items-center">
+            <Checkbox
+              value="1"
+              name="zp"
+              defaultChecked={includeZeroPower ?? false}
+              onCheckedChange={handleIncludeZeroPower}
+            />
+            <Label htmlFor="zp" className="text-xs/3 inline-block">Include a 0-power region</Label>
           </div>
         </div>
         <div className="flex flex-row gap-4">

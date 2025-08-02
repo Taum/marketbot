@@ -5,7 +5,7 @@ import { AbilityCharacterDataV1 } from "@common/models/postprocess";
 import { db } from "@common/utils/kysely.server";
 import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/postgres'
 import { Decimal } from "decimal.js";
-import { Expression, SelectQueryBuilder, sql } from "kysely";
+import { Expression, FilterObject, ReferenceExpression, SelectQueryBuilder, sql } from "kysely";
 import { partition } from "~/lib/utils";
 import { DB } from "@generated/kysely-db/types";
 
@@ -32,6 +32,7 @@ export interface SearchQuery {
   forestPowers?: number[];
   mountainPowers?: number[];
   oceanPowers?: number[];
+  includeZeroPower?: boolean;
 }
 
 export interface PageParams {
@@ -107,7 +108,8 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     maxPrice,
     forestPowers,
     mountainPowers,
-    oceanPowers
+    oceanPowers,
+    includeZeroPower
   } = searchQuery
   const {
     page,
@@ -229,14 +231,33 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     query = query.where('recallCost', 'in', recallCosts)
   }
 
+  var regionsWithZero: ReferenceExpression<DB, 'UniqueInfo'>[] = []
   if (forestPowers && forestPowers.length > 0) {
     query = query.where('forestPower', 'in', forestPowers)
+    if (forestPowers.includes(0)) {
+      regionsWithZero.push('forestPower')
+    }
+  } else {
+    regionsWithZero.push('forestPower')
   }
   if (mountainPowers && mountainPowers.length > 0) {
     query = query.where('mountainPower', 'in', mountainPowers)
+    if (mountainPowers.includes(0)) {
+      regionsWithZero.push('mountainPower')
+    }
+  } else {
+    regionsWithZero.push('mountainPower')
   }
   if (oceanPowers && oceanPowers.length > 0) {
     query = query.where('oceanPower', 'in', oceanPowers)
+    if (oceanPowers.includes(0)) {
+      regionsWithZero.push('oceanPower')
+    }
+  } else {
+    regionsWithZero.push('oceanPower')
+  }
+  if (includeZeroPower) {
+    query = query.where((eb) => eb.or(regionsWithZero.map((region) => { return eb(region, '=', 0) }) as Readonly<FilterObject<DB, "UniqueInfo">>))
   }
 
   if (set != null) {

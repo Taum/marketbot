@@ -5,7 +5,7 @@ import { AbilityCharacterDataV1 } from "@common/models/postprocess";
 import { db } from "@common/utils/kysely.server";
 import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/postgres'
 import { Decimal } from "decimal.js";
-import { Expression, SelectQueryBuilder, sql } from "kysely";
+import { Expression, FilterObject, ReferenceExpression, SelectQueryBuilder, sql } from "kysely";
 import { partition } from "~/lib/utils";
 import { DB } from "@generated/kysely-db/types";
 import { buildDisplayAbility, PageParams, SearchQuery, SearchResults, to_tsvector2, Token, tokenize, tokens_to_tsquery } from "~/loaders/search";
@@ -19,7 +19,7 @@ const PAGE_SIZE = 100
 
 export const websearch_to_tsquery = (str: string) => {
   // return sql`websearch_to_tsquery('simple', ${str})`
-  return sql`ts_rewrite(websearch_to_tsquery('simple', ${str}), 'SELECT "from","to" FROM "FtsAlias"')`   
+  return sql`ts_rewrite(websearch_to_tsquery('simple', ${str}), 'SELECT "from","to" FROM "FtsAlias"')`
 }
 
 export async function searchWithJoins(searchQuery: SearchQuery, pageParams: PageParams): Promise<SearchResults> {
@@ -143,7 +143,7 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
       ))
     }
   }
-  
+
   if (cardSubTypes && cardSubTypes.length > 0) {
     // This may be a little paranoid, but there isn't a point in allowing random strings to be passed in here anyway.
     const validSubtypes = cardSubTypes.filter(subtype => allCardSubTypes.map(x => x.value).includes(subtype as CardSubType))
@@ -156,7 +156,7 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
   if (recallCosts && recallCosts.length > 0) {
     query = query.where('recallCost', 'in', recallCosts)
   }
-  
+
   if (forestPowers && forestPowers.length > 0) {
     query = query.where('forestPower', 'in', forestPowers)
   }
@@ -335,6 +335,7 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
     includeExpiredCards,
     minPrice,
     maxPrice,
+    includeZeroPower
   } = searchQuery
   const {
     page,
@@ -669,6 +670,7 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
     includeExpiredCards,
     minPrice,
     maxPrice,
+    includeZeroPower
   } = searchQuery
   const {
     page,
@@ -834,7 +836,7 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
         }
         return q
       }
-      
+
       let q = eb.selectFrom('apl0_ids').selectAll()
       if (nonNullAbilityParts.length > 1) {
         if (except1) {
@@ -918,14 +920,34 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
   if (recallCosts && recallCosts.length > 0) {
     query = query.where('recallCost', 'in', recallCosts)
   }
+
+  var regionsWithZero: ReferenceExpression<DB, 'UniqueInfo'>[] = []
   if (forestPowers && forestPowers.length > 0) {
     query = query.where('forestPower', 'in', forestPowers)
+    if (forestPowers.includes(0)) {
+      regionsWithZero.push('forestPower')
+    }
+  } else {
+    regionsWithZero.push('forestPower')
   }
   if (mountainPowers && mountainPowers.length > 0) {
     query = query.where('mountainPower', 'in', mountainPowers)
+    if (mountainPowers.includes(0)) {
+      regionsWithZero.push('mountainPower')
+    }
+  } else {
+    regionsWithZero.push('mountainPower')
   }
   if (oceanPowers && oceanPowers.length > 0) {
     query = query.where('oceanPower', 'in', oceanPowers)
+    if (oceanPowers.includes(0)) {
+      regionsWithZero.push('oceanPower')
+    }
+  } else {
+    regionsWithZero.push('oceanPower')
+  }
+  if (includeZeroPower) {
+    query = query.where((eb) => eb.or(regionsWithZero.map((region) => { return eb(region, '=', 0) }) as Readonly<FilterObject<DB, "UniqueInfo">>))
   }
 
   if (set != null) {
@@ -1248,7 +1270,7 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
         }
         return q
       }
-      
+
       let q = eb.selectFrom('apl0_ids').selectAll()
       if (nonNullAbilityParts.length > 1) {
         if (except1) {
