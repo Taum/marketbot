@@ -161,4 +161,10 @@ npm run crawler-get-all-uniques
 npm run crawler-post-process
 ```
 
+# Maintenance operations
 
+## Updating cards_min.json
+
+The `data/cards_min.json` file contains the list of all cards in the game, for the purpose of directing the Crawler to do searches by family and faction. When a new set is released, it should be updated to include new cards so they too can be crawled.
+
+The `dev-utils/strip-card-data.ts` script can help generate this file. The script uses the English files from https://github.com/PolluxTroy0/Altered-TCG-Card-Database/ and references their path at the top of the script. Download the files from that Git repository and place them in the `data` folder, then run the script via `npm run dev:strip-card-data`. It should update the `cards_min.json` file, which you can then commit into the repository.

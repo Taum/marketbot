@@ -18,6 +18,7 @@
     "dev:check-uniques": "tsx --env-file=.env dev-utils/check-uniques.ts",
     "dev:list-subtypes": "tsx --env-file=.env dev-utils/list-subtypes.ts",
     "dev:side-load-uniques": "tsx --env-file=.env dev-utils/side-load-uniques.ts",
+    "dev:strip-card-data": "tsx --env-file=.env dev-utils/strip-card-data.ts",
     "test:db-perf": "tsx --env-file=.env.test dev-utils/db-perf-test/test.ts",
     "test:logs-analysis": "tsx dev-utils/gcp-perf-analysis/analysis.ts"
   },
