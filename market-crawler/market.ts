@@ -266,6 +266,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
 
     // Remove duplicates
     const requestsArray = unique(requests, (r) => `${r.cardFamilyId}-${r.faction}`);
+    console.log(`Enqueued ${requestsArray.length} card families`)
     this.addRequests(requestsArray)
   }
 

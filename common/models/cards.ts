@@ -45,6 +45,7 @@ export enum CardSet {
   COREKS = "COREKS",
   ALIZE = "ALIZE",
   BISE = "BISE",
+  CYCLONE = "CYCLONE",
 }
 export interface CardMeta {
   set: CardSet
