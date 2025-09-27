@@ -80,7 +80,7 @@ export interface MarketUpdateCrawlerStats {
 const bannedWords = [
   'Lyra', 'Ordis', 'Yzmir', 'Muna', 'Axiom', 'Bravos',
   'The', 'of',
-  'Haven', 'Foundry', 'Ouroboros', 'BLISS',
+  'Haven', 'Foundry', 'Ouroboros', 'Monolith', 'BLISS',
   'little',
   'Moth',
 ]
@@ -253,7 +253,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
     let requests: CardFamilyRequest[] = []
     for (const cardKey in cardsDb) {
       const card = cardsDb[cardKey];
-      if (card.type == CardType.CHARACTER && card.rarity == Rarity.RARE) {
+      if (card.type == CardType.CHARACTER && card.rarity == Rarity.RARE && !card.id.match(/_P_/)) {
         if (filter && !filter(card)) { continue }
         requests.push({
           fetchGenerationId: fetchGenerationId,
