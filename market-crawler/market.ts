@@ -300,7 +300,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
         url.searchParams.set(key, value)
       }
       url.searchParams.set("inSale", "true")
-      url.searchParams.set("itemsPerPage", "36")
+      url.searchParams.set("itemsPerPage", "108")
       url.searchParams.set("locale", "en-us")
       url.searchParams.set("rarity[]", "UNIQUE")
       return url.toString()
@@ -323,7 +323,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
       url.searchParams.set("query", `${strippedName}`)
       url.searchParams.set("inSale", "true")
       url.searchParams.set("rarity[]", "UNIQUE")
-      url.searchParams.set("itemsPerPage", "36")
+      url.searchParams.set("itemsPerPage", "108")
       url.searchParams.set("locale", "en-us")
 
       const urlString = url.toString()

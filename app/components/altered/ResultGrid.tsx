@@ -90,6 +90,9 @@ function formatAbility(ability: DisplayAbilityOnCard): JSX.Element {
   const { text, parts } = ability
   let res: JSX.Element[] = []
   let k = 0;
+  if (parts.length == 0) {
+    return <span>{text}</span>
+  }
   res.push(<span key={k++}>{text.slice(0, parts[0].startIndex)}</span>);
   for (let i = 0; i < parts.length; i++) {
     if (i > 0 && parts[i].startIndex != parts[i - 1].endIndex) {
