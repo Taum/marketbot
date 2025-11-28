@@ -77,15 +77,14 @@ export interface MarketUpdateCrawlerStats {
   totalPagesLoaded: number;
 }
 
-const bannedWords = [
-  'Lyra', 'Ordis', 'Yzmir', 'Muna', 'Axiom', 'Bravos',
-  'The', 'of',
-  'Haven', 'Foundry', 'Ouroboros', 'Monolith', 'BLISS',
-  'little',
-  'Moth',
-]
-
-const forcedMappings: Record<string, string> = {}
+// Not used anymore, since we can now search with exact name using "<name>"
+// const bannedWords = [
+//   'Lyra', 'Ordis', 'Yzmir', 'Muna', 'Axiom', 'Bravos',
+//   'The', 'of',
+//   'Haven', 'Foundry', 'Ouroboros', 'Monolith', 'BLISS',
+//   'little',
+//   'Moth',
+// ]
 
 const verboseLevel = parseInt(getEnv("VERBOSE_LEVEL") ?? "0")
 const debugCrawler = getEnv("DEBUG_CRAWLER") == "true";
@@ -305,22 +304,26 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
       url.searchParams.set("rarity[]", "UNIQUE")
       return url.toString()
     } else {
-      let strippedName = request.name.toLocaleLowerCase();
-      if (strippedName in forcedMappings) {
-        strippedName = forcedMappings[strippedName];
-      } else {
-        for (const word of bannedWords) {
-          strippedName = strippedName.replace(new RegExp(`\\b${word}\\b`, "ig"), '');
-        }
-      }
-      if (strippedName != request.name.toLocaleLowerCase()) {
-        console.debug(`Stripped name from ${request.name} -> ${strippedName}`)
-      }
+      // let strippedName: string
+      // let lcName = request.name.toLocaleLowerCase();
+      // if (lcName in forcedMappings) {
+      //   strippedName = forcedMappings[lcName];
+      // } else {
+      //   strippedName = lcName;
+      //   for (const word of bannedWords) {
+      //     strippedName = lcName.replace(new RegExp(`\\b${word}\\b`, "ig"), '');
+      //   }
+      // }
+      // if (strippedName != lcName) {
+      //   console.debug(`Stripped name from ${request.name} -> ${strippedName}`)
+      // }
       // const urlSafeName = strippedName.trim();
+
+      const name = request.name.trim();
 
       const url = new URL("https://api.altered.gg/cards/stats")
       url.searchParams.set("factions[]", request.faction)
-      url.searchParams.set("query", `${strippedName}`)
+      url.searchParams.set("query", `"${name}"`)
       url.searchParams.set("inSale", "true")
       url.searchParams.set("rarity[]", "UNIQUE")
       url.searchParams.set("itemsPerPage", "108")
