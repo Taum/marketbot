@@ -1,6 +1,6 @@
 import { type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useLoaderData, useSearchParams } from "@remix-run/react";
-import { FC, useState } from "react";
+import { FC, useState, useEffect } from "react";
 import { FactionSelect } from "~/components/altered/FactionSelect";
 import { SetSelect } from "~/components/altered/SetSelect";
 import { Button } from "~/components/ui/button";
@@ -157,6 +157,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export default function SearchPage() {
   const loaderData = useLoaderData<LoaderData>();
   const [searchParams] = useSearchParams();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    // Clear submitting flag when loader data updates
+    setIsSubmitting(false);
+  }, [loaderData]);
 
   const now = new Date();
 
@@ -173,35 +179,45 @@ export default function SearchPage() {
   return (
     <div className="global-page">
       {/* Search Form */}
-      <SearchForm {...loaderData.query} />
+      <SearchForm {...loaderData.query} setSubmitting={setIsSubmitting} />
 
       {/* Results Section */}
       {results.length > 0 ? (
-        <div className="space-y-6">
-          {pagination ? (
-            <div className="flex flex-row justify-between gap-8">
-              <div>
-                <h2 className="grow-1 text-xl font-semibold inline-block">
-                  Found {pagination.totalCount} cards
-                </h2>
-                {loaderData.metrics?.duration && (
-                  <span className="ml-2 text-xs text-muted-foreground/50">
-                    in {(loaderData.metrics.duration / 1000).toFixed(1)} seconds
-                  </span>
-                )}
+        <div id="results" className="relative">
+          {isSubmitting && (
+            <div className="absolute inset-0 bg-white/60 z-50 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-2">
+                <img src="/assets/loading.svg" alt="Loading" className="h-12 w-12" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                <span className="text-sm text-gray-700">Searching...</span>
               </div>
-              {pagination.pageCount && pagination.pageCount > 1 ? (
-                <div>
-                  <ResultsPagination
-                    currentPage={currentPage ?? 1}
-                    totalPages={pagination.pageCount ?? 1}
-                    onPageChange={handlePageChange}
-                  />
-                </div>
-              ) : null}
             </div>
-          ) : null}
-          <ResultGrid results={results} now={now} />
+          )}
+          <div className="space-y-6">
+            {pagination ? (
+              <div className="flex flex-row justify-between gap-8">
+                <div>
+                  <h2 className="grow-1 text-xl font-semibold inline-block">
+                    Found {pagination.totalCount} cards
+                  </h2>
+                  {loaderData.metrics?.duration && (
+                    <span className="ml-2 text-xs text-muted-foreground/50">
+                      in {(loaderData.metrics.duration / 1000).toFixed(1)} seconds
+                    </span>
+                  )}
+                </div>
+                {pagination.pageCount && pagination.pageCount > 1 ? (
+                  <div>
+                    <ResultsPagination
+                      currentPage={currentPage ?? 1}
+                      totalPages={pagination.pageCount ?? 1}
+                      onPageChange={handlePageChange}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            <ResultGrid results={results} now={now} />
+          </div>
         </div>
       ) : (loaderData.error ? (
         <p className="text-red-500">Error: {loaderData.error}</p>
@@ -212,7 +228,7 @@ export default function SearchPage() {
   );
 }
 
-const SearchForm: FC<SearchQuery> = ({
+const SearchForm: FC<SearchQuery & { setSubmitting?: (v: boolean) => void }> = ({
   faction,
   set,
   characterName,
@@ -230,7 +246,8 @@ const SearchForm: FC<SearchQuery> = ({
   forestPowerRange,
   mountainPowerRange,
   oceanPowerRange
-}: SearchQuery) => {
+  , setSubmitting
+}: SearchQuery & { setSubmitting?: (v: boolean) => void }) => {
   const [selectedFaction, setSelectedFaction] = useState(faction ?? undefined);
   const [selectedSet, setSelectedSet] = useState<string | string[] | undefined>(set ?? undefined);
   const [selectedCardSubTypes, setSelectedCardSubTypes] = useState<string[]>(cardSubTypes ?? []);
@@ -261,7 +278,7 @@ const SearchForm: FC<SearchQuery> = ({
   }
 
   return (
-    <Form method="get" id="search-form" className="mb-8">
+    <Form method="get" id="search-form" className="mb-8" onSubmit={() => setSubmitting?.(true)}>
       <div className="flex flex-col gap-2">
         <div className="flex flex-row gap-8">
           <div>
