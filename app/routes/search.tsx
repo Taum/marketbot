@@ -13,7 +13,7 @@ import { allCardSubTypes, CardSubType, DisplayUniqueCard } from "~/models/cards"
 import { Checkbox } from "~/components/ui/checkbox";
 import { searchWithCTEsIndexingCharacterNames } from "~/loaders/search-alternates";
 import { MultiSelect } from "~/components/ui-ext/multi-select";
-
+import prisma from "@common/utils/prisma.server";
 
 interface SearchQuery {
   faction?: string;
@@ -45,6 +45,9 @@ interface LoaderData {
   metrics: {
     duration: number;
   } | undefined;
+  triggers?: { id: number; text: string }[];
+  conditions?: { id: number; text: string }[];
+  effects?: { id: number; text: string }[];
   query: SearchQuery;
   error: string | undefined;
 }
@@ -134,12 +137,26 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const endTs = performance.now()
     const duration = endTs - startTs
 
+    // fetch ability parts (Trigger/Condition/Effect) in a single query and group them
+    const allParts = await prisma.uniqueAbilityPart.findMany({
+      where: { partType: { in: ["Trigger", "Condition", "Effect"] } },
+      orderBy: { textEn: "asc" },
+      select: { id: true, textEn: true, partType: true }
+    });
+
+    const triggers = allParts.filter(p => p.partType === "Trigger").map(p => ({ id: p.id, text: p.textEn }));
+    const conditions = allParts.filter(p => p.partType === "Condition").map(p => ({ id: p.id, text: p.textEn }));
+    const effects = allParts.filter(p => p.partType === "Effect").map(p => ({ id: p.id, text: p.textEn }));
+
     return {
       results,
       pagination: { ...pagination, currentPage },
       metrics: {
         duration,
       },
+      triggers,
+      conditions,
+      effects,
       query: originalQuery,
     };
   } catch (e) {
@@ -179,7 +196,13 @@ export default function SearchPage() {
   return (
     <div className="global-page">
       {/* Search Form */}
-      <SearchForm {...loaderData.query} setSubmitting={setIsSubmitting} />
+      <SearchForm
+        {...loaderData.query}
+        setSubmitting={setIsSubmitting}
+        triggers={loaderData.triggers ?? []}
+        conditions={loaderData.conditions ?? []}
+        effects={loaderData.effects ?? []}
+      />
 
       {/* Results Section */}
       {results.length > 0 ? (
@@ -228,7 +251,14 @@ export default function SearchPage() {
   );
 }
 
-const SearchForm: FC<SearchQuery & { setSubmitting?: (v: boolean) => void }> = ({
+const SearchForm: FC<
+  SearchQuery & {
+    setSubmitting?: (v: boolean) => void;
+    triggers?: { id: number; text: string }[];
+    conditions?: { id: number; text: string }[];
+    effects?: { id: number; text: string }[];
+  }
+> = ({
   faction,
   set,
   characterName,
@@ -246,11 +276,35 @@ const SearchForm: FC<SearchQuery & { setSubmitting?: (v: boolean) => void }> = (
   forestPowerRange,
   mountainPowerRange,
   oceanPowerRange
-  , setSubmitting
-}: SearchQuery & { setSubmitting?: (v: boolean) => void }) => {
+  , setSubmitting, triggers = [], conditions = [], effects = []
+}: SearchQuery & { setSubmitting?: (v: boolean) => void; triggers?: { id: number; text: string }[]; conditions?: { id: number; text: string }[]; effects?: { id: number; text: string }[] }) => {
   const [selectedFaction, setSelectedFaction] = useState(faction ?? undefined);
   const [selectedSet, setSelectedSet] = useState<string | string[] | undefined>(set ?? undefined);
   const [selectedCardSubTypes, setSelectedCardSubTypes] = useState<string[]>(cardSubTypes ?? []);
+  const [triggerValue, setTriggerValue] = useState<string>(triggerPart ?? "");
+  const [showTriggerOptions, setShowTriggerOptions] = useState<boolean>(false);
+  const [conditionValue, setConditionValue] = useState<string>(conditionPart ?? "");
+  const [showConditionOptions, setShowConditionOptions] = useState<boolean>(false);
+  const [effectValue, setEffectValue] = useState<string>(effectPart ?? "");
+  const [showEffectOptions, setShowEffectOptions] = useState<boolean>(false);
+
+  const filteredTriggers = triggers.filter(t => {
+    const q = triggerValue?.toLowerCase().trim();
+    if (!q) return true;
+    return t.text.toLowerCase().includes(q);
+  });
+
+  const filteredConditions = conditions.filter(t => {
+    const q = conditionValue?.toLowerCase().trim();
+    if (!q) return true;
+    return t.text.toLowerCase().includes(q);
+  });
+
+  const filteredEffects = effects.filter(t => {
+    const q = effectValue?.toLowerCase().trim();
+    if (!q) return true;
+    return t.text.toLowerCase().includes(q);
+  });
 
 
   const [searchParams] = useSearchParams();
@@ -384,32 +438,75 @@ const SearchForm: FC<SearchQuery & { setSubmitting?: (v: boolean) => void }> = (
           </div>
         </div>
         <div className="flex flex-row gap-4">
-          <div className="grow-1 flex-[30%]">
+          <div className="grow-1 flex-[30%] relative">
             <Label htmlFor="tr">Trigger</Label>
+            {/* Controlled input to allow "contains" filtering */}
             <Input
               type="search"
               name="tr"
-              defaultValue={triggerPart ?? ""}
+              id="tr"
+              value={triggerValue}
+              onChange={(e) => { setTriggerValue(e.target.value); setShowTriggerOptions(true); }}
+              onFocus={() => setShowTriggerOptions(true)}
+              onBlur={() => setTimeout(() => setShowTriggerOptions(false), 150)}
               placeholder="Trigger text..."
+              autoComplete="off"
             />
+            {showTriggerOptions && filteredTriggers.length > 0 && (
+              <ul role="listbox" className="absolute z-40 mt-1 max-h-48 w-full overflow-auto rounded-md border bg-white shadow-lg">
+                {filteredTriggers.map((t) => (
+                  <li key={t.id} role="option" className="cursor-pointer px-3 py-2 hover:bg-gray-100" onMouseDown={(e) => { e.preventDefault(); setTriggerValue(t.text); setShowTriggerOptions(false); }}>
+                    {t.text}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          <div className="grow-1 flex-[30%]">
+          <div className="grow-1 flex-[30%] relative">
             <Label htmlFor="cond">Condition</Label>
             <Input
               type="search"
               name="cond"
-              defaultValue={conditionPart ?? ""}
+              id="cond"
+              value={conditionValue}
+              onChange={(e) => { setConditionValue(e.target.value); setShowConditionOptions(true); }}
+              onFocus={() => setShowConditionOptions(true)}
+              onBlur={() => setTimeout(() => setShowConditionOptions(false), 150)}
               placeholder="Condition text..."
+              autoComplete="off"
             />
+            {showConditionOptions && filteredConditions.length > 0 && (
+              <ul role="listbox" className="absolute z-40 mt-1 max-h-48 w-full overflow-auto rounded-md border bg-white shadow-lg">
+                {filteredConditions.map((t) => (
+                  <li key={t.id} role="option" className="cursor-pointer px-3 py-2 hover:bg-gray-100" onMouseDown={(e) => { e.preventDefault(); setConditionValue(t.text); setShowConditionOptions(false); }}>
+                    {t.text}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          <div className="grow-1 flex-[30%]">
+          <div className="grow-1 flex-[30%] relative">
             <Label htmlFor="eff">Effect</Label>
             <Input
               type="search"
               name="eff"
-              defaultValue={effectPart ?? ""}
+              id="eff"
+              value={effectValue}
+              onChange={(e) => { setEffectValue(e.target.value); setShowEffectOptions(true); }}
+              onFocus={() => setShowEffectOptions(true)}
+              onBlur={() => setTimeout(() => setShowEffectOptions(false), 150)}
               placeholder="Effect text..."
+              autoComplete="off"
             />
+            {showEffectOptions && filteredEffects.length > 0 && (
+              <ul role="listbox" className="absolute z-40 mt-1 max-h-48 w-full overflow-auto rounded-md border bg-white shadow-lg">
+                {filteredEffects.map((t) => (
+                  <li key={t.id} role="option" className="cursor-pointer px-3 py-2 hover:bg-gray-100" onMouseDown={(e) => { e.preventDefault(); setEffectValue(t.text); setShowEffectOptions(false); }}>
+                    {t.text}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <div className="grow-1 flex-[10%] pt-4 flex flex-row gap-2 items-center">
             <Checkbox
