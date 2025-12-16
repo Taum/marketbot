@@ -258,7 +258,6 @@ const SearchForm: FC<SearchQuery> = ({
   const handleCardSubTypesChange = (newValues: string[]) => {
     setSelectedCardSubTypes(newValues);
     searchParams.set("types", newValues.join(","));
-    window.location.search = searchParams.toString();
   }
 
   return (
