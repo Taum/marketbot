@@ -1,5 +1,6 @@
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
+import { useTranslation } from "~/lib/i18n";
 import { AbilityPartType, UniqueAbilityLine, UniqueAbilityPart } from "@prisma/client";
 import prisma from "@common/utils/prisma.server";
 import { DisplayAbilityOnCard, DisplayUniqueCard, Faction } from "~/models/cards";
@@ -136,11 +137,12 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
 export default function ByAbilityPartRoute() {
   const { part, results, pagination, generalSearchLink } = useLoaderData<LoaderData>();
+  const { t } = useTranslation();
   const { currentPage, totalCount, pageCount } = pagination;
   const [searchParams] = useSearchParams();
 
   if (!part) {
-    return <div className="container mx-auto p-6">Ability part not found</div>;
+    return <div className="container mx-auto p-6">{t('no_results')}</div>;
   }
 
   const handlePageChange = (page: number) => {
@@ -158,12 +160,12 @@ export default function ByAbilityPartRoute() {
         </Link>
       </div>
       <div className="bg-muted px-4 py-2 rounded-lg mb-6">
-        <span className="text text-muted-foreground">Ability ({part.partType}):</span>
+        <span className="text text-muted-foreground">{t('ability_label', { type: part.partType })}</span>
         <h1 className="text-xl font-bold mb-2">{part.textEn}</h1>
         <div className="text-sm text-muted-foreground">
-          <span>Found in {pagination.totalCount} cards</span>
+          <span>{t('found_count', { count: pagination.totalCount })}</span>
           <span className="px-2">&middot;</span>
-          <span>{generalSearchLink ? <Link to={generalSearchLink} className="text-link">Search with other filters</Link> : null}</span>
+          <span>{generalSearchLink ? <Link to={generalSearchLink} className="text-link">{t('search_with_other_filters')}</Link> : null}</span>
         </div>
       </div>
 
@@ -181,7 +183,7 @@ export default function ByAbilityPartRoute() {
         <ResultGrid results={results} now={now} />
       ) : (
         <div className="text-center py-6">
-          <p>No unique cards found with this ability part.</p>
+          <p>{t('no_unique_cards_with_part')}</p>
         </div>
       )}
 

@@ -9,6 +9,7 @@ import { SearchLayout } from "~/components/search-layout";
 import { nullifyParseInt } from "~/lib/utils";
 import { buildDisplayAbility } from "~/loaders/search";
 import { DisplayAbilityOnCard, DisplayUniqueCard, Faction } from "~/models/cards";
+import { useTranslation } from "~/lib/i18n";
 
 
 interface LoaderData {
@@ -94,6 +95,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export default function TextlessSearch() {
   const loaderData = useLoaderData<LoaderData>();
   const now = new Date();
+  const { t } = useTranslation();
   
   const [searchParams] = useSearchParams();
   const currentPage = parseInt(searchParams.get("p") ?? "1");
@@ -108,7 +110,7 @@ export default function TextlessSearch() {
 
   return (
     <div className="global-page">
-      <h2>Textless cards</h2>
+      <h2>{t('textless_title')}</h2>
       
       {results.length > 0 ? (
         <div className="space-y-6">
@@ -116,7 +118,7 @@ export default function TextlessSearch() {
             <div className="flex flex-row justify-between gap-8">
               <div>
                 <h2 className="grow-1 text-xl font-semibold inline-block">
-                  Found {pagination.totalCount} cards
+                  {t('found_count', { count: pagination.totalCount })}
                 </h2>
                 {loaderData.metrics?.duration && (
                   <span className="ml-2 text-xs text-muted-foreground/50">
@@ -138,7 +140,7 @@ export default function TextlessSearch() {
           <ResultGrid results={results} now={now} />
         </div>
       ) : (
-        <p className="text-gray-600">No results found.</p>
+        <p className="text-gray-600">{t('no_results')}</p>
       )}
     </div>
   );

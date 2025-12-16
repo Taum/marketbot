@@ -1,5 +1,6 @@
 import { useLoaderData } from "@remix-run/react";
 import { Link } from "@remix-run/react";
+import { useTranslation } from "~/lib/i18n";
 import prisma from "@common/utils/prisma.server";
 import { cn, groupBy } from "~/lib/utils";
 import {
@@ -66,15 +67,16 @@ export async function loader() {
 
 export default function AbilitiesList() {
   const { abilityParts } = useLoaderData<LoaderData>();
+  const { t } = useTranslation();
 
   return (
     <div className="global-page">
-      <h1 className="text-2xl font-bold mb-6">Unique Ability Parts List</h1>
+      <h1 className="text-2xl font-bold mb-6">{t('abilities_list_title')}</h1>
 
       <div className="grid gap-8">
-        <AbilityPartSection title="Trigger" abilityParts={abilityParts.trigger} />
-        <AbilityPartSection title="Condition" abilityParts={abilityParts.condition} />
-        <AbilityPartSection title="Effect" abilityParts={abilityParts.effect} />
+        <AbilityPartSection title={t('ability_section_trigger')} abilityParts={abilityParts.trigger} />
+        <AbilityPartSection title={t('ability_section_condition')} abilityParts={abilityParts.condition} />
+        <AbilityPartSection title={t('ability_section_effect')} abilityParts={abilityParts.effect} />
       </div>
     </div>
   );
@@ -89,6 +91,7 @@ function replaceSymbolsForTables(text: string): JSX.Element {
 }
 
 function AbilityPartSection({ title, abilityParts }: { title: string; abilityParts: DisplayAbilityPart[] }) {
+  const { t } = useTranslation();
   if (!abilityParts || abilityParts.length === 0) {
     return null;
   }
@@ -99,10 +102,10 @@ function AbilityPartSection({ title, abilityParts }: { title: string; abilityPar
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>ID</TableHead>
-            <TableHead>Name</TableHead>
+            <TableHead>{t('table_id')}</TableHead>
+            <TableHead>{t('table_name')}</TableHead>
             <TableHead></TableHead>
-            <TableHead>Count</TableHead>
+            <TableHead>{t('table_count')}</TableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>
@@ -115,14 +118,14 @@ function AbilityPartSection({ title, abilityParts }: { title: string; abilityPar
                   {replaceSymbolsForTables(part.text)}
                 </div>
               </TableCell>
-              <TableCell>{part.isSupport ? "Support" : "Main"}</TableCell>
+              <TableCell>{part.isSupport ? t('support') : t('main')}</TableCell>
               <TableCell className="text-right pr-12 w-1">{part.count}</TableCell>
               <TableCell>
                 <Link
                   to={`/by-ability/${part.id}`}
                   className="text-primary hover:underline"
                 >
-                  {"View\u00A0cards"}
+                  {t('view_cards')}
                 </Link>
               </TableCell>
             </TableRow>
