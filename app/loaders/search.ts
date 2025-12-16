@@ -16,7 +16,7 @@ const debug = process.env.DEBUG_WEB == "true"
 
 export interface SearchQuery {
   faction?: string;
-  set?: string;
+  set?: string | string[];
   characterName?: string;
   cardSubTypes?: string[];
   cardText?: string;
@@ -240,10 +240,15 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
   }
 
   if (set != null) {
-    if (set == CardSet.Core) {
-      query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
+    if (Array.isArray(set)) {
+      const sets = set.flatMap(s => s === CardSet.Core ? [CardSet.Core, "COREKS"] : s)
+      query = query.where('cardSet', 'in', sets)
     } else {
-      query = query.where('cardSet', '=', set)
+      if (set == CardSet.Core) {
+        query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
+      } else {
+        query = query.where('cardSet', '=', set)
+      }
     }
   }
 

@@ -168,10 +168,15 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
   }
 
   if (set != null) {
-    if (set == CardSet.Core) {
-      query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
+    if (Array.isArray(set)) {
+      const sets = set.flatMap(s => s === CardSet.Core ? [CardSet.Core, "COREKS"] : s)
+      query = query.where('cardSet', 'in', sets)
     } else {
-      query = query.where('cardSet', '=', set)
+      if (set == CardSet.Core) {
+        query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
+      } else {
+        query = query.where('cardSet', '=', set)
+      }
     }
   }
 
@@ -503,10 +508,15 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
   }
 
   if (set != null) {
-    if (set == CardSet.Core) {
-      query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
+    if (Array.isArray(set)) {
+      const sets = set.flatMap(s => s === CardSet.Core ? [CardSet.Core, "COREKS"] : s)
+      query = query.where('cardSet', 'in', sets)
     } else {
-      query = query.where('cardSet', '=', set)
+      if (set == CardSet.Core) {
+        query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
+      } else {
+        query = query.where('cardSet', '=', set)
+      }
     }
   }
 
@@ -929,10 +939,15 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
   }
 
   if (set != null) {
-    if (set == CardSet.Core) {
-      query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
+    if (Array.isArray(set)) {
+      const sets = set.flatMap(s => s === CardSet.Core ? [CardSet.Core, "COREKS"] : s)
+      query = query.where('cardSet', 'in', sets)
     } else {
-      query = query.where('cardSet', '=', set)
+      if (set == CardSet.Core) {
+        query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
+      } else {
+        query = query.where('cardSet', '=', set)
+      }
     }
   }
 
@@ -1330,10 +1345,15 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
   }
 
   if (set != null) {
-    if (set == CardSet.Core) {
-      query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
+    if (Array.isArray(set)) {
+      const sets = set.flatMap(s => s === CardSet.Core ? [CardSet.Core, "COREKS"] : s)
+      query = query.where('cardSet', 'in', sets)
     } else {
-      query = query.where('cardSet', '=', set)
+      if (set == CardSet.Core) {
+        query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
+      } else {
+        query = query.where('cardSet', '=', set)
+      }
     }
   }
 

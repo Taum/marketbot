@@ -17,7 +17,7 @@ import { MultiSelect } from "~/components/ui-ext/multi-select";
 
 interface SearchQuery {
   faction?: string;
-  set?: string;
+  set?: string | string[];
   characterName?: string;
   cardSubTypes?: string[];
   cardText?: string;
@@ -56,7 +56,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const characterName = nullifyTrim(url.searchParams.get("cname"));
   const cardSubTypes = nullifyTrim(url.searchParams.get("types"))?.split(",") ?? [];
   const faction = nullifyTrim(url.searchParams.get("f"));
-  const set = nullifyTrim(url.searchParams.get("s"));
+  const setParam = nullifyTrim(url.searchParams.get("s"));
+  const parsedSets = setParam?.split(",").map(s => s.trim()).filter(Boolean) ?? []
+  const set = parsedSets.length === 0 ? undefined : (parsedSets.length === 1 ? parsedSets[0] : parsedSets)
   const triggerPart = nullifyTrim(url.searchParams.get("tr"));
   const conditionPart = nullifyTrim(url.searchParams.get("cond"));
   const effectPart = nullifyTrim(url.searchParams.get("eff"));
@@ -230,7 +232,7 @@ const SearchForm: FC<SearchQuery> = ({
   oceanPowerRange
 }: SearchQuery) => {
   const [selectedFaction, setSelectedFaction] = useState(faction ?? undefined);
-  const [selectedSet, setSelectedSet] = useState(set ?? undefined);
+  const [selectedSet, setSelectedSet] = useState<string | string[] | undefined>(set ?? undefined);
   const [selectedCardSubTypes, setSelectedCardSubTypes] = useState<string[]>(cardSubTypes ?? []);
 
 
@@ -273,9 +275,16 @@ const SearchForm: FC<SearchQuery> = ({
           <div>
             <Label htmlFor="cname">Set</Label>
             <SetSelect
+              multiple={true}
               value={selectedSet ?? "any"}
-              onValueChange={(newVal) => setSelectedSet(newVal == "any" ? undefined : newVal)} />
-            <input type="hidden" name="s" value={selectedSet} />
+              onValueChange={(newVal) => {
+                if (Array.isArray(newVal)) {
+                  setSelectedSet(newVal.length === 0 ? undefined : newVal)
+                } else {
+                  setSelectedSet(newVal == "any" ? undefined : newVal as string)
+                }
+              }} />
+            <input type="hidden" name="s" value={Array.isArray(selectedSet) ? selectedSet.join(",") : (selectedSet ?? "")} />
           </div>
           <div>
             <Label htmlFor="cname">Character name</Label>
