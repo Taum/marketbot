@@ -28,6 +28,7 @@ model UniqueInfo {
   mountainPower Int?
   forestPower   Int?
   nameEn        String?
+  nameFr        String?
   imageUrlEn    String?
   imageUrlDe    String?
   imageUrlEs    String?
@@ -36,6 +37,8 @@ model UniqueInfo {
 
   mainEffectEn  String? // Indexed for full text search managed outside of Prisma
   echoEffectEn  String? // Indexed for full text search managed outside of Prisma
+  mainEffectFr  String? // Indexed for full text search managed outside of Prisma
+  echoEffectFr  String? // Indexed for full text search managed outside of Prisma
   cardSubTypes  String[]
 
   fetchedDetails   Boolean   @default(false)
@@ -79,7 +82,8 @@ model UniqueAbilityLine {
   /// @kyselyType(JsonValue)
   characterData Json?
 
-  textEn String
+  textEn String @default("")
+  textFr String @default("")
 
   allParts AbilityPartLink[]
 
@@ -109,7 +113,8 @@ model AbilityPartLink {
 
 model UniqueAbilityPart {
   id     Int    @id @default(autoincrement())
-  textEn String
+  textEn String @default("")
+  textFr String @default("")
 
   partType  AbilityPartType
   isSupport Boolean

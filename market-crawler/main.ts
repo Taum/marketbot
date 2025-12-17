@@ -4,6 +4,7 @@ import { ExhaustiveInSaleCrawler, MarketUpdateCrawlerStats, marketUpdateStatsCom
 import prisma from '@common/utils/prisma.server.js';
 import { AuthTokenService } from './refresh-token.js';
 import { CommunityDbUniquesCrawler } from './uniques-community-db.js';
+import { UniquesPublicApiCrawler } from './uniques-public-api.js';
 
 const sessionName = getEnv("ALT_SESSION_NAME")
 if (!sessionName) {
@@ -11,6 +12,7 @@ if (!sessionName) {
 }
 
 const debugCrawler = getEnv("DEBUG_CRAWLER") == "true";
+const debugPublicCrawler = getEnv("DEBUG_PUBLIC_API") == "true";
 
 const communityDbPath = getEnv("COMMUNITY_DB_PATH")
 const authorName = getEnv("GIT_AUTHOR_NAME") ?? "Marketbot"
@@ -25,6 +27,8 @@ if (communityDbPath != null && communityDbPath != "") {
   let com = new CommunityDbUniquesCrawler(communityDbPath, authorName, authorEmail);
   await com.communityDbBeginUpdate()
   uniquesCrawler = com
+} else if (debugPublicCrawler) {
+  uniquesCrawler = new UniquesPublicApiCrawler();
 } else {
   uniquesCrawler = new UniquesCrawler();
 }

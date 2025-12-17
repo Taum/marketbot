@@ -23,6 +23,7 @@ export type CardFamilyRequest = {
   faction: string;
   cardFamilyId: string;
   nextPage?: string;
+  locale?: string;
 } | {
   fetchGenerationId: number;
   queryParams: { [key: string]: string };
@@ -76,15 +77,6 @@ export interface MarketUpdateCrawlerStats {
   totalOffersUpdated: number;
   totalPagesLoaded: number;
 }
-
-// Not used anymore, since we can now search with exact name using "<name>"
-// const bannedWords = [
-//   'Lyra', 'Ordis', 'Yzmir', 'Muna', 'Axiom', 'Bravos',
-//   'The', 'of',
-//   'Haven', 'Foundry', 'Ouroboros', 'Monolith', 'BLISS',
-//   'little',
-//   'Moth',
-// ]
 
 const verboseLevel = parseInt(getEnv("VERBOSE_LEVEL") ?? "0")
 const debugCrawler = getEnv("DEBUG_CRAWLER") == "true";
@@ -300,25 +292,10 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
       }
       url.searchParams.set("inSale", "true")
       url.searchParams.set("itemsPerPage", "108")
-      url.searchParams.set("locale", "en-us")
       url.searchParams.set("rarity[]", "UNIQUE")
+      url.searchParams.set("locale", "en-us")
       return url.toString()
     } else {
-      // let strippedName: string
-      // let lcName = request.name.toLocaleLowerCase();
-      // if (lcName in forcedMappings) {
-      //   strippedName = forcedMappings[lcName];
-      // } else {
-      //   strippedName = lcName;
-      //   for (const word of bannedWords) {
-      //     strippedName = lcName.replace(new RegExp(`\\b${word}\\b`, "ig"), '');
-      //   }
-      // }
-      // if (strippedName != lcName) {
-      //   console.debug(`Stripped name from ${request.name} -> ${strippedName}`)
-      // }
-      // const urlSafeName = strippedName.trim();
-
       const name = request.name.trim();
 
       const url = new URL("https://api.altered.gg/cards/stats")
@@ -327,7 +304,7 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
       url.searchParams.set("inSale", "true")
       url.searchParams.set("rarity[]", "UNIQUE")
       url.searchParams.set("itemsPerPage", "108")
-      url.searchParams.set("locale", "en-us")
+      url.searchParams.set("locale", request.locale ?? "en-us")
 
       const urlString = url.toString()
       if (verboseLevel >= 3) {
@@ -389,23 +366,6 @@ export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, C
     } catch (err) {
       console.error("Error in cardFamilyStatsRecordFetchComplete: ", err)
     }
-  }
-}
-
-// This builds a partial card blob from the `/cards` endpoint.
-// (not used currently)
-function buildCardBlob(member: CardFamilyCardsData["hydra:member"][0]): UniqueInfoCreateInput {
-  return {
-    ref: member.reference,
-    faction: member.mainFaction.reference,
-    nameEn: member.name,
-    imageUrlEn: member.imagePath,
-    cardSet: member.cardSet.reference,
-    mainCost: parseInt(member.elements.MAIN_COST),
-    recallCost: parseInt(member.elements.RECALL_COST),
-    oceanPower: parseInt(member.elements.OCEAN_POWER),
-    mountainPower: parseInt(member.elements.MOUNTAIN_POWER),
-    forestPower: parseInt(member.elements.FOREST_POWER),
   }
 }
 

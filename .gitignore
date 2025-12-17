@@ -11,3 +11,4 @@ node_modules
 dev-utils/gcp-perf-analysis/*.json
 data/raw
 dist
+scripts

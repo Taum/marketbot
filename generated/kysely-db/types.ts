@@ -53,11 +53,13 @@ export type UniqueAbilityLine = {
      * @kyselyType(JsonValue)
      */
     characterData: JsonValue | null;
-    textEn: string;
+    textEn: Generated<string>;
+    textFr: Generated<string>;
 };
 export type UniqueAbilityPart = {
     id: Generated<number>;
-    textEn: string;
+    textEn: Generated<string>;
+    textFr: Generated<string>;
     partType: AbilityPartType;
     isSupport: boolean;
 };
@@ -72,6 +74,7 @@ export type UniqueInfo = {
     mountainPower: number | null;
     forestPower: number | null;
     nameEn: string | null;
+    nameFr: string | null;
     imageUrlEn: string | null;
     imageUrlDe: string | null;
     imageUrlEs: string | null;
@@ -79,6 +82,8 @@ export type UniqueInfo = {
     imageUrlIt: string | null;
     mainEffectEn: string | null;
     echoEffectEn: string | null;
+    mainEffectFr: string | null;
+    echoEffectFr: string | null;
     cardSubTypes: string[];
     fetchedDetails: Generated<boolean>;
     fetchedDetailsAt: Timestamp | null;

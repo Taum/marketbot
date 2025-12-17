@@ -113,7 +113,6 @@ function normalizeAbilityText(text: string | null | undefined): string | undefin
 }
 
 function processOneCard(cardIn: UniqueInfo): ProcessedCard {
-
   // start by making a copy, with the ability texts normalized
   const card = {
     ...cardIn,
@@ -508,16 +507,6 @@ export async function processUniquesBatch(fromPage: number = 0, toPage: number |
     let batchUniques = await prisma.uniqueInfo.findMany({
       where: {
         fetchedDetails: true,
-        // cardSet: {
-        //   in: [CardSet.BISE]
-        // },
-        // nameEn: {
-        //   equals: "Thoth",
-        // }
-        // AND: [
-        //   { mainEffectEn: { not: null } }
-        //   { echoEffectEn: { not: null } }
-        // ]
       },
       orderBy: {
         id: "asc",
