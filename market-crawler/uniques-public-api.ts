@@ -128,6 +128,10 @@ export class UniquesPublicApiCrawler extends GenericIndexer<UniqueRequest, Uniqu
     };
   };
 
+  public async enqueueUniquesWithId(_ids: string[]) {
+    console.log(`No enqueuing by ID in public api crawler`)
+  }
+
   public async enqueueUniquesWithMissingEffects({ limit = 1000 }: { limit?: number } = {}) {
     const uniques = await prisma.uniqueInfo.findMany({
       where: {

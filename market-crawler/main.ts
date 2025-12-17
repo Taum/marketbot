@@ -12,7 +12,7 @@ if (!sessionName) {
 }
 
 const debugCrawler = getEnv("DEBUG_CRAWLER") == "true";
-const debugPublicCrawler = getEnv("DEBUG_PUBLIC_API") == "true";
+const usePublicCrawler = getEnv("USE_PUBLIC_API") == "true";
 
 const communityDbPath = getEnv("COMMUNITY_DB_PATH")
 const authorName = getEnv("GIT_AUTHOR_NAME") ?? "Marketbot"
@@ -22,12 +22,12 @@ const authTokenService = new AuthTokenService(sessionName);
 
 const exhaustiveInSaleCrawler = new ExhaustiveInSaleCrawler(authTokenService);
 
-let uniquesCrawler: UniquesCrawler
+let uniquesCrawler: any
 if (communityDbPath != null && communityDbPath != "") {
   let com = new CommunityDbUniquesCrawler(communityDbPath, authorName, authorEmail);
   await com.communityDbBeginUpdate()
   uniquesCrawler = com
-} else if (debugPublicCrawler) {
+} else if (usePublicCrawler) {
   uniquesCrawler = new UniquesPublicApiCrawler();
 } else {
   uniquesCrawler = new UniquesCrawler();
