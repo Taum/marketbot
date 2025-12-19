@@ -2,7 +2,7 @@ import { useLoaderData } from "@remix-run/react";
 import { Link } from "@remix-run/react";
 import { useTranslation } from "~/lib/i18n";
 import prisma from "@common/utils/prisma.server";
-import { cn, groupBy } from "~/lib/utils";
+import { cn, groupBy, nullifyTrim } from "~/lib/utils";
 import {
   Table,
   TableBody,
@@ -12,7 +12,8 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { findReplaceSymbols } from "~/components/altered/ResultGrid";
-
+import { LoaderFunctionArgs } from "@remix-run/node";
+import { detectLocaleFromAcceptLanguage } from "~/lib/i18n.server";
 
 interface DisplayAbilityPart {
   id: number;
@@ -30,13 +31,26 @@ type LoaderData = {
   }
 };
 
-export async function loader() {
+export async function loader({ request }: LoaderFunctionArgs) {
+  // change ordering according to locale
+  const url = new URL(request.url);
+  const langParam = nullifyTrim(url.searchParams.get("lang"));
+  const lang = langParam ?? "en";
+  let orderBys: any;
+  if (lang === "fr") {
+    orderBys = [
+      { isSupport: "asc" },
+      { textFr: "asc" }
+    ]
+  } else {
+    orderBys = [
+      { isSupport: "asc" },
+      { textEn: "asc" }
+    ]
+  } 
   // TODO: include count of UniqueAbilityLine that include this part
   const abilities = await prisma.uniqueAbilityPart.findMany({
-    orderBy: [
-      { isSupport: "asc" },
-      { textEn: "asc" },
-    ],
+    orderBy: orderBys,
     include: {
       _count: {
         select: {
@@ -49,7 +63,7 @@ export async function loader() {
   const exportAbilities: DisplayAbilityPart[] = abilities.map((a) => {
     return {
       id: a.id,
-      text: a.textEn,
+      text: lang === "fr" ? a.textFr : a.textEn,
       partType: a.partType.toString(),
       count: a._count.allAbilities,
       isSupport: a.isSupport,

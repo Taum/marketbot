@@ -10,6 +10,7 @@ import { PrismaClient } from "@prisma/client";
 export interface UniqueRequest {
   requestId: string;
   familyId: string;
+  name: string;
   locale?: string;
   nextPage?: string;
 }
@@ -58,10 +59,10 @@ export const recordOneUnique = async (cardData: AlteredggCard, prisma: PrismaCli
       update: blob,
       create: blob,
     });
-    console.debug(`Recorded unique ${blob.ref} (${blob.nameEn})`);
+    console.debug(`Recorded unique ${blob.ref} (${blob.nameEn ?? blob.nameFr})`);
 
     // Post-process the unique -- breakdown abilities and upsert them
-    await processAndWriteOneUnique(uniqueInfo, prisma);
+    await processAndWriteOneUnique(uniqueInfo, prisma, locale);
 
   } catch (error) {
     console.error(`Error recording unique ${blob.ref} (${blob.nameEn}): ${error}`);
@@ -80,14 +81,17 @@ export class UniquesPublicApiCrawler extends GenericIndexer<UniqueRequest, Uniqu
     let url = ""
     if (request.nextPage) {
       url = "https://api.altered.gg" + request.nextPage;
+      if (!debugCrawler) {
+        return;
+      }
     } else {
       const newUrl = new URL("https://api.altered.gg/public/cards")
       newUrl.searchParams.set("locale", request.locale ?? "en-us")
       newUrl.searchParams.set("page", "1")
-      newUrl.searchParams.set("itemsPerPage", "30")
+      newUrl.searchParams.set("itemsPerPage", debugCrawler ? "1" : "100")
       newUrl.searchParams.set("rarity", "UNIQUE")
       newUrl.searchParams.set("inSale", "True")
-      newUrl.searchParams.set("query", request.familyId)
+      newUrl.searchParams.set("query", `\"${request.name}\"`)
       url = newUrl.toString()
     }
 
@@ -133,25 +137,35 @@ export class UniquesPublicApiCrawler extends GenericIndexer<UniqueRequest, Uniqu
   }
 
   public async enqueueUniquesWithMissingEffects({ limit = 1000 }: { limit?: number } = {}) {
-    const uniques = await prisma.uniqueInfo.findMany({
+    let todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
+    const families = await prisma.cardFamilyStats.findMany({
       where: {
-        fetchedDetails: false,
+        fetchStartedAt: {
+          gt: todayDate
+        },
       },
       orderBy: {
-        lastSeenInSaleAt: 'desc',
+        id: 'desc',
       },
       take: limit,
     });
 
-    console.log(`Uniques task enqueueing ${uniques.length} uniques...`)
-    for (const unique of uniques) {
-      if(unique.cardFamilyId == null) {
-        console.warn(`Unique ${unique.ref} has no family ID, skipping...`)
-        continue;
-      }
+    console.log(`Unique families task enqueueing ${families.length} families...`)
+    for (const family of families) {
       // create one request per locale, as both can't be requested at once
-      await this.addRequests([{ familyId: unique.cardFamilyId, locale: "en-us", requestId: `${unique.cardFamilyId}-en-us` }], false, "requestId");
-      await this.addRequests([{ familyId: unique.cardFamilyId, locale: "fr-fr", requestId: `${unique.cardFamilyId}-fr-fr` }], false, "requestId");
+      await this.addRequests([{ 
+        name: family.name, 
+        familyId: family.cardFamilyId, 
+        locale: "en-us", 
+        requestId: `${family.cardFamilyId}-en-us` 
+      }], false, "requestId");
+      await this.addRequests([{ 
+        name: family.name, 
+        familyId: family.cardFamilyId, 
+        locale: "fr-fr", 
+        requestId: `${family.cardFamilyId}-fr-fr` 
+      }], false, "requestId");
     }
   }
 

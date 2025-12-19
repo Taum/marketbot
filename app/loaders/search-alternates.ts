@@ -673,6 +673,7 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
   const {
     page,
     includePagination,
+    locale,
   } = pageParams
 
   if (
@@ -727,12 +728,24 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
           return eb.selectFrom('AbilityPartLink')
             .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
             .select('AbilityPartLink.abilityId')
-            .where(({ eb, and }) => {
+            .where(({ eb, and, or }) => {
               return and([
                 eb(`upa.partType`, '=', ap.part),
                 !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
-                ...ap.pos.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
-                ...ap.neg.map(token => eb('upa.textEn', 'not ilike', `%${token.text}%`)),
+                // Positive filters: match in textEn OR textFr
+                ...ap.pos.map(token => 
+                  or([
+                    eb('upa.textEn', 'ilike', `%${token.text}%`),
+                    eb('upa.textFr', 'ilike', `%${token.text}%`)
+                  ])
+                ),
+                // Negative filters: must NOT match in textEn AND must NOT match in textFr
+                ...ap.neg.map(token => 
+                  and([
+                    eb('upa.textEn', 'not ilike', `%${token.text}%`),
+                    eb('upa.textFr', 'not ilike', `%${token.text}%`)
+                  ])
+                ),
               ].filter(x => x != null))
             })
         } else {
@@ -761,12 +774,24 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
           return eb.selectFrom('AbilityPartLink')
             .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
             .select('AbilityPartLink.abilityId')
-            .where(({ eb, and }) => {
+            .where(({ eb, and, or }) => {
               return and([
                 eb(`upa.partType`, '=', ap.part),
                 !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
-                ...ap.pos.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
-                ...ap.neg.map(token => eb('upa.textEn', 'not ilike', `%${token.text}%`)),
+                // Positive filters: match in textEn OR textFr
+                ...ap.pos.map(token => 
+                  or([
+                    eb('upa.textEn', 'ilike', `%${token.text}%`),
+                    eb('upa.textFr', 'ilike', `%${token.text}%`)
+                  ])
+                ),
+                // Negative filters: must NOT match in textEn AND must NOT match in textFr
+                ...ap.neg.map(token => 
+                  and([
+                    eb('upa.textEn', 'not ilike', `%${token.text}%`),
+                    eb('upa.textFr', 'not ilike', `%${token.text}%`)
+                  ])
+                ),
               ].filter(x => x != null))
             })
         } else {
@@ -795,12 +820,24 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
           return eb.selectFrom('AbilityPartLink')
             .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
             .select('AbilityPartLink.abilityId')
-            .where(({ eb, and }) => {
+            .where(({ eb, and, or }) => {
               return and([
                 eb(`upa.partType`, '=', ap.part),
                 !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
-                ...ap.pos.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
-                ...ap.neg.map(token => eb('upa.textEn', 'not ilike', `%${token.text}%`)),
+                // Positive filters: match in textEn OR textFr
+                ...ap.pos.map(token => 
+                  or([
+                    eb('upa.textEn', 'ilike', `%${token.text}%`),
+                    eb('upa.textFr', 'ilike', `%${token.text}%`)
+                  ])
+                ),
+                // Negative filters: must NOT match in textEn AND must NOT match in textFr
+                ...ap.neg.map(token => 
+                  and([
+                    eb('upa.textEn', 'not ilike', `%${token.text}%`),
+                    eb('upa.textFr', 'not ilike', `%${token.text}%`)
+                  ])
+                ),
               ].filter(x => x != null))
             })
         } else {
@@ -959,14 +996,18 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
       'UniqueInfo.id',
       'UniqueInfo.ref',
       'UniqueInfo.nameEn',
+      'UniqueInfo.nameFr',
       'UniqueInfo.faction',
       'UniqueInfo.mainEffectEn',
+      'UniqueInfo.mainEffectFr',
       'UniqueInfo.echoEffectEn',
+      'UniqueInfo.echoEffectFr',
       'UniqueInfo.lastSeenInSaleAt',
       'UniqueInfo.lastSeenInSalePrice',
       'UniqueInfo.seenInLastGeneration',
       'UniqueInfo.cardSet',
       'UniqueInfo.imageUrlEn',
+      'UniqueInfo.imageUrlFr',
       'UniqueInfo.oceanPower',
       'UniqueInfo.mountainPower',
       'UniqueInfo.forestPower',
@@ -979,7 +1020,7 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
     .select((eb) => [
       jsonArrayFrom(
         eb.selectFrom('UniqueAbilityLine')
-          .select(['UniqueAbilityLine.id', 'UniqueAbilityLine.lineNumber', 'UniqueAbilityLine.textEn', 'UniqueAbilityLine.isSupport', 'UniqueAbilityLine.characterData'])
+          .select(['UniqueAbilityLine.id', 'UniqueAbilityLine.lineNumber', 'UniqueAbilityLine.textEn', 'UniqueAbilityLine.textFr', 'UniqueAbilityLine.isSupport', 'UniqueAbilityLine.characterData'])
           .select((eb2) => [
             jsonArrayFrom(
               eb2.selectFrom('AbilityPartLink')
@@ -1044,17 +1085,17 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
     }
 
     let displayAbilities: DisplayAbilityOnCard[] = result.mainAbilities
-      .map((a) => buildDisplayAbility(a))
+      .map((a) => buildDisplayAbility(a, locale))
       .filter((x) => x != null)
 
     return {
       ref: result.ref,
-      name: result.nameEn,
+      name: (locale == "en" ? result.nameEn : result.nameFr) ?? '',
       faction: result.faction as Faction,
       cardSet: result.cardSet!,
-      imageUrl: result.imageUrlEn!,
-      mainEffect: result.mainEffectEn,
-      echoEffect: result.echoEffectEn,
+      imageUrl: locale == "en" ? result.imageUrlEn! : result.imageUrlFr!,
+      mainEffect: locale == "en" ? result.mainEffectEn : result.mainEffectFr,
+      echoEffect: locale == "en" ? result.echoEffectEn : result.echoEffectFr,
       lastSeenInSaleAt: result.lastSeenInSaleAt?.toISOString(),
       lastSeenInSalePrice: Decimal(result.lastSeenInSalePrice ?? 0).toFixed(2).toString(),
       mainAbilities: displayAbilities.sort((a, b) => a.lineNumber - b.lineNumber),
@@ -1391,7 +1432,7 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
     .select((eb) => [
       jsonArrayFrom(
         eb.selectFrom('UniqueAbilityLine')
-          .select(['UniqueAbilityLine.id', 'UniqueAbilityLine.lineNumber', 'UniqueAbilityLine.textEn', 'UniqueAbilityLine.isSupport', 'UniqueAbilityLine.characterData'])
+          .select(['UniqueAbilityLine.id', 'UniqueAbilityLine.lineNumber', 'UniqueAbilityLine.textEn', 'UniqueAbilityLine.textFr', 'UniqueAbilityLine.isSupport', 'UniqueAbilityLine.characterData'])
           .select((eb2) => [
             jsonArrayFrom(
               eb2.selectFrom('AbilityPartLink')

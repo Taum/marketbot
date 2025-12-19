@@ -125,6 +125,7 @@ model UniqueAbilityPart {
   @@unique([textEn, partType, isSupport])
   @@index([id])
   @@index([textEn])
+  @@index([textFr])
 }
 
 // This will be a singleton entry

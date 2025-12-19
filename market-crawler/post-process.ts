@@ -3,13 +3,13 @@ import { AbilityPartType, UniqueAbilityPart, PrismaClient, UniqueInfo, Prisma } 
 import { unique } from "radash"
 import { getEnv } from "./helpers";
 import { ITXClientDenyList } from "@prisma/client/runtime/library";
-import { PartCharacterData } from "@common/models/postprocess";
+import { AbilityCharacterDataV1, PartCharacterData } from "@common/models/postprocess";
 import { CardSet } from "@common/models/cards";
 
 
 const verboseLevel = parseInt(getEnv("VERBOSE_LEVEL") ?? "1");
 
-type ProcessedAbility = Omit<PartCharacterData, "partId"> & { partText: string, partId?: number }
+type ProcessedAbility = Omit<PartCharacterData, "partId"> & { partText: string, enPartText?: string, partId?: number }
 
 interface ProcessedCard {
   uniqueInfo: UniqueInfo
@@ -18,7 +18,8 @@ interface ProcessedCard {
 }
 
 interface ProcessedAbilityLine {
-  textEn: string
+  textEn?: string
+  textFr?: string
   lineNumber: number
   isSupport: boolean
   lineStartIndex: number
@@ -83,7 +84,8 @@ function buildEmptyProcessedAbility(
 // This splits each ability of the abilities text box, usually separated by two consecutive spaces.
 // The exception is when there is a "•" character, which is used to separate the modes. We keep that as
 // a single ability line.
-function splitLinesWithIndices(text: string): { line: string, startIndex: number, endIndex: number }[] {
+function splitLinesWithIndices(text: string | null | undefined): { line: string, startIndex: number, endIndex: number }[] {
+  if (!text) return [];
   const splits = Array.from(text.matchAll(/  (?!•)/gid));
   if (splits.length == 0) {
     return [{ line: text, startIndex: 0, endIndex: text.length }];
@@ -112,17 +114,18 @@ function normalizeAbilityText(text: string | null | undefined): string | undefin
     .replace(/\{(\w)\}/g, (m) => `{${m[1].toUpperCase()}}`)
 }
 
-function processOneCard(cardIn: UniqueInfo): ProcessedCard {
+function processOneCard(cardIn: UniqueInfo, mainEffect: string | null, echoEffect: string | null, locale: string): ProcessedCard {
   // start by making a copy, with the ability texts normalized
-  const card = {
-    ...cardIn,
-    mainEffectEn: normalizeAbilityText(cardIn.mainEffectEn) ?? null,
-    echoEffectEn: normalizeAbilityText(cardIn.echoEffectEn) ?? null,
-  };
+  let mainEff = normalizeAbilityText(mainEffect) ?? '';
+  let echoEff = normalizeAbilityText(echoEffect) ?? '';
+  if (locale === "fr-fr") {
+    mainEff = normalizeAbilityText(mainEffect) ?? '';
+    echoEff = normalizeAbilityText(echoEffect) ?? '';
+  }
 
-  let mainLines = card.mainEffectEn ? splitLinesWithIndices(card.mainEffectEn) : [];
+  let mainLines = mainEff ? splitLinesWithIndices(mainEff) : [];
   // Support abilities only have a single line right now
-  let echoLines = card.echoEffectEn ? [card.echoEffectEn] : [];
+  let echoLines = echoEff ? [echoEff] : [];
 
   let mainAbilities: ProcessedAbilityLine[] = mainLines.map((lineData, lineNumber) => {
     const { line, startIndex, endIndex } = lineData;
@@ -133,7 +136,8 @@ function processOneCard(cardIn: UniqueInfo): ProcessedCard {
     let extraEffectParts: ProcessedAbility[] = [];
 
     // Search for a few exceptions first
-    if (line.indexOf("Then, depending on the number of boosts removed this way") != -1) {
+    if (line.indexOf("Then, depending on the number of boosts removed this way") != -1 ||
+        line.indexOf("Puis, en fonction du nombre de boosts retirés de cette manière") != -1) {
       // This is a "Man in the Maze" ability, try to find the sub effects
       const matches = line.match(/({H}|{R}|{J})\s+(.*?)\s+(• \d+\+:)(.*?)(• \d+\+:)(.*?)(• \d+\+:)(.*?)$/id)
       if (matches) {
@@ -151,34 +155,52 @@ function processOneCard(cardIn: UniqueInfo): ProcessedCard {
         extraEffectParts.push(buildProcessedAbility(line, matches, 8))
       }
     }
-    else if (line.startsWith("When my Expedition fails to move forward during Dusk — After Rest")) {
+    else if (line.startsWith("When my Expedition fails to move forward during Dusk — After Rest") ||
+      line.startsWith("Lorsque mon Expédition n'avance pas pendant le Crépuscule — Après le Repos")) {
       // The Bureaucrats ability always uses After Rest after the long-dash, but that should really be part
       // of the trigger. Note that there doesn't seem to be any card that use this trigger and a condition, but the
       // empty-condition [] marker is still there, so we handle it here, assuming a condition would end with a colon.
-      const matches = line.match(/^(When my Expedition fails to move forward during Dusk — After Rest:)\s+(\[\]|.+?:)(.*)$/id);
+      let matches = line.match(/^(When my Expedition fails to move forward during Dusk — After Rest:)\s+(\[\]|.+?:)(.*)$/id);
+      if(!matches) {
+        matches = line.match(/^(Lorsque mon Expédition n'avance pas pendant le Crépuscule — Après le Repos:)\s+(\[\]|.+?:)(.*)$/id);
+      }
       if (matches) {
         trigger = buildProcessedAbility(line, matches, 1);
         condition = buildProcessedAbility(line, matches, 2, { subIfEmpty: "$noCondition" });
         effect = buildProcessedAbility(line, matches, 2);
       }
     }
-    else if (line.startsWith("When")) {
-      const matches = line.match(/^((?:When .*?)|{H}|{R}|{J})\s+—\s+(\[\]|.+?:)(.*)$/id);
-      if (matches) {
-        trigger = buildProcessedAbility(line, matches, 1);
-        condition = buildProcessedAbility(line, matches, 2, { subIfEmpty: "$noCondition" });
-        effect = buildProcessedAbility(line, matches, 3);
-      } else {
-        // Some cards are missing the [] for empty condition, use this other pattern:
-        const matches = line.match(/^((?:When .*?)|{H}|{R}|{J})\s+—\s+(.*)$/id);
+    else if (line.startsWith("When") || line.startsWith("Lorsque")) {
+      const processWhens = (fullLine: string, matches: RegExpMatchArray | null, r: any): boolean => {
         if (matches) {
-          trigger = buildProcessedAbility(line, matches, 1);
-          condition = buildEmptyProcessedAbility(line, matches, 1, "$noCondition");
-          effect = buildProcessedAbility(line, matches, 2);
+          trigger = buildProcessedAbility(fullLine, matches, 1);
+          condition = buildProcessedAbility(fullLine, matches, 2, { subIfEmpty: "$noCondition" });
+          effect = buildProcessedAbility(fullLine, matches, 3);
+
+          return true;
         } else {
+          // Some cards are missing the [] for empty condition, use this other pattern:
+          const matches = fullLine.match(r);
+          if (matches) {
+            trigger = buildProcessedAbility(fullLine, matches, 1);
+            condition = buildEmptyProcessedAbility(fullLine, matches, 1, "$noCondition");
+            effect = buildProcessedAbility(fullLine, matches, 2);
+
+            return true;
+          }
+        }
+        return false;
+      }
+      
+      const matches = line.match(/^((?:When .*?)|{H}|{R}|{J})\s+—\s+(\[\]|.+?:)(.*)$/id);
+      let found = processWhens(line, matches, /^((?:When .*?)|{H}|{R}|{J})\s+—\s+(.*)$/id);
+      if(!found) {
+        const matches = line.match(/^((?:Lorsque .*?)|{H}|{R}|{J})\s+—\s+(\[\]|.+?:)(.*)$/id);
+        found = processWhens(line, matches, /^((?:Lorsque .*?)|{H}|{R}|{J})\s+—\s+(.*)$/id);
+        if (!found) {
           console.error("Line did not match 'When' pattern: " + line)
         }
-      }
+      } 
     } else if (line.startsWith("{H}") || line.startsWith("{R}") || line.startsWith("{J}")) {
       const matches = line.match(/^({H}|{R}|{J})\s+(\[\]|.+?:)(.*)$/id)
       if (matches) {
@@ -188,7 +210,7 @@ function processOneCard(cardIn: UniqueInfo): ProcessedCard {
       } else {
         console.error("Line did not match 'H/R/J' pattern: " + line)
       }
-    } else if (line.startsWith("At")) {
+    } else if (line.startsWith("At") || line.startsWith("Au Crépuscule") || line.startsWith("À midi")) {
       const matches = line.match(/^(.*)—\s+(\[\]|.+?:)(.*)$/id)
       if (matches) {
         trigger = buildProcessedAbility(line, matches, 1);
@@ -219,8 +241,7 @@ function processOneCard(cardIn: UniqueInfo): ProcessedCard {
       console.error("Line does not match any known pattern: " + line)
     }
 
-    return {
-      textEn: line,
+    const result: ProcessedAbilityLine = {
       lineNumber,
       isSupport: false,
       lineStartIndex: startIndex,
@@ -230,6 +251,12 @@ function processOneCard(cardIn: UniqueInfo): ProcessedCard {
       effect,
       extraEffectParts,
     }
+    if(locale === "fr-fr") {
+      result.textFr = line;
+    } else {
+      result.textEn = line;
+    }
+    return result;
   })
 
   let echoAbilities: ProcessedAbilityLine[] = echoLines.map(line => {
@@ -270,8 +297,7 @@ function processOneCard(cardIn: UniqueInfo): ProcessedCard {
       console.error("Line does not match any known pattern: " + line)
     }
 
-    return {
-      textEn: line,
+    const result: ProcessedAbilityLine = {
       lineNumber: 0,
       isSupport: true,
       lineStartIndex: 0,
@@ -280,10 +306,16 @@ function processOneCard(cardIn: UniqueInfo): ProcessedCard {
       condition,
       effect,
     }
+    if (locale === "fr-fr") {
+      result.textFr = line;
+    } else {
+      result.textEn = line;
+    }
+    return result;
   })
 
   return {
-    uniqueInfo: card,
+    uniqueInfo: { ...cardIn },
     mainAbilities,
     echoAbilities,
   }
@@ -295,35 +327,49 @@ async function upsertAbilityPart(
   partType: AbilityPartType,
   isSupport: boolean,
   ability: ProcessedAbility | undefined,
-  tx?: Omit<PrismaClient, ITXClientDenyList>
+  tx?: Omit<PrismaClient, ITXClientDenyList>,
+  locale?: string
 ): Promise<(UniqueAbilityPart & PartCharacterData) | undefined> {
   if (!ability) {
     return undefined;
   }
-  const text = ability.partText;
+  let textEn = "";
+  let textFr = "";
+  let text = ability.partText;
 
-  const key = `${partType}-${isSupport}__${text}`;
+  const key = `${partType}-${isSupport}__${text}__${locale?.split('-')?.at(0) || "en"}`;
+  if(locale === "fr-fr") {
+    textFr = text;
+    if (ability.enPartText) {
+      textEn = ability.enPartText;
+    }
+  } else {
+    textEn = text;
+  }
 
   let part: UniqueAbilityPart | undefined = undefined;
   if (mainAbilityPartsCache[key]) {
     part = mainAbilityPartsCache[key];
   } else {
     const db = tx ?? prisma;
-    part = await db.uniqueAbilityPart.upsert({
+      part = await db.uniqueAbilityPart.upsert({
       where: {
         textEn_partType_isSupport: {
-          textEn: text,
+          textEn: textEn,
           partType: partType,
           isSupport: isSupport,
-        }
+        },
       },
-      update: {},
+      update: {
+        textEn: textEn,
+        textFr: textFr,
+      },
       create: {
-        textEn: text,
+        textEn: textEn,
         partType: partType,
         isSupport: isSupport,
       }
-    })
+    });
     mainAbilityPartsCache[key] = part;
   }
   if (verboseLevel >= 3) {
@@ -338,17 +384,17 @@ async function upsertAbilityPart(
 
 let totalProcessed = 0;
 
-export async function upsertOneAbilityLine(uniqueInfoId: number, ability: ProcessedAbilityLine, tx: Omit<PrismaClient, ITXClientDenyList>) {
+export async function upsertOneAbilityLine(uniqueInfoId: number, ability: ProcessedAbilityLine, tx: Omit<PrismaClient, ITXClientDenyList>, locale?: string) {
   let allParts: ((UniqueAbilityPart & PartCharacterData) | undefined)[] = [];
   let extraEffectParts: (UniqueAbilityPart & PartCharacterData)[] = [];
 
-  allParts.push(await upsertAbilityPart(AbilityPartType.Trigger, ability.isSupport, ability.trigger, tx));
-  allParts.push(await upsertAbilityPart(AbilityPartType.Condition, ability.isSupport, ability.condition, tx));
-  allParts.push(await upsertAbilityPart(AbilityPartType.Effect, ability.isSupport, ability.effect, tx));
+  allParts.push(await upsertAbilityPart(AbilityPartType.Trigger, ability.isSupport, ability.trigger, tx, locale));
+  allParts.push(await upsertAbilityPart(AbilityPartType.Condition, ability.isSupport, ability.condition, tx, locale));
+  allParts.push(await upsertAbilityPart(AbilityPartType.Effect, ability.isSupport, ability.effect, tx, locale));
 
   if (ability.extraEffectParts) {
     for (let extraEffectPart of ability.extraEffectParts) {
-      const part = await upsertAbilityPart(AbilityPartType.Effect, ability.isSupport, extraEffectPart, tx);
+      const part = await upsertAbilityPart(AbilityPartType.Effect, ability.isSupport, extraEffectPart, tx, locale);
       if (part) {
         extraEffectParts.push(part);
       }
@@ -357,11 +403,44 @@ export async function upsertOneAbilityLine(uniqueInfoId: number, ability: Proces
 
   const allPartsNotNull = allParts.filter(part => part != null);
 
-  const characterData = {
+  let dbAbilityId: number | undefined = undefined;
+  let dbAbility = await tx.uniqueAbilityLine.findUnique({
+    where: {
+      uniqueInfoId_lineNumber_isSupport: {
+        uniqueInfoId: uniqueInfoId,
+        lineNumber: ability.lineNumber,
+        isSupport: ability.isSupport,
+      }
+    },
+    include: {
+      allParts: true,
+    }
+  })
+
+  const characterData: any = {
     version: 1,
-    lineStartIndex: ability.lineStartIndex,
-    lineEndIndex: ability.lineEndIndex,
-    parts: [
+  }
+  if (locale === "fr-fr") {
+    characterData.lineStartIndexFr = ability.lineStartIndex,
+    characterData.lineEndIndexFr = ability.lineEndIndex,
+    characterData.partsFr = [
+      ...allPartsNotNull.map((p) => ({
+        partId: p.id,
+        startIndex: p.startIndex,
+        endIndex: p.endIndex,
+        substituteText: p.substituteText,
+      })),
+      ...extraEffectParts.map(p => ({
+        partId: p.id,
+        startIndex: p.startIndex,
+        endIndex: p.endIndex,
+        substituteText: p.substituteText,
+      }))
+    ].filter(part => part != null)
+  } else {
+    characterData.lineStartIndex = ability.lineStartIndex,
+    characterData.lineEndIndex = ability.lineEndIndex,
+    characterData.parts = [
       ...allPartsNotNull.map((p) => ({
         partId: p.id,
         startIndex: p.startIndex,
@@ -389,6 +468,7 @@ export async function upsertOneAbilityLine(uniqueInfoId: number, ability: Proces
 
   let blob = {
     textEn: ability.textEn,
+    textFr: ability.textFr,
     isSupport: ability.isSupport,
     characterData: characterData,
     allParts: {
@@ -403,23 +483,19 @@ export async function upsertOneAbilityLine(uniqueInfoId: number, ability: Proces
     },
   }
 
-  let dbAbilityId: number | undefined = undefined;
-  let dbAbility = await tx.uniqueAbilityLine.findUnique({
-    where: {
-      uniqueInfoId_lineNumber_isSupport: {
-        uniqueInfoId: uniqueInfoId,
-        lineNumber: ability.lineNumber,
-        isSupport: ability.isSupport,
-      }
-    },
-    include: {
-      allParts: true,
-    }
-  })
   if (dbAbility) {
     dbAbilityId = dbAbility.id;
+    const existingLine = await tx.uniqueAbilityLine.findUniqueOrThrow({ where: { id: dbAbility.id }, include: { allParts: true } });
+    if (existingLine.textEn == blob.textEn && JSON.stringify(existingLine.characterData) != JSON.stringify(blob.characterData)
+    ) {
+      blob.characterData = {
+        ...blob.characterData,
+        ...existingLine.characterData as any
+      };
+    }
+
     const partsToDelete = dbAbility.allParts.filter(pl => (partsForAdding.find(p => p.id == pl.partId && p.partType == pl.partType) == null));
-    await tx.uniqueAbilityLine.update({
+    const res = await tx.uniqueAbilityLine.update({
       where: { id: dbAbility.id },
       data: {
         ...blob,
@@ -456,8 +532,29 @@ export async function upsertOneAbilityLine(uniqueInfoId: number, ability: Proces
   }
 }
 
-export async function processAndWriteOneUnique(unique: UniqueInfo, tx: Omit<PrismaClient, ITXClientDenyList>) {
-  let processedCard = processOneCard(unique);
+export async function processAndWriteOneUnique(unique: UniqueInfo, tx: Omit<PrismaClient, ITXClientDenyList>, locale?: string) {
+  let processedCard: ProcessedCard | undefined = undefined;
+  if (locale === "fr-fr") {
+    processedCard = processOneCard(unique, unique.mainEffectFr, unique.echoEffectFr, locale || 'fr-fr');
+    // when running for fr-fr, we still need to get the English texts for each ability part before upsert logic, as uniqueness is verified over english text
+    const processCardForEnLocal = processOneCard(unique, unique.mainEffectEn, unique.echoEffectEn, 'en-us');
+    processedCard.mainAbilities.map((ma, idx) => {
+      const enMa = processCardForEnLocal.mainAbilities[idx];
+      ma.textEn = enMa.textEn;
+      ma.trigger && (ma.trigger.enPartText = enMa.trigger?.partText);
+      ma.condition && (ma.condition.enPartText = enMa.condition?.partText);
+      ma.effect && (ma.effect.enPartText = enMa.effect?.partText);
+    });
+    processedCard.echoAbilities.map((ea, idx) => {
+      const enEa = processCardForEnLocal.echoAbilities[idx];
+      ea.textEn = enEa.textEn;
+      ea.trigger && (ea.trigger.enPartText = enEa.trigger?.partText);
+      ea.condition && (ea.condition.enPartText = enEa.condition?.partText);
+      ea.effect && (ea.effect.enPartText = enEa.effect?.partText);    
+    });
+  } else {
+    processedCard = processOneCard(unique, unique.mainEffectEn, unique.echoEffectEn, locale || 'en-us');
+  }
   if (processedCard && (processedCard.mainAbilities.length > 0 || processedCard.echoAbilities.length > 0)) {
 
     if (verboseLevel >= 2) {
@@ -470,13 +567,15 @@ export async function processAndWriteOneUnique(unique: UniqueInfo, tx: Omit<Pris
         console.log(`echo: ${processedCard.uniqueInfo.echoEffectEn}`)
       }
     }
-    await writeProcessedCard(processedCard, unique, tx);
+    await writeProcessedCard(processedCard, unique, tx, locale);
   }
 }
 
 let textUpdatedCount = 0;
-async function writeProcessedCard(processedCard: ProcessedCard, originalUnique: UniqueInfo, tx: Omit<PrismaClient, ITXClientDenyList>) {
-  if (originalUnique.mainEffectEn != processedCard.uniqueInfo.mainEffectEn || originalUnique.echoEffectEn != processedCard.uniqueInfo.echoEffectEn) {
+async function writeProcessedCard(processedCard: ProcessedCard, originalUnique: UniqueInfo, tx: Omit<PrismaClient, ITXClientDenyList>, locale?: string) {
+  if (originalUnique.mainEffectEn != processedCard.uniqueInfo.mainEffectEn || originalUnique.echoEffectEn != processedCard.uniqueInfo.echoEffectEn
+    || originalUnique.mainEffectFr != processedCard.uniqueInfo.mainEffectFr || originalUnique.echoEffectFr != processedCard.uniqueInfo.echoEffectFr
+  ) {
     // We might have modified the mainEffectEn/echoEffectEn strings to fix some typos
     // so we update the UniqueInfo record with the new strings
     textUpdatedCount += 1;
@@ -485,19 +584,21 @@ async function writeProcessedCard(processedCard: ProcessedCard, originalUnique: 
       data: {
         mainEffectEn: processedCard.uniqueInfo.mainEffectEn,
         echoEffectEn: processedCard.uniqueInfo.echoEffectEn,
+        mainEffectFr: processedCard.uniqueInfo.mainEffectFr,
+        echoEffectFr: processedCard.uniqueInfo.echoEffectFr,
       }
     })
   }
 
   for (let ability of processedCard.mainAbilities) {
-    await upsertOneAbilityLine(processedCard.uniqueInfo.id, ability, tx);
+    await upsertOneAbilityLine(processedCard.uniqueInfo.id, ability, tx, locale);
   }
   for (let ability of processedCard.echoAbilities) {
-    await upsertOneAbilityLine(processedCard.uniqueInfo.id, ability, tx);
+    await upsertOneAbilityLine(processedCard.uniqueInfo.id, ability, tx, locale);
   }
 }
 
-export async function processUniquesBatch(fromPage: number = 0, toPage: number | undefined = undefined, batchSize = 100) {
+export async function processUniquesBatch(fromPage: number = 0, toPage: number | undefined = undefined, batchSize = 100, locale: string) {
   let page = fromPage;
   console.log(`Starting batch from ${fromPage} to ${toPage} (batchSize=${batchSize})`)
   while (toPage && page < toPage) {
@@ -524,7 +625,15 @@ export async function processUniquesBatch(fromPage: number = 0, toPage: number |
     const readTime = readTs - startTs;
 
     const processedCards: { original: UniqueInfo, processed: ProcessedCard }[] = batchUniques
-      .map(u => ({ original: u, processed: processOneCard(u) }))
+      .map(u => {
+        let processedCard: ProcessedCard | undefined = undefined;
+        if (locale === "fr-fr") {
+          processedCard = processOneCard(u, u.mainEffectFr, u.echoEffectFr, locale || 'fr-fr');
+        } else {
+          processedCard = processOneCard(u, u.mainEffectEn, u.echoEffectEn, locale || 'en-us');
+        }
+        return { original: u, processed: processedCard }
+      })
       .filter(pc => pc.processed.mainAbilities.length > 0 || pc.processed.echoAbilities.length > 0)
 
     const processTs = Date.now();
@@ -532,7 +641,7 @@ export async function processUniquesBatch(fromPage: number = 0, toPage: number |
 
     await prisma.$transaction(async (tx) => {
       for (let { original, processed } of processedCards) {
-        await writeProcessedCard(processed, original, tx);
+        await writeProcessedCard(processed, original, tx, locale);
         totalProcessed += 1;
       }
     }, { timeout: 60000 })

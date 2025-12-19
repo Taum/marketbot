@@ -37,6 +37,7 @@ export interface SearchQuery {
 export interface PageParams {
   page: number;
   includePagination: boolean;
+  locale?: string;
 }
 
 export interface Token {
@@ -388,15 +389,17 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
 
 export function buildDisplayAbility(
   ability:
-    Pick<UniqueAbilityLine, 'id' | 'lineNumber' | 'isSupport' | 'characterData' | 'textEn'> &
-    { allParts: Pick<AbilityPartLink, 'id' | 'partId' | 'partType'>[] }
+    Pick<UniqueAbilityLine, 'id' | 'lineNumber' | 'isSupport' | 'characterData' | 'textEn' | 'textFr'> &
+    { allParts: Pick<AbilityPartLink, 'id' | 'partId' | 'partType'>[] },
+  locale: string = 'en'
 ): DisplayAbilityOnCard | undefined {
   if (ability.characterData == null) {
     return undefined;
   }
   const charData = ability.characterData as unknown as AbilityCharacterDataV1;
-  const line = ability.textEn
-  const displayParts: DisplayPartOnCard[] = charData.parts.map((part) => {
+  const line = locale === "fr" ? ability.textFr : ability.textEn;
+  const parts = locale === "fr" ? charData.partsFr : charData.parts;
+  const displayParts: DisplayPartOnCard[] = parts.map((part) => {
     const matchingPart = ability.allParts
       .find((p) => p?.partId == part.partId)
     if (matchingPart == null) {

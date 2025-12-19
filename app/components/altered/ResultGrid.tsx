@@ -3,6 +3,7 @@ import { formatDistance } from "date-fns";
 import { FC, useCallback } from "react";
 import { AlteredIcon, AlteredIconType } from "~/components/altered/AlteredIcon";
 import { CardImage } from "~/components/altered/CardImage";
+import { useTranslation } from "~/lib/i18n";
 import { AbilityPartType, DisplayAbilityOnCard, DisplayPartOnCard, DisplayUniqueCard } from "~/models/cards";
 
 export interface ResultGridProps {
@@ -21,6 +22,7 @@ export const ResultGrid: FC<ResultGridProps> = ({ results, now }) => {
 }
 
 export const Result: FC<{ result: DisplayUniqueCard, now: Date }> = ({ result, now }) => {
+  const { t } = useTranslation();
   return (
     <div className="rounded-lg p-2 bg-subtle-background flex flex-row gap-4">
       <div className="flex-1">
@@ -40,7 +42,7 @@ export const Result: FC<{ result: DisplayUniqueCard, now: Date }> = ({ result, n
           </div>
           <div>
             <Link to={`https://www.altered.gg/cards/${result.ref}`}>
-              View on Altered
+              {t('viewOnAltered')}
             </Link>
           </div>
         </div>

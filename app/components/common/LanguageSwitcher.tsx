@@ -1,11 +1,15 @@
+import { useSearchParams } from "@remix-run/react";
 import { useState, useEffect } from "react";
 import { useTranslation } from "~/lib/i18n";
 
 export const LanguageSwitcher: React.FC = () => {
   const { locale, setLocale } = useTranslation();
+  const [searchParams] = useSearchParams();
   const [current, setCurrent] = useState<string>(locale ?? "en");
 
-  useEffect(() => setCurrent(locale ?? "en"), [locale]);
+  useEffect(() => {
+    setCurrent(locale ?? "en");
+  }, [locale]);
 
   function changeLocale(lang: string) {
     // Persist in cookie for server-side use on next request
@@ -17,7 +21,8 @@ export const LanguageSwitcher: React.FC = () => {
       setLocale(lang);
       setCurrent(lang);
       // Reload to let server render localized content
-      window.location.reload();
+      searchParams.set("lang", lang);
+      window.location.search = searchParams.toString();
     } catch (e) {
       console.error("Failed to set locale cookie", e);
     }

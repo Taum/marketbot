@@ -60,8 +60,7 @@ interface LoaderData {
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const langParam = nullifyTrim(url.searchParams.get("lang"));
-  const detected = detectLocaleFromAcceptLanguage(request.headers.get("Accept-Language") ?? undefined);
-  const lang = langParam ?? detected ?? "en";
+  const lang = langParam ?? "en";
   const cardText = nullifyTrim(url.searchParams.get("text"));
   const characterName = nullifyTrim(url.searchParams.get("cname"));
   const cardSubTypes = nullifyTrim(url.searchParams.get("types"))?.split(",") ?? [];
@@ -135,7 +134,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
       },
       {
         page: currentPage,
-        includePagination: true
+        includePagination: true,
+        locale: lang
       }
     );
 
