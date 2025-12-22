@@ -74,7 +74,9 @@
   "columns": "columns",
   "columns_2": "2 columns",
   "columns_3": "3 columns",
-  "columns_4": "4 columns"
+  "columns_4": "4 columns",
+  "restore_last_search": "Restore last search",
+  "no_search_yet": "No search performed yet"
   ,
   "viewOnAltered": "View on Altered"
 }

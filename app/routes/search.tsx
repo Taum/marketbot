@@ -1,6 +1,6 @@
 import { type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useLoaderData, useSearchParams } from "@remix-run/react";
-import { FC, useState } from "react";
+import { FC, useState, useEffect } from "react";
 import { FactionSelect } from "~/components/altered/FactionSelect";
 import { SetSelect } from "~/components/altered/SetSelect";
 import { Button } from "~/components/ui/button";
@@ -204,6 +204,7 @@ export default function SearchPage() {
   const [showFilters, setShowFilters] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'row'>('grid');
   const [gridColumns, setGridColumns] = useState<2 | 3 | 4>(3);
+  const [hasLastSearch, setHasLastSearch] = useState(false);
 
   const now = new Date();
 
@@ -211,6 +212,54 @@ export default function SearchPage() {
   const pagination = loaderData.pagination
 
   const currentPage = parseInt(searchParams.get("p") ?? "1");
+
+  // Check if there's a saved search on mount
+  useEffect(() => {
+    try {
+      const lastSearch = localStorage.getItem('lastSearch');
+      const currentSearch = searchParams.toString();
+      // Has last search AND it's different from current
+      setHasLastSearch(!!lastSearch && lastSearch !== currentSearch);
+    } catch (e) {
+      setHasLastSearch(false);
+    }
+  }, [searchParams]);
+
+  // Save current search to localStorage whenever search params change
+  useEffect(() => {
+    const hasSearchParams = Array.from(searchParams.keys()).some(
+      key => key !== 'lang' && key !== 'p'
+    );
+    
+    if (hasSearchParams) {
+      try {
+        localStorage.setItem('lastSearch', searchParams.toString());
+        setHasLastSearch(true);
+      } catch (e) {
+        console.error('Failed to save search to localStorage', e);
+      }
+    }
+  }, [searchParams]);
+
+  const handleRestoreLastSearch = () => {
+    try {
+      const lastSearch = localStorage.getItem('lastSearch');
+      if (lastSearch) {
+        const params = new URLSearchParams(lastSearch);
+        // Keep current language
+        const currentLang = searchParams.get('lang');
+        if (currentLang) {
+          params.set('lang', currentLang);
+        }
+        // Reset to page 1
+        params.delete('p');
+        
+        window.location.search = params.toString();
+      }
+    } catch (e) {
+      console.error('Failed to restore search from localStorage', e);
+    }
+  };
 
   const handlePageChange = (page: number) => {
     const newParams = new URLSearchParams(searchParams);
@@ -367,16 +416,64 @@ export default function SearchPage() {
             </div>
           </div>
         ) : (loaderData.error ? (
-                <p className="text-red-500">{t('error_prefix')} {loaderData.error}</p>
+          <div className="flex flex-col items-center justify-center h-full gap-4">
+            <p className="text-red-500">{t('error_prefix')} {loaderData.error}</p>
+          </div>
         ) : loaderData.query ? (
-                <p className="text-gray-600">{t('no_results')}</p>
-        ) : null)}
+          <div className="flex flex-col items-center justify-center h-full gap-4">
+            <p className="text-gray-600">{t('no_results')}</p>
+          </div>
+        ) : (
+          // Empty state - show restore button if available
+          <div className="flex flex-col items-center justify-center h-full gap-4">
+            {hasLastSearch ? (
+              <>
+                <p className="text-muted-foreground">{t('no_search_yet')}</p>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleRestoreLastSearch}
+                  className="flex items-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                    <path d="M21 3v5h-5"/>
+                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                    <path d="M3 21v-5h5"/>
+                  </svg>
+                  {t('restore_last_search')}
+                </Button>
+              </>
+            ) : (
+              <p className="text-muted-foreground">{t('no_search_yet')}</p>
+            )}
+          </div>
+        ))}
       </div>
 
       {/* Right Sidebar - Search Form */}
       {showFilters && (
         <div className="w-[360px] flex-shrink-0 border-l border-border overflow-y-auto p-6 bg-muted/5">
           <h2 className="text-lg font-semibold mb-4">{t('search_filters')}</h2>
+          
+          {/* Restore Last Search Button */}
+          {hasLastSearch && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRestoreLastSearch}
+              className="w-full flex items-center justify-center gap-2 mb-4"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                <path d="M21 3v5h-5"/>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                <path d="M3 21v-5h5"/>
+              </svg>
+              {t('restore_last_search')}
+            </Button>
+          )}
+          
           <SearchForm 
             {...loaderData.query} 
             triggers={loaderData.triggers}
