@@ -1,6 +1,6 @@
 import { useLoaderData } from "@remix-run/react";
 import { Link } from "@remix-run/react";
-import { useTranslation } from "~/lib/i18n";
+import { useTranslation, useLocale } from "~/lib/i18n";
 import prisma from "@common/utils/prisma.server";
 import { cn, groupBy, nullifyTrim } from "~/lib/utils";
 import {
@@ -81,7 +81,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export default function AbilitiesList() {
   const { abilityParts } = useLoaderData<LoaderData>();
-  const { t } = useTranslation();
+  const locale = useLocale();
+  const { t } = useTranslation(locale);
 
   return (
     <div className="global-page">
@@ -105,7 +106,8 @@ function replaceSymbolsForTables(text: string): JSX.Element {
 }
 
 function AbilityPartSection({ title, abilityParts }: { title: string; abilityParts: DisplayAbilityPart[] }) {
-  const { t } = useTranslation();
+  const locale = useLocale();
+  const { t } = useTranslation(locale);
   if (!abilityParts || abilityParts.length === 0) {
     return null;
   }

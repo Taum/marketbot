@@ -1,6 +1,6 @@
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
-import { useTranslation } from "~/lib/i18n";
+import { useTranslation, useLocale } from "~/lib/i18n";
 import { AbilityPartType, UniqueAbilityLine, UniqueAbilityPart } from "@prisma/client";
 import prisma from "@common/utils/prisma.server";
 import { DisplayAbilityOnCard, DisplayUniqueCard, Faction } from "~/models/cards";
@@ -137,7 +137,8 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
 export default function ByAbilityPartRoute() {
   const { part, results, pagination, generalSearchLink } = useLoaderData<LoaderData>();
-  const { t } = useTranslation();
+  const locale = useLocale();
+  const { t } = useTranslation(locale);
   const { currentPage, totalCount, pageCount } = pagination;
   const [searchParams] = useSearchParams();
 

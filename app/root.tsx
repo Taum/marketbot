@@ -36,13 +36,57 @@ export function Layout({ children }: { children: React.ReactNode; }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
+        {/* Set the locale BEFORE any scripts run to prevent flash of wrong language */}
         <script dangerouslySetInnerHTML={{ __html: `window.__LOCALE__ = "${lang}";` }} />
+        {/* Add loading overlay styles */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: hsl(var(--background));
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s ease-out;
+          }
+          #loading-overlay.ready {
+            opacity: 0;
+            pointer-events: none;
+          }
+          .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid hsl(var(--muted));
+            border-top-color: hsl(var(--primary));
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+          }
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        ` }} />
       </head>
       <body>
+        {/* Loading overlay - hidden after locale is ready */}
+        <div id="loading-overlay">
+          <div className="loading-spinner"></div>
+        </div>
         <Navigation />
         {children}
         <ScrollRestoration />
         <Scripts />
+        {/* Hide loading overlay after hydration */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          window.addEventListener('load', function() {
+            setTimeout(function() {
+              document.getElementById('loading-overlay').classList.add('ready');
+            }, 100);
+          });
+        ` }} />
       </body>
     </html>
   );

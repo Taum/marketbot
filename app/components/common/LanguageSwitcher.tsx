@@ -21,8 +21,9 @@ export const LanguageSwitcher: React.FC = () => {
       setLocale(lang);
       setCurrent(lang);
       // Reload to let server render localized content
-      searchParams.set("lang", lang);
-      window.location.search = searchParams.toString();
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set("lang", lang);
+      window.location.search = newParams.toString();
     } catch (e) {
       console.error("Failed to set locale cookie", e);
     }

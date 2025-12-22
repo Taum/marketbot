@@ -9,7 +9,7 @@ import { SearchLayout } from "~/components/search-layout";
 import { nullifyParseInt } from "~/lib/utils";
 import { buildDisplayAbility } from "~/loaders/search";
 import { DisplayAbilityOnCard, DisplayUniqueCard, Faction } from "~/models/cards";
-import { useTranslation } from "~/lib/i18n";
+import { useTranslation, useLocale } from "~/lib/i18n";
 
 
 interface LoaderData {
@@ -95,7 +95,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export default function TextlessSearch() {
   const loaderData = useLoaderData<LoaderData>();
   const now = new Date();
-  const { t } = useTranslation();
+  const locale = useLocale();
+  const { t } = useTranslation(locale);
   
   const [searchParams] = useSearchParams();
   const currentPage = parseInt(searchParams.get("p") ?? "1");

@@ -194,6 +194,25 @@ export function findReplaceSymbols(text: string): JSX.Element {
 }
 
 const AbilityLink: FC<{ part: DisplayPartOnCard, children: string, ability: DisplayAbilityOnCard }> = ({ part, children, ability }) => {
+  // Hooks must be called at the top, before any conditional returns
+  const [searchParams] = useSearchParams();
+  const onClickHandler = useCallback(() => {
+    const newParams = new URLSearchParams(searchParams);
+    switch (part.partType) {
+      case AbilityPartType.Trigger:
+        newParams.set("tr", `"${children}"`)
+        break
+      case AbilityPartType.Condition:
+        newParams.set("cond", `"${children}"`)
+        break
+      case AbilityPartType.Effect:
+      case AbilityPartType.ExtraEffect:
+        newParams.set("eff", `"${children}"`)
+        break
+    }
+    const newSearch = newParams.toString();
+    window.location.search = newSearch;
+  }, [part.partType, searchParams, children])
 
   let linkText = children
   let addedText: string | undefined = undefined
@@ -243,24 +262,6 @@ const AbilityLink: FC<{ part: DisplayPartOnCard, children: string, ability: Disp
   }
 
   classes += " font-medium hover:underline hover:underline-offset-1 cursor-pointer"
-
-  const [searchParams] = useSearchParams();
-  const onClickHandler = useCallback(() => {
-    switch (part.partType) {
-      case AbilityPartType.Trigger:
-        searchParams.set("tr", `"${children}"`)
-        break
-      case AbilityPartType.Condition:
-        searchParams.set("cond", `"${children}"`)
-        break
-      case AbilityPartType.Effect:
-      case AbilityPartType.ExtraEffect:
-        searchParams.set("eff", `"${children}"`)
-        break
-    }
-    const newSearch = searchParams.toString();
-    window.location.search = newSearch;
-  }, [part.partId, part.partType, searchParams])
 
   if (addedText) {
     return <><a onClick={onClickHandler} className={classes} title={title}>{textWithSymbols}</a>{addedText}</>

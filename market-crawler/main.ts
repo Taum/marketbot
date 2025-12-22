@@ -51,7 +51,7 @@ console.log(`Token refreshed: ${token.token.slice(0, 20)}...[redacted] - Expires
 await exhaustiveInSaleCrawler.addAllWithFilter(fetchGenerationId, (c) => {
   // We can implement filters here to exclude certain families
   if (debugCrawler) {
-    return c.name.en.startsWith("Copp") || c.name.en.startsWith("Alelo");
+    return c.name.en.startsWith("Bessie");
   }
   return true;
 })

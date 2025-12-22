@@ -88,10 +88,10 @@ export class UniquesPublicApiCrawler extends GenericIndexer<UniqueRequest, Uniqu
       const newUrl = new URL("https://api.altered.gg/public/cards")
       newUrl.searchParams.set("locale", request.locale ?? "en-us")
       newUrl.searchParams.set("page", "1")
-      newUrl.searchParams.set("itemsPerPage", debugCrawler ? "1" : "100")
+      newUrl.searchParams.set("itemsPerPage", debugCrawler ? "10" : "100")
       newUrl.searchParams.set("rarity", "UNIQUE")
       newUrl.searchParams.set("inSale", "True")
-      newUrl.searchParams.set("query", `\"${request.name}\"`)
+      newUrl.searchParams.set("query", `"${request.name}"`)
       url = newUrl.toString()
     }
 

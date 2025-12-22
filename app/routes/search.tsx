@@ -59,8 +59,7 @@ interface LoaderData {
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
-  const langParam = nullifyTrim(url.searchParams.get("lang"));
-  const lang = langParam ?? "en";
+  const lang = nullifyTrim(url.searchParams.get("lang")) ?? "en";
   const cardText = nullifyTrim(url.searchParams.get("text"));
   const characterName = nullifyTrim(url.searchParams.get("cname"));
   const cardSubTypes = nullifyTrim(url.searchParams.get("types"))?.split(",") ?? [];
@@ -194,8 +193,9 @@ export default function SearchPage() {
   const currentPage = parseInt(searchParams.get("p") ?? "1");
 
   const handlePageChange = (page: number) => {
-    searchParams.set("p", page.toString());
-    window.location.search = searchParams.toString();
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("p", page.toString());
+    window.location.search = newParams.toString();
   };
 
   return (
@@ -303,31 +303,35 @@ const SearchForm: FC<
 
   const [searchParams] = useSearchParams();
   const handleExpiredCardsChange = (newValue: boolean) => {
+    const newParams = new URLSearchParams(searchParams);
     if (newValue) {
-      searchParams.set("exp", "1");
+      newParams.set("exp", "1");
     } else {
-      searchParams.delete("exp");
+      newParams.delete("exp");
     }
-    window.location.search = searchParams.toString();
+    window.location.search = newParams.toString();
   }
 
   const handleIncludeSupport = (newValue: boolean) => {
+    const newParams = new URLSearchParams(searchParams);
     if (newValue) {
-      searchParams.set("inclSup", "1");
+      newParams.set("inclSup", "1");
     } else {
-      searchParams.delete("inclSup");
+      newParams.delete("inclSup");
     }
-    window.location.search = searchParams.toString();
+    window.location.search = newParams.toString();
   }
 
   const handleCardSubTypesChange = (newValues: string[]) => {
     setSelectedCardSubTypes(newValues);
-    searchParams.set("types", newValues.join(","));
-    window.location.search = searchParams.toString();
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("types", newValues.join(","));
+    window.location.search = newParams.toString();
   }
 
   return (
     <Form method="get" id="search-form" className="mb-8">
+      {/* Preserve the lang parameter across form submissions */}
       <div className="flex flex-col gap-2">
         <div className="flex flex-row gap-8">
             <div>
@@ -545,6 +549,7 @@ const SearchForm: FC<
             </div>
           </div>
         </div>
+        <input type="hidden" name="lang" value={locale ?? searchParams.get("lang") ?? "en"} />
       </div>
     </Form>
   )
