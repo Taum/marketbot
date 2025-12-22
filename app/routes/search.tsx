@@ -108,6 +108,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const mountainPowers = parseRange(mountainPowerRange)
   const oceanPowers = parseRange(oceanPowerRange)
 
+  // fetch ability parts (Trigger/Condition/Effect) - always load these for the dropdowns
+  const allParts = await prisma.uniqueAbilityPart.findMany({
+    where: { partType: { in: ["Trigger", "Condition", "Effect"] } },
+    orderBy: { textEn: "asc" },
+    select: { id: true, textEn: true, partType: true }
+  });
+
+  const triggers = allParts.filter(p => p.partType === "Trigger").map(p => ({ id: p.id, text: p.textEn }));
+  const conditions = allParts.filter(p => p.partType === "Condition").map(p => ({ id: p.id, text: p.textEn }));
+  const effects = allParts.filter(p => p.partType === "Effect").map(p => ({ id: p.id, text: p.textEn }));
+
   try {
     const startTs = performance.now()
 
@@ -141,17 +152,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const endTs = performance.now()
     const duration = endTs - startTs
 
-    // fetch ability parts (Trigger/Condition/Effect) in a single query and group them
-    const allParts = await prisma.uniqueAbilityPart.findMany({
-      where: { partType: { in: ["Trigger", "Condition", "Effect"] } },
-      orderBy: { textEn: "asc" },
-      select: { id: true, textEn: true, partType: true }
-    });
-
-    const triggers = allParts.filter(p => p.partType === "Trigger").map(p => ({ id: p.id, text: p.textEn }));
-    const conditions = allParts.filter(p => p.partType === "Condition").map(p => ({ id: p.id, text: p.textEn }));
-    const effects = allParts.filter(p => p.partType === "Effect").map(p => ({ id: p.id, text: p.textEn }));
-
     const t = getTranslator(lang);
     const localizedFoundText = pagination ? t("found_count", { count: pagination.totalCount }) : undefined;
 
@@ -175,6 +175,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
       results: [],
       pagination: undefined,
       metrics: undefined,
+      triggers,
+      conditions,
+      effects,
+      locale: lang,
       query: originalQuery,
     }
   }
@@ -201,7 +205,13 @@ export default function SearchPage() {
   return (
     <div className="global-page">
       {/* Search Form */}
-      <SearchForm {...loaderData.query} />
+      <SearchForm 
+        {...loaderData.query} 
+        triggers={loaderData.triggers}
+        conditions={loaderData.conditions}
+        effects={loaderData.effects}
+        locale={loaderData.locale}
+      />
 
       {/* Results Section */}
       {results.length > 0 ? (
@@ -279,8 +289,7 @@ const SearchForm: FC<
   const [showTriggerOptions, setShowTriggerOptions] = useState<boolean>(false);
   const [conditionValue, setConditionValue] = useState<string>(conditionPart ?? "");
   const [showConditionOptions, setShowConditionOptions] = useState<boolean>(false);
-  const [effectValue, setEffectValue] = useState<string>(effectPart ?? "");
-  const [showEffectOptions, setShowEffectOptions] = useState<boolean>(false);
+  const [effectValue, setEffectValue] = useState<string>(effectPart ?? "");  const [showEffectOptions, setShowEffectOptions] = useState<boolean>(false);
 
   const filteredTriggers = triggers.filter(tr => {
     const q = triggerValue?.toLowerCase().trim();
@@ -440,17 +449,33 @@ const SearchForm: FC<
               value={triggerValue}
               onChange={(e) => { setTriggerValue(e.target.value); setShowTriggerOptions(true); }}
               onFocus={() => setShowTriggerOptions(true)}
-              onBlur={() => setTimeout(() => setShowTriggerOptions(false), 150)}
+              onBlur={() => setTimeout(() => setShowTriggerOptions(false), 200)}
+              onKeyDown={(e) => { if (e.key === 'Enter') setShowTriggerOptions(false); }}
               placeholder={t('placeholder_trigger_text')}
               autoComplete="off"
             />
-            {showTriggerOptions && filteredTriggers.length > 0 && (
-              <ul role="listbox" className="absolute z-40 mt-1 max-h-48 w-full overflow-auto rounded-md border bg-white shadow-lg">
-                {filteredTriggers.map((t) => (
-                  <li key={t.id} role="option" className="cursor-pointer px-3 py-2 hover:bg-gray-100" onMouseDown={(e) => { e.preventDefault(); setTriggerValue(t.text); setShowTriggerOptions(false); }}>
-                    {t.text}
+            {showTriggerOptions && (
+              <ul role="listbox" className="absolute z-40 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-white shadow-lg">
+                {filteredTriggers.length > 0 ? (
+                  filteredTriggers.map((t) => (
+                    <li 
+                      key={t.id} 
+                      role="option" 
+                      className="cursor-pointer px-3 py-2 hover:bg-gray-100 text-sm" 
+                      onMouseDown={(e) => { 
+                        e.preventDefault(); 
+                        setTriggerValue(t.text); 
+                        setShowTriggerOptions(false); 
+                      }}
+                    >
+                      {t.text}
+                    </li>
+                  ))
+                ) : (
+                  <li className="px-3 py-2 text-sm text-gray-500 italic">
+                    {t('no_matching_triggers') || 'No matching triggers found'}
                   </li>
-                ))}
+                )}
               </ul>
             )}
           </div>
@@ -463,7 +488,8 @@ const SearchForm: FC<
               value={conditionValue}
               onChange={(e) => { setConditionValue(e.target.value); setShowConditionOptions(true); }}
               onFocus={() => setShowConditionOptions(true)}
-              onBlur={() => setTimeout(() => setShowConditionOptions(false), 150)}
+              onBlur={() => setTimeout(() => setShowConditionOptions(false), 200)}
+              onKeyDown={(e) => { if (e.key === 'Enter') setShowConditionOptions(false); }}
               placeholder={t('placeholder_condition_text')}
               autoComplete="off"
             />
@@ -486,7 +512,8 @@ const SearchForm: FC<
               value={effectValue}
               onChange={(e) => { setEffectValue(e.target.value); setShowEffectOptions(true); }}
               onFocus={() => setShowEffectOptions(true)}
-              onBlur={() => setTimeout(() => setShowEffectOptions(false), 150)}
+              onBlur={() => setTimeout(() => setShowEffectOptions(false), 200)}
+              onKeyDown={(e) => { if (e.key === 'Enter') setShowEffectOptions(false); }}
               placeholder={t('placeholder_effect_text')}
               autoComplete="off"
             />
