@@ -64,7 +64,17 @@
   "select_sets": "Select sets"
   ,
   "faction_any": "Any faction",
-  "set_any": "All sets"
+  "set_any": "All sets",
+  "search_filters": "Search Filters",
+  "no_matching_triggers": "No matching triggers found",
+  "hide_filters": "Hide filters",
+  "show_filters": "Show filters",
+  "grid_view": "Grid view",
+  "row_view": "Row view",
+  "columns": "columns",
+  "columns_2": "2 columns",
+  "columns_3": "3 columns",
+  "columns_4": "4 columns"
   ,
   "viewOnAltered": "View on Altered"
 }

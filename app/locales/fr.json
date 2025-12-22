@@ -65,7 +65,17 @@
   "select_sets": "Sélectionner des extensions"
   ,
   "faction_any": "Toutes les factions",
-  "set_any": "Toutes les extensions"
+  "set_any": "Toutes les extensions",
+  "search_filters": "Filtres de recherche",
+  "no_matching_triggers": "Aucun déclencheur correspondant",
+  "hide_filters": "Masquer les filtres",
+  "show_filters": "Afficher les filtres",
+  "grid_view": "Vue grille",
+  "row_view": "Vue liste",
+  "columns": "colonnes",
+  "columns_2": "2 colonnes",
+  "columns_3": "3 colonnes",
+  "columns_4": "4 colonnes"
   ,
   "viewOnAltered": "Voir sur Altered"
 }

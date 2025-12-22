@@ -14,8 +14,15 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { searchWithCTEsIndexingCharacterNames } from "~/loaders/search-alternates";
 import { MultiSelect } from "~/components/ui-ext/multi-select";
 import prisma from "@common/utils/prisma.server";
-import { getTranslator, detectLocaleFromAcceptLanguage } from "~/lib/i18n.server";
+import { getTranslator } from "~/lib/i18n.server";
 import { useTranslation } from "~/lib/i18n";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 
 interface SearchQuery {
   faction?: string;
@@ -194,6 +201,9 @@ export default function SearchPage() {
   const loaderData = useLoaderData<LoaderData>();
   const { t } = useTranslation(loaderData.locale);
   const [searchParams] = useSearchParams();
+  const [showFilters, setShowFilters] = useState(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'row'>('grid');
+  const [gridColumns, setGridColumns] = useState<2 | 3 | 4>(3);
 
   const now = new Date();
 
@@ -208,59 +218,180 @@ export default function SearchPage() {
     window.location.search = newParams.toString();
   };
 
-  return (
-    <div className="global-page">
-      {/* Search Form */}
-      <SearchForm 
-        {...loaderData.query} 
-        triggers={loaderData.triggers}
-        conditions={loaderData.conditions}
-        effects={loaderData.effects}
-        locale={loaderData.locale}
-      />
+  // Build active filters summary
+  const getActiveFiltersSummary = () => {
+    const filters: string[] = [];
+    const query = loaderData.query;
+    
+    if (query.faction) filters.push(t('faction') + `: ${query.faction}`);
+    if (query.set) filters.push(t('set') + `: ${query.set}`);
+    if (query.characterName) filters.push(t('character_name') + `: ${query.characterName}`);
+    if (query.cardSubTypes && query.cardSubTypes.length > 0) {
+      filters.push(t('character_type') + `: ${query.cardSubTypes.join(', ')}`);
+    }
+    if (query.mainCostRange) filters.push(t('hand_cost') + `: ${query.mainCostRange}`);
+    if (query.recallCostRange) filters.push(t('reserve_cost') + `: ${query.recallCostRange}`);
+    if (query.forestPowerRange) filters.push(t('forest_power') + `: ${query.forestPowerRange}`);
+    if (query.mountainPowerRange) filters.push(t('mountain_power') + `: ${query.mountainPowerRange}`);
+    if (query.oceanPowerRange) filters.push(t('ocean_power') + `: ${query.oceanPowerRange}`);
+    if (query.cardText) filters.push(t('placeholder_card_text') + `: "${query.cardText}"`);
+    if (query.triggerPart) filters.push(t('trigger') + `: "${query.triggerPart}"`);
+    if (query.conditionPart) filters.push(t('condition') + `: "${query.conditionPart}"`);
+    if (query.effectPart) filters.push(t('effect') + `: "${query.effectPart}"`);
+    if (query.minPrice !== undefined || query.maxPrice !== undefined) {
+      const priceRange = [
+        query.minPrice !== undefined ? `${query.minPrice}` : '',
+        query.maxPrice !== undefined ? `${query.maxPrice}` : ''
+      ].filter(Boolean).join(' - ');
+      filters.push(t('min_price') + ` - ${t('max_price')}: ${priceRange}`);
+    }
+    if (query.includeExpiredCards) filters.push(t('include_unavailable'));
+    
+    return filters.length > 0 ? filters.join(' • ') : null;
+  };
 
-      {/* Results Section */}
-      {results.length > 0 ? (
-        <div id="results" className="relative">
-          <div className="space-y-6">
+  const activeFilters = getActiveFiltersSummary();
+
+  return (
+    <div className="flex flex-row h-[calc(100vh-3rem)] overflow-hidden">
+      {/* Left Content - Results */}
+      <div className="flex-1 flex flex-col p-6">
+        {results.length > 0 ? (
+          <div id="results" className="relative flex flex-col h-full">
             {pagination ? (
-              <div className="flex flex-row justify-between gap-8">
-                <div>
-                  <h2 className="grow-1 text-xl font-semibold inline-block">
-                    {loaderData.localizedFoundText ?? `${t('found_count', { count: pagination.totalCount })}`}
-                  </h2>
-                  {loaderData.metrics?.duration && (
-                      <span className="ml-2 text-xs text-muted-foreground/50">
-                        {t('in_seconds', { seconds: (loaderData.metrics.duration / 1000).toFixed(1) })}
-                      </span>
+              <div className="mb-6">
+                <div className="flex flex-row items-center mb-4">
+                  {/* Left: Results count */}
+                  <div className="flex-1">
+                    <h2 className="text-xl font-semibold inline-block">
+                      {loaderData.localizedFoundText ?? `${t('found_count', { count: pagination.totalCount })}`}
+                    </h2>
+                    {loaderData.metrics?.duration && (
+                        <span className="ml-2 text-xs text-muted-foreground/50">
+                          {t('in_seconds', { seconds: (loaderData.metrics.duration / 1000).toFixed(1) })}
+                        </span>
+                      )}
+                    {activeFilters && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {activeFilters}
+                      </div>
                     )}
-                </div>
-                {pagination.pageCount && pagination.pageCount > 1 ? (
-                  <div>
-                    <ResultsPagination
-                      currentPage={currentPage ?? 1}
-                      totalPages={pagination.pageCount ?? 1}
-                      onPageChange={handlePageChange}
-                    />
                   </div>
-                ) : null}
+                  
+                  {/* Center: Pagination */}
+                  <div className="flex-1 flex justify-center">
+                    {pagination.pageCount && pagination.pageCount > 1 ? (
+                      <ResultsPagination
+                        currentPage={currentPage ?? 1}
+                        totalPages={pagination.pageCount ?? 1}
+                        onPageChange={handlePageChange}
+                      />
+                    ) : null}
+                  </div>
+                  
+                  {/* Right: Control buttons */}
+                  <div className="flex-1 flex flex-row gap-4 items-center justify-end">
+                    {viewMode === 'grid' && (
+                      <Select
+                        value={gridColumns.toString()}
+                        onValueChange={(value) => setGridColumns(parseInt(value) as 2 | 3 | 4)}
+                      >
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue placeholder={t('columns')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="2">{t('columns_2')}</SelectItem>
+                          <SelectItem value="3">{t('columns_3')}</SelectItem>
+                          <SelectItem value="4">{t('columns_4')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setViewMode(viewMode === 'grid' ? 'row' : 'grid')}
+                      className="flex items-center gap-2"
+                    >
+                      {viewMode === 'grid' ? (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="8" y1="6" x2="21" y2="6"/>
+                            <line x1="8" y1="12" x2="21" y2="12"/>
+                            <line x1="8" y1="18" x2="21" y2="18"/>
+                            <line x1="3" y1="6" x2="3.01" y2="6"/>
+                            <line x1="3" y1="12" x2="3.01" y2="12"/>
+                            <line x1="3" y1="18" x2="3.01" y2="18"/>
+                          </svg>
+                          {t('row_view')}
+                        </>
+                      ) : (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="3" width="7" height="7"/>
+                            <rect x="14" y="3" width="7" height="7"/>
+                            <rect x="14" y="14" width="7" height="7"/>
+                            <rect x="3" y="14" width="7" height="7"/>
+                          </svg>
+                          {t('grid_view')}
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="flex items-center gap-2"
+                    >
+                      {showFilters ? (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 6 6 18M6 6l12 12"/>
+                          </svg>
+                          {t('hide_filters')}
+                        </>
+                      ) : (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                          </svg>
+                          {t('show_filters')}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </div>
             ) : null}
-            <ResultGrid results={results} now={now} />
+            <div className="overflow-y-auto flex-1">
+              <ResultGrid results={results} now={now} viewMode={viewMode} gridColumns={gridColumns} />
+            </div>
           </div>
+        ) : (loaderData.error ? (
+                <p className="text-red-500">{t('error_prefix')} {loaderData.error}</p>
+        ) : loaderData.query ? (
+                <p className="text-gray-600">{t('no_results')}</p>
+        ) : null)}
+      </div>
+
+      {/* Right Sidebar - Search Form */}
+      {showFilters && (
+        <div className="w-[360px] flex-shrink-0 border-l border-border overflow-y-auto p-6 bg-muted/5">
+          <h2 className="text-lg font-semibold mb-4">{t('search_filters')}</h2>
+          <SearchForm 
+            {...loaderData.query} 
+            triggers={loaderData.triggers}
+            conditions={loaderData.conditions}
+            effects={loaderData.effects}
+            locale={loaderData.locale}
+          />
         </div>
-      ) : (loaderData.error ? (
-              <p className="text-red-500">{t('error_prefix')} {loaderData.error}</p>
-      ) : loaderData.query ? (
-              <p className="text-gray-600">{t('no_results')}</p>
-      ) : null)}
+      )}
     </div>
   );
 }
 
 const SearchForm: FC<
   SearchQuery & {
-    setSubmitting?: (v: boolean) => void;
     triggers?: { id: number; text: string }[];
     conditions?: { id: number; text: string }[];
     effects?: { id: number; text: string }[];
@@ -284,9 +415,9 @@ const SearchForm: FC<
   forestPowerRange,
   mountainPowerRange,
   oceanPowerRange
-  , setSubmitting, triggers = [], conditions = [], effects = []
+  , triggers = [], conditions = [], effects = []
   , locale
-}: SearchQuery & { setSubmitting?: (v: boolean) => void; triggers?: { id: number; text: string }[]; conditions?: { id: number; text: string }[]; effects?: { id: number; text: string }[]; locale?: string }) => {
+}: SearchQuery & { triggers?: { id: number; text: string }[]; conditions?: { id: number; text: string }[]; effects?: { id: number; text: string }[]; locale?: string }) => {
   const { t } = useTranslation(locale);
   const [selectedFaction, setSelectedFaction] = useState(faction ?? undefined);
   const [selectedSet, setSelectedSet] = useState(set ?? undefined);
@@ -345,243 +476,283 @@ const SearchForm: FC<
   }
 
   return (
-    <Form method="get" id="search-form" className="mb-8">
+    <Form method="get" id="search-form" className="space-y-4">
       {/* Preserve the lang parameter across form submissions */}
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-row gap-8">
-            <div>
-            <Label>{t('faction')}</Label>
-            <FactionSelect
-              value={selectedFaction ?? "any"}
-              onValueChange={(newVal) => setSelectedFaction(newVal == "any" ? undefined : newVal)} />
-            <input type="hidden" name="f" value={selectedFaction} />
-          </div>
-          <div>
-            <Label htmlFor="cname">{t('set')}</Label>
-            <SetSelect
-              value={selectedSet ?? "any"}
-              onValueChange={(newVal) => setSelectedSet(newVal == "any" ? undefined : newVal)} />
-            <input type="hidden" name="s" value={selectedSet} />
-          </div>
-          <div>
-            <Label htmlFor="cname">{t('character_name')}</Label>
-            <Input
-              type="text"
-              name="cname"
-              defaultValue={characterName ?? ""}
-              placeholder={t('placeholder_character_name')}
-            />
-          </div>
-          <div>
-            <Label htmlFor="mc">{t('hand_cost')}</Label>
-            <Input
-              type="text"
-              name="mc"
-              defaultValue={mainCostRange ?? ""}
-              placeholder={t('placeholder_hand_cost')}
-            />
-          </div>
-          <div>
-            <Label htmlFor="rc">{t('reserve_cost')}</Label>
-            <Input
-              type="text"
-              name="rc"
-              defaultValue={recallCostRange ?? ""}
-              placeholder={t('placeholder_reserve_cost')}
-            />
-          </div>
+      <div className="space-y-4">
+        {/* Faction */}
+        <div>
+          <Label>{t('faction')}</Label>
+          <FactionSelect
+            value={selectedFaction ?? "any"}
+            onValueChange={(newVal) => setSelectedFaction(newVal == "any" ? undefined : newVal)} />
+          <input type="hidden" name="f" value={selectedFaction} />
         </div>
-        <div className="flex flex-row gap-8">
-          <div>
-            <Label htmlFor="cname">{t('character_type')}</Label>
-            <MultiSelect
-              options={allCardSubTypes}
-              onValueChange={handleCardSubTypesChange}
-              defaultValue={selectedCardSubTypes}
-              placeholder={t('placeholder_select_character_types')}
-              variant="secondary"
-              animation={0.5}
-              maxCount={3}
-            />
-            <input type="hidden" name="types" value={selectedCardSubTypes.join(",")} />
-          </div>
-          <div>
-            <Label htmlFor="fp">{t('forest_power')}</Label>
-            <Input
-              type="text"
-              name="fp"
-              defaultValue={forestPowerRange ?? ""}
-              placeholder={t('placeholder_power_range')}
-            />
-          </div>
-          <div>
-            <Label htmlFor="mp">{t('mountain_power')}</Label>
-            <Input
-              type="text"
-              name="mp"
-              defaultValue={mountainPowerRange ?? ""}
-              placeholder={t('placeholder_power_range')}
-            />
-          </div>
-          <div>
-            <Label htmlFor="op">{t('ocean_power')}</Label>
-            <Input
-              type="text"
-              name="op"
-              defaultValue={oceanPowerRange ?? ""}
-              placeholder={t('placeholder_power_range')}
-            />
-          </div>
+
+        {/* Set */}
+        <div>
+          <Label htmlFor="cname">{t('set')}</Label>
+          <SetSelect
+            value={selectedSet ?? "any"}
+            onValueChange={(newVal) => setSelectedSet(newVal == "any" ? undefined : newVal)} />
+          <input type="hidden" name="s" value={selectedSet} />
         </div>
-        <div className="flex flex-row gap-4">
-          <div className="grow-1 flex-[60%]">
-            <Label htmlFor="text">Card text</Label>
-            <Input
-              type="search"
-              name="text"
-              defaultValue={cardText ?? ""}
-              placeholder={t('placeholder_card_text')}
-            />
-          </div>
+
+        {/* Character Name */}
+        <div>
+          <Label htmlFor="cname">{t('character_name')}</Label>
+          <Input
+            type="text"
+            name="cname"
+            defaultValue={characterName ?? ""}
+            placeholder={t('placeholder_character_name')}
+          />
         </div>
-        <div className="flex flex-row gap-4">
-            <div className="grow-1 flex-[30%] relative">
-            <Label htmlFor="tr">{t('trigger')}</Label>
-            {/* Controlled input to allow "contains" filtering */}
-            <Input
-              type="search"
-              name="tr"
-              id="tr"
-              value={triggerValue}
-              onChange={(e) => { setTriggerValue(e.target.value); setShowTriggerOptions(true); }}
-              onFocus={() => setShowTriggerOptions(true)}
-              onBlur={() => setTimeout(() => setShowTriggerOptions(false), 200)}
-              onKeyDown={(e) => { if (e.key === 'Enter') setShowTriggerOptions(false); }}
-              placeholder={t('placeholder_trigger_text')}
-              autoComplete="off"
-            />
-            {showTriggerOptions && (
-              <ul role="listbox" className="absolute z-40 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-white shadow-lg">
-                {filteredTriggers.length > 0 ? (
-                  filteredTriggers.map((t) => (
-                    <li 
-                      key={t.id} 
-                      role="option" 
-                      className="cursor-pointer px-3 py-2 hover:bg-gray-100 text-sm" 
-                      onMouseDown={(e) => { 
-                        e.preventDefault(); 
-                        setTriggerValue(t.text); 
-                        setShowTriggerOptions(false); 
-                      }}
-                    >
-                      {t.text}
-                    </li>
-                  ))
-                ) : (
-                  <li className="px-3 py-2 text-sm text-gray-500 italic">
-                    {t('no_matching_triggers') || 'No matching triggers found'}
-                  </li>
-                )}
-              </ul>
-            )}
-          </div>
-            <div className="grow-1 flex-[30%] relative">
-            <Label htmlFor="cond">{t('condition')}</Label>
-            <Input
-              type="search"
-              name="cond"
-              id="cond"
-              value={conditionValue}
-              onChange={(e) => { setConditionValue(e.target.value); setShowConditionOptions(true); }}
-              onFocus={() => setShowConditionOptions(true)}
-              onBlur={() => setTimeout(() => setShowConditionOptions(false), 200)}
-              onKeyDown={(e) => { if (e.key === 'Enter') setShowConditionOptions(false); }}
-              placeholder={t('placeholder_condition_text')}
-              autoComplete="off"
-            />
-            {showConditionOptions && filteredConditions.length > 0 && (
-              <ul role="listbox" className="absolute z-40 mt-1 max-h-48 w-full overflow-auto rounded-md border bg-white shadow-lg">
-                {filteredConditions.map((t) => (
-                  <li key={t.id} role="option" className="cursor-pointer px-3 py-2 hover:bg-gray-100" onMouseDown={(e) => { e.preventDefault(); setConditionValue(t.text); setShowConditionOptions(false); }}>
+
+        {/* Character Type */}
+        <div>
+          <Label htmlFor="cname">{t('character_type')}</Label>
+          <MultiSelect
+            options={allCardSubTypes}
+            onValueChange={handleCardSubTypesChange}
+            defaultValue={selectedCardSubTypes}
+            placeholder={t('placeholder_select_character_types')}
+            variant="secondary"
+            animation={0.5}
+            maxCount={2}
+          />
+          <input type="hidden" name="types" value={selectedCardSubTypes.join(",")} />
+        </div>
+
+        {/* Hand Cost */}
+        <div>
+          <Label htmlFor="mc">{t('hand_cost')}</Label>
+          <Input
+            type="text"
+            name="mc"
+            defaultValue={mainCostRange ?? ""}
+            placeholder={t('placeholder_hand_cost')}
+          />
+        </div>
+
+        {/* Reserve Cost */}
+        <div>
+          <Label htmlFor="rc">{t('reserve_cost')}</Label>
+          <Input
+            type="text"
+            name="rc"
+            defaultValue={recallCostRange ?? ""}
+            placeholder={t('placeholder_reserve_cost')}
+          />
+        </div>
+
+        {/* Powers Section */}
+        <div>
+          <Label htmlFor="fp">{t('forest_power')}</Label>
+          <Input
+            type="text"
+            name="fp"
+            defaultValue={forestPowerRange ?? ""}
+            placeholder={t('placeholder_power_range')}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="mp">{t('mountain_power')}</Label>
+          <Input
+            type="text"
+            name="mp"
+            defaultValue={mountainPowerRange ?? ""}
+            placeholder={t('placeholder_power_range')}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="op">{t('ocean_power')}</Label>
+          <Input
+            type="text"
+            name="op"
+            defaultValue={oceanPowerRange ?? ""}
+            placeholder={t('placeholder_power_range')}
+          />
+        </div>
+
+        {/* Card Text */}
+        <div>
+          <Label htmlFor="text">Card text</Label>
+          <Input
+            type="search"
+            name="text"
+            defaultValue={cardText ?? ""}
+            placeholder={t('placeholder_card_text')}
+          />
+        </div>
+
+        {/* Trigger */}
+        <div className="relative">
+          <Label htmlFor="tr">{t('trigger')}</Label>
+          <Input
+            type="search"
+            name="tr"
+            id="tr"
+            value={triggerValue}
+            onChange={(e) => { setTriggerValue(e.target.value); setShowTriggerOptions(true); }}
+            onFocus={() => setShowTriggerOptions(true)}
+            onBlur={() => setTimeout(() => setShowTriggerOptions(false), 200)}
+            onKeyDown={(e) => { if (e.key === 'Enter') setShowTriggerOptions(false); }}
+            placeholder={t('placeholder_trigger_text')}
+            autoComplete="off"
+          />
+          {showTriggerOptions && (
+            <ul role="listbox" className="absolute z-40 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover text-popover-foreground shadow-lg">
+              {filteredTriggers.length > 0 ? (
+                filteredTriggers.map((t) => (
+                  <li 
+                    key={t.id} 
+                    role="option"
+                    aria-selected={triggerValue === t.text}
+                    className="cursor-pointer px-3 py-2 hover:bg-accent hover:text-accent-foreground text-sm" 
+                    onMouseDown={(e) => { 
+                      e.preventDefault(); 
+                      setTriggerValue(t.text); 
+                      setShowTriggerOptions(false); 
+                    }}
+                  >
                     {t.text}
                   </li>
-                ))}
-              </ul>
-            )}
-          </div>
-            <div className="grow-1 flex-[30%] relative">
-            <Label htmlFor="eff">{t('effect')}</Label>
+                ))
+              ) : (
+                <li className="px-3 py-2 text-sm text-muted-foreground italic">
+                  {t('no_matching_triggers') || 'No matching triggers found'}
+                </li>
+              )}
+            </ul>
+          )}
+        </div>
+
+        {/* Condition */}
+        <div className="relative">
+          <Label htmlFor="cond">{t('condition')}</Label>
+          <Input
+            type="search"
+            name="cond"
+            id="cond"
+            value={conditionValue}
+            onChange={(e) => { setConditionValue(e.target.value); setShowConditionOptions(true); }}
+            onFocus={() => setShowConditionOptions(true)}
+            onBlur={() => setTimeout(() => setShowConditionOptions(false), 200)}
+            onKeyDown={(e) => { if (e.key === 'Enter') setShowConditionOptions(false); }}
+            placeholder={t('placeholder_condition_text')}
+            autoComplete="off"
+          />
+          {showConditionOptions && filteredConditions.length > 0 && (
+            <ul role="listbox" className="absolute z-40 mt-1 max-h-48 w-full overflow-auto rounded-md border bg-popover text-popover-foreground shadow-lg">
+              {filteredConditions.map((t) => (
+                <li 
+                  key={t.id} 
+                  role="option"
+                  aria-selected={conditionValue === t.text}
+                  className="cursor-pointer px-3 py-2 hover:bg-accent hover:text-accent-foreground text-sm" 
+                  onMouseDown={(e) => { 
+                    e.preventDefault(); 
+                    setConditionValue(t.text); 
+                    setShowConditionOptions(false); 
+                  }}
+                >
+                  {t.text}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Effect */}
+        <div className="relative">
+          <Label htmlFor="eff">{t('effect')}</Label>
+          <Input
+            type="search"
+            name="eff"
+            id="eff"
+            value={effectValue}
+            onChange={(e) => { setEffectValue(e.target.value); setShowEffectOptions(true); }}
+            onFocus={() => setShowEffectOptions(true)}
+            onBlur={() => setTimeout(() => setShowEffectOptions(false), 200)}
+            onKeyDown={(e) => { if (e.key === 'Enter') setShowEffectOptions(false); }}
+            placeholder={t('placeholder_effect_text')}
+            autoComplete="off"
+          />
+          {showEffectOptions && filteredEffects.length > 0 && (
+            <ul role="listbox" className="absolute z-40 mt-1 max-h-48 w-full overflow-auto rounded-md border bg-popover text-popover-foreground shadow-lg">
+              {filteredEffects.map((t) => (
+                <li 
+                  key={t.id} 
+                  role="option"
+                  aria-selected={effectValue === t.text}
+                  className="cursor-pointer px-3 py-2 hover:bg-accent hover:text-accent-foreground text-sm" 
+                  onMouseDown={(e) => { 
+                    e.preventDefault(); 
+                    setEffectValue(t.text); 
+                    setShowEffectOptions(false); 
+                  }}
+                >
+                  {t.text}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Include Support Checkbox */}
+        <div className="flex flex-row gap-2 items-center">
+          <Checkbox
+            value="1"
+            name="inclSup"
+            defaultChecked={partIncludeSupport ?? false}
+            onCheckedChange={handleIncludeSupport}
+          />
+          <Label htmlFor="inclSup" className="text-sm">{t('also_match_support')}</Label>
+        </div>
+
+        {/* Include Expired Cards */}
+        <div className="flex flex-row gap-2 items-center">
+          <Checkbox
+            value="1"
+            name="exp"
+            defaultChecked={includeExpiredCards ?? false}
+            onCheckedChange={handleExpiredCardsChange}
+          />
+          <Label htmlFor="exp">{t('include_unavailable')}</Label>
+        </div>
+
+        {/* Price Range */}
+        <div className="flex flex-row gap-2">
+          <div className="flex-1">
+            <Label htmlFor="minpr">{t('min_price')}</Label>
             <Input
               type="search"
-              name="eff"
-              id="eff"
-              value={effectValue}
-              onChange={(e) => { setEffectValue(e.target.value); setShowEffectOptions(true); }}
-              onFocus={() => setShowEffectOptions(true)}
-              onBlur={() => setTimeout(() => setShowEffectOptions(false), 200)}
-              onKeyDown={(e) => { if (e.key === 'Enter') setShowEffectOptions(false); }}
-              placeholder={t('placeholder_effect_text')}
-              autoComplete="off"
+              name="minpr"
+              defaultValue={minPrice ?? ""}
+              placeholder={t('placeholder_ellipsis')}
             />
-            {showEffectOptions && filteredEffects.length > 0 && (
-              <ul role="listbox" className="absolute z-40 mt-1 max-h-48 w-full overflow-auto rounded-md border bg-white shadow-lg">
-                {filteredEffects.map((t) => (
-                  <li key={t.id} role="option" className="cursor-pointer px-3 py-2 hover:bg-gray-100" onMouseDown={(e) => { e.preventDefault(); setEffectValue(t.text); setShowEffectOptions(false); }}>
-                    {t.text}
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
-          <div className="grow-1 flex-[10%] pt-4 flex flex-row gap-2 items-center">
-            <Checkbox
-              value="1"
-              name="inclSup"
-              defaultChecked={partIncludeSupport ?? false}
-              onCheckedChange={handleIncludeSupport}
+          <div className="flex-1">
+            <Label htmlFor="maxpr">{t('max_price')}</Label>
+            <Input
+              type="search"
+              name="maxpr"
+              defaultValue={maxPrice ?? ""}
+              placeholder={t('placeholder_ellipsis')}
             />
-            <Label htmlFor="inclSup" className="text-xs/3 inline-block">{t('also_match_support')}</Label>
           </div>
         </div>
-        <div className="flex flex-row gap-8 align-self-start justify-between items-end">
-          <Button
-            type="submit"
-            className="bg-accent/80 text-foreground hover:bg-accent"
-          >
-            {t('search')}
-          </Button>
-          <div className="flex flex-row gap-2">
-            <div className="flex flex-row gap-2 items-center mt-6 mr-2">
-              <Checkbox
-                value="1"
-                name="exp"
-                defaultChecked={includeExpiredCards ?? false}
-                onCheckedChange={handleExpiredCardsChange}
-              />
-              <Label htmlFor="exp">{t('include_unavailable')}</Label>
-            </div>
-            <div className="">
-              <Label htmlFor="minpr">{t('min_price')}</Label>
-              <Input
-                type="search"
-                name="minpr"
-                className="w-20"
-                defaultValue={minPrice ?? ""}
-                  placeholder={t('placeholder_ellipsis')}
-              />
-            </div>
-            <div className="">
-              <Label htmlFor="maxpr">{t('max_price')}</Label>
-              <Input
-                type="search"
-                name="maxpr"
-                className="w-20"
-                defaultValue={maxPrice ?? ""}
-                  placeholder={t('placeholder_ellipsis')}
-              />
-            </div>
-          </div>
-        </div>
+
+        {/* Search Button */}
+        <Button
+          type="submit"
+          className="w-full bg-accent/80 text-foreground hover:bg-accent"
+        >
+          {t('search')}
+        </Button>
+
         <input type="hidden" name="lang" value={locale ?? searchParams.get("lang") ?? "en"} />
       </div>
     </Form>

@@ -38,6 +38,15 @@ export function Layout({ children }: { children: React.ReactNode; }) {
         <Links />
         {/* Set the locale BEFORE any scripts run to prevent flash of wrong language */}
         <script dangerouslySetInnerHTML={{ __html: `window.__LOCALE__ = "${lang}";` }} />
+        {/* Apply dark mode class immediately to prevent flash */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            const theme = localStorage.getItem('theme');
+            if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+              document.documentElement.classList.add('dark');
+            }
+          })();
+        ` }} />
         {/* Add loading overlay styles */}
         <style dangerouslySetInnerHTML={{ __html: `
           #loading-overlay {
@@ -67,6 +76,10 @@ export function Layout({ children }: { children: React.ReactNode; }) {
           }
           @keyframes spin {
             to { transform: rotate(360deg); }
+          }
+          body {
+            overflow: hidden;
+            height: 100vh;
           }
         ` }} />
       </head>

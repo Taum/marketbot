@@ -11,32 +11,42 @@ export const LanguageSwitcher: React.FC = () => {
     setCurrent(locale ?? "en");
   }, [locale]);
 
-  function changeLocale(lang: string) {
+  function toggleLanguage() {
+    const newLang = current === "en" ? "fr" : "en";
+    
     // Persist in cookie for server-side use on next request
     try {
-      document.cookie = `locale=${lang}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+      document.cookie = `locale=${newLang}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
       // Update runtime locale flag for immediate client-side use
-      // @ts-ignore
-      window.__LOCALE__ = lang;
-      setLocale(lang);
-      setCurrent(lang);
+      // @ts-expect-error - Runtime global
+      window.__LOCALE__ = newLang;
+      setLocale(newLang);
+      setCurrent(newLang);
       // Reload to let server render localized content
       const newParams = new URLSearchParams(searchParams);
-      newParams.set("lang", lang);
+      newParams.set("lang", newLang);
       window.location.search = newParams.toString();
     } catch (e) {
       console.error("Failed to set locale cookie", e);
     }
   }
 
+  const currentFlag = current === "en" ? "/assets/eng.png" : "/assets/fr.png";
+  const currentLabel = current === "en" ? "English" : "Français";
+  const nextLabel = current === "en" ? "Français" : "English";
+
   return (
-    <div className="ml-auto flex items-center gap-2">
-      <button aria-label="English" title="English" onClick={() => changeLocale("en")} className={`p-1 rounded ${current === "en" ? "ring-2 ring-primary" : ""}`}>
-        <span role="img" aria-hidden>🇬🇧</span>
-      </button>
-      <button aria-label="Français" title="Français" onClick={() => changeLocale("fr")} className={`p-1 rounded ${current === "fr" ? "ring-2 ring-primary" : ""}`}>
-        <span role="img" aria-hidden>🇫🇷</span>
-      </button>
-    </div>
+    <button 
+      aria-label={`Switch to ${nextLabel}`}
+      title={`Switch to ${nextLabel}`}
+      onClick={toggleLanguage}
+      className="p-1 rounded hover:bg-accent/10 transition-colors"
+    >
+      <img 
+        src={currentFlag} 
+        alt={currentLabel}
+        className="w-6 h-6 object-contain"
+      />
+    </button>
   );
 };

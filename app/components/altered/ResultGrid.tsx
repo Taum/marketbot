@@ -9,20 +9,59 @@ import { AbilityPartType, DisplayAbilityOnCard, DisplayPartOnCard, DisplayUnique
 export interface ResultGridProps {
   results: DisplayUniqueCard[]
   now: Date
+  viewMode?: 'grid' | 'row'
+  gridColumns?: 2 | 3 | 4
 }
 
-export const ResultGrid: FC<ResultGridProps> = ({ results, now }) => {
+export const ResultGrid: FC<ResultGridProps> = ({ results, now, viewMode = 'grid', gridColumns = 3 }) => {
+  const gridClass = viewMode === 'grid' 
+    ? `grid gap-4 ${
+        gridColumns === 2 ? 'grid-cols-2' :
+        gridColumns === 3 ? 'grid-cols-3' :
+        'grid-cols-4'
+      }`
+    : 'flex flex-col gap-4';
+    
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className={gridClass}>
       {results.map((result) => (
-        <Result key={result.ref} result={result} now={now} />
+        <Result key={result.ref} result={result} now={now} viewMode={viewMode} />
       ))}
     </div>
   )
 }
 
-export const Result: FC<{ result: DisplayUniqueCard, now: Date }> = ({ result, now }) => {
+export const Result: FC<{ result: DisplayUniqueCard, now: Date, viewMode?: 'grid' | 'row' }> = ({ result, now, viewMode = 'grid' }) => {
   const { t } = useTranslation();
+  
+  if (viewMode === 'row') {
+    return (
+      <div className="rounded-lg p-4 bg-subtle-background flex flex-row gap-6">
+        <div className="w-48 flex-shrink-0">
+          <CardImage card={result} className="rounded-alt-card" />
+        </div>
+        <div className="flex-1 flex flex-col gap-2">
+          <div className="flex flex-row justify-between items-start">
+            <div>
+              <div className="font-bold text-2xl">
+                {result.lastSeenInSalePrice}&euro;
+              </div>
+              <div className="text-sm text-subtle-foreground">
+                {formatLastSeen(result.lastSeenInSaleAt, now)}
+              </div>
+            </div>
+            <Link to={`https://www.altered.gg/cards/${result.ref}`} className="text-sm">
+              {t('viewOnAltered')}
+            </Link>
+          </div>
+          {result.mainEffect && (
+            <div className="text-base">{result.mainAbilities ? formatEffect(result.mainAbilities) : result.mainEffect}</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="rounded-lg p-2 bg-subtle-background flex flex-row gap-4">
       <div className="flex-1">
