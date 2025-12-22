@@ -109,15 +109,21 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const oceanPowers = parseRange(oceanPowerRange)
 
   // fetch ability parts (Trigger/Condition/Effect) - always load these for the dropdowns
+  type AbilityPartWithFr = { id: number; textEn: string; textFr: string; partType: string; isSupport: boolean };
   const allParts = await prisma.uniqueAbilityPart.findMany({
     where: { partType: { in: ["Trigger", "Condition", "Effect"] } },
-    orderBy: { textEn: "asc" },
-    select: { id: true, textEn: true, partType: true }
+  }) as AbilityPartWithFr[];
+
+  // Sort by the appropriate language field
+  const sortedParts = allParts.sort((a, b) => {
+    const textA = (lang === "fr" ? a.textFr : a.textEn) || "";
+    const textB = (lang === "fr" ? b.textFr : b.textEn) || "";
+    return textA.localeCompare(textB);
   });
 
-  const triggers = allParts.filter(p => p.partType === "Trigger").map(p => ({ id: p.id, text: p.textEn }));
-  const conditions = allParts.filter(p => p.partType === "Condition").map(p => ({ id: p.id, text: p.textEn }));
-  const effects = allParts.filter(p => p.partType === "Effect").map(p => ({ id: p.id, text: p.textEn }));
+  const triggers = sortedParts.filter(p => p.partType === "Trigger").map(p => ({ id: p.id, text: lang === "fr" && !!p.textFr ? p.textFr : p.textEn }));
+  const conditions = sortedParts.filter(p => p.partType === "Condition").map(p => ({ id: p.id, text: lang === "fr" && !!p.textFr ? p.textFr : p.textEn }));
+  const effects = sortedParts.filter(p => p.partType === "Effect").map(p => ({ id: p.id, text: lang === "fr" && !!p.textFr ? p.textFr : p.textEn }));
 
   try {
     const startTs = performance.now()

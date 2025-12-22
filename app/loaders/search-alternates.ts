@@ -1090,12 +1090,12 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
 
     return {
       ref: result.ref,
-      name: (locale == "en" ? result.nameEn : result.nameFr) ?? '',
+      name: (locale == "fr" && !!result.nameFr ? result.nameFr : result.nameEn) ?? '',
       faction: result.faction as Faction,
       cardSet: result.cardSet!,
-      imageUrl: locale == "en" ? result.imageUrlEn! : result.imageUrlFr!,
-      mainEffect: locale == "en" ? result.mainEffectEn : result.mainEffectFr,
-      echoEffect: locale == "en" ? result.echoEffectEn : result.echoEffectFr,
+      imageUrl: locale == "fr" && !!result.imageUrlFr ? result.imageUrlFr : result.imageUrlEn!,
+      mainEffect: locale == "fr" && !!result.mainEffectFr ? result.mainEffectFr : result.mainEffectEn,
+      echoEffect: locale == "fr" && !!result.echoEffectFr ? result.echoEffectFr : result.echoEffectEn,
       lastSeenInSaleAt: result.lastSeenInSaleAt?.toISOString(),
       lastSeenInSalePrice: Decimal(result.lastSeenInSalePrice ?? 0).toFixed(2).toString(),
       mainAbilities: displayAbilities.sort((a, b) => a.lineNumber - b.lineNumber),

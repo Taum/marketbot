@@ -397,8 +397,8 @@ export function buildDisplayAbility(
     return undefined;
   }
   const charData = ability.characterData as unknown as AbilityCharacterDataV1;
-  const line = locale === "fr" ? ability.textFr : ability.textEn;
-  const parts = locale === "fr" ? charData.partsFr : charData.parts;
+  const line = locale === "fr" && ability.textFr ? ability.textFr : ability.textEn;
+  const parts = locale === "fr" && charData.partsFr ? charData.partsFr : charData.parts;
   const displayParts: DisplayPartOnCard[] = parts.map((part) => {
     const matchingPart = ability.allParts
       .find((p) => p?.partId == part.partId)
