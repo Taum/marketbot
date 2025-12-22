@@ -175,6 +175,29 @@ model AltggSession {
   @@index([id])
 }
 
+model FtsAlias {
+  id   Int    @id @default(autoincrement())
+  from String
+  to   String
+
+  @@unique([id])
+  @@unique([from])
+  @@index([from])
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String
+  password  String   // This will store the hashed password
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([id])
+  @@unique([email])
+  @@index([email])
+}
+
 enum AbilityPartType {
   Trigger
   Condition

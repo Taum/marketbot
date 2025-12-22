@@ -36,6 +36,11 @@ export type CardFamilyStats = {
     fetchCompletedGeneration: number | null;
     totalItems: number | null;
 };
+export type FtsAlias = {
+    id: Generated<number>;
+    from: string;
+    to: string;
+};
 export type MarketUpdateStats = {
     generationId: Generated<number>;
     updateStartedAt: Timestamp;
@@ -97,12 +102,22 @@ export type UniqueInfo = {
     seenInLastGeneration: Generated<boolean>;
     cardFamilyId: string | null;
 };
+export type User = {
+    id: Generated<number>;
+    email: string;
+    password: string;
+    name: string | null;
+    createdAt: Generated<Timestamp>;
+    updatedAt: Timestamp;
+};
 export type DB = {
     AbilityPartLink: AbilityPartLink;
     AltggSession: AltggSession;
     CardFamilyStats: CardFamilyStats;
+    FtsAlias: FtsAlias;
     MarketUpdateStats: MarketUpdateStats;
     UniqueAbilityLine: UniqueAbilityLine;
     UniqueAbilityPart: UniqueAbilityPart;
     UniqueInfo: UniqueInfo;
+    User: User;
 };
