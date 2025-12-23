@@ -15,7 +15,7 @@ const debug = process.env.DEBUG_WEB == "true"
 
 export interface SearchQuery {
   faction?: string;
-  set?: string;
+  set?: string | string[];
   characterName?: string;
   cardSubTypes?: string[];
   cardText?: string;

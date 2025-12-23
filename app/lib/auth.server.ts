@@ -13,9 +13,15 @@ export async function createUser(email: string, password: string, name?: string)
   });
 }
 
-export async function verifyLogin(email: string, password: string) {
-  const user = await prisma.user.findUnique({
-    where: { email },
+export async function verifyLogin(emailOrName: string, password: string) {
+  // Try to find user by email first, then by name
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { email: emailOrName },
+        { name: emailOrName },
+      ],
+    },
   });
 
   if (!user) {

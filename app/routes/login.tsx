@@ -21,28 +21,28 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
-  const email = formData.get("email");
+  const emailOrName = formData.get("email");
   const password = formData.get("password");
   const redirectTo = formData.get("redirectTo") || "/";
 
-  if (typeof email !== "string" || typeof password !== "string") {
+  if (typeof emailOrName !== "string" || typeof password !== "string") {
     return json(
-      { error: "Invalid form data", fields: { email, password } },
+      { error: "Invalid form data", fields: { email: emailOrName, password } },
       { status: 400 }
     );
   }
 
-  if (!email || !password) {
+  if (!emailOrName || !password) {
     return json(
-      { error: "Email and password are required", fields: { email, password } },
+      { error: "Email/nickname and password are required", fields: { email: emailOrName, password } },
       { status: 400 }
     );
   }
 
-  const user = await verifyLogin(email, password);
+  const user = await verifyLogin(emailOrName, password);
   if (!user) {
     return json(
-      { error: "Invalid email or password", fields: { email, password } },
+      { error: "Invalid email/nickname or password", fields: { email: emailOrName, password } },
       { status: 400 }
     );
   }
@@ -75,11 +75,11 @@ export default function Login() {
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="email">{t('email')}</Label>
+              <Label htmlFor="email">{t('email_or_nickname')}</Label>
               <Input
                 id="email"
                 name="email"
-                type="email"
+                type="text"
                 autoComplete="email"
                 required
                 className="mt-1"

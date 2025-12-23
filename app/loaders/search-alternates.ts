@@ -177,11 +177,11 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
   }
 
   if (set != null) {
-    if (set == CardSet.Core) {
-      query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
-    } else {
-      query = query.where('cardSet', '=', set)
-    }
+    const sets = Array.isArray(set) ? set : [set];
+    const expandedSets = sets.flatMap(s => 
+      s === CardSet.Core ? [CardSet.Core, "COREKS"] : [s]
+    );
+    query = query.where('cardSet', 'in', expandedSets);
   }
 
   if (cardText != null) {
@@ -524,11 +524,11 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
   }
 
   if (set != null) {
-    if (set == CardSet.Core) {
-      query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
-    } else {
-      query = query.where('cardSet', '=', set)
-    }
+    const sets = Array.isArray(set) ? set : [set];
+    const expandedSets = sets.flatMap(s => 
+      s === CardSet.Core ? [CardSet.Core, "COREKS"] : [s]
+    );
+    query = query.where('cardSet', 'in', expandedSets);
   }
 
   if (cardText != null) {
@@ -1002,11 +1002,11 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
   }
 
   if (set != null) {
-    if (set == CardSet.Core) {
-      query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
-    } else {
-      query = query.where('cardSet', '=', set)
-    }
+    const sets = Array.isArray(set) ? set : [set];
+    const expandedSets = sets.flatMap(s => 
+      s === CardSet.Core ? [CardSet.Core, "COREKS"] : [s]
+    );
+    query = query.where('cardSet', 'in', expandedSets);
   }
 
   if (cardText != null) {
@@ -1458,11 +1458,11 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
   }
 
   if (set != null) {
-    if (set == CardSet.Core) {
-      query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
-    } else {
-      query = query.where('cardSet', '=', set)
-    }
+    const sets = Array.isArray(set) ? set : [set];
+    const expandedSets = sets.flatMap(s => 
+      s === CardSet.Core ? [CardSet.Core, "COREKS"] : [s]
+    );
+    query = query.where('cardSet', 'in', expandedSets);
   }
 
   if (cardText != null) {
@@ -1606,3 +1606,4 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
 
   return { results: outResults, pagination };
 }
+

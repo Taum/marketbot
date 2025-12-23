@@ -88,6 +88,7 @@
   "register_subtitle": "Create a new account",
   "register_button": "Create account",
   "email": "Email",
+  "email_or_nickname": "Email or Nickname",
   "password": "Password",
   "name": "Name",
   "optional": "(optional)",

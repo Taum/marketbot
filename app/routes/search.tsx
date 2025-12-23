@@ -38,7 +38,7 @@ import { getUserId } from "~/lib/session.server";
 
 interface SearchQuery {
   faction?: string;
-  set?: string;
+  set?: string | string[];
   characterName?: string;
   cardSubTypes?: string[];
   cardText?: string;
@@ -91,7 +91,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const characterName = nullifyTrim(url.searchParams.get("cname"));
   const cardSubTypes = nullifyTrim(url.searchParams.get("types"))?.split(",") ?? [];
   const faction = nullifyTrim(url.searchParams.get("f"));
-  const set = nullifyTrim(url.searchParams.get("s"));
+  const setParam = nullifyTrim(url.searchParams.get("s"));
+  const set = setParam?.includes(",") ? setParam.split(",") : setParam ?? undefined;
   const triggerPart = nullifyTrim(url.searchParams.get("tr"));
   const conditionPart = nullifyTrim(url.searchParams.get("cond"));
   const effectPart = nullifyTrim(url.searchParams.get("eff"));
@@ -734,7 +735,7 @@ const SearchForm: FC<
   };
   
   const [selectedFaction, setSelectedFaction] = useState(faction ?? undefined);
-  const [selectedSet, setSelectedSet] = useState(set ?? undefined);
+  const [selectedSet, setSelectedSet] = useState<string | string[] | undefined>(set ?? undefined);
   const [selectedCardSubTypes, setSelectedCardSubTypes] = useState<string[]>(cardSubTypes ?? []);
   const [triggerValue, setTriggerValue] = useState<string>(triggerPart ?? "");
   const [showTriggerOptions, setShowTriggerOptions] = useState<boolean>(false);
@@ -865,7 +866,6 @@ const SearchForm: FC<
     setSelectedCardSubTypes(newValues);
     const newParams = new URLSearchParams(searchParams);
     newParams.set("types", newValues.join(","));
-    window.location.search = newParams.toString();
   }
 
   const deleteSave = () => {
@@ -1020,9 +1020,14 @@ const SearchForm: FC<
         <div>
           <Label htmlFor="cname">{t('set')}</Label>
           <SetSelect
-            value={selectedSet ?? "any"}
-            onValueChange={(newVal) => setSelectedSet(newVal == "any" ? undefined : newVal)} />
-          <input type="hidden" name="s" value={selectedSet} />
+            multiple
+            value={Array.isArray(selectedSet) ? selectedSet : selectedSet ? [selectedSet] : []}
+            onValueChange={(newVals) => setSelectedSet(Array.isArray(newVals) && newVals.length > 0 ? newVals : undefined)} />
+          {Array.isArray(selectedSet) ? (
+            <input type="hidden" name="s" value={selectedSet.join(",")} />
+          ) : selectedSet ? (
+            <input type="hidden" name="s" value={selectedSet} />
+          ) : null}
         </div>
 
         {/* Character Name */}

@@ -9,16 +9,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select"
-import { CardSet, Faction, titleForCardSet } from "~/models/cards"
+import { CardSet, titleForCardSet } from "~/models/cards"
 import { MultiSelect } from "~/components/ui-ext/multi-select"
 import { useLoaderData } from "@remix-run/react";
 
-interface SetSelectProps extends SelectProps {
-  value: string
-  onValueChange?: (value: string | undefined) => void
+interface SetSelectSingleProps extends Omit<SelectProps, 'value' | 'onValueChange'> {
+  multiple?: false;
+  value: string;
+  onValueChange?: (value: string | undefined) => void;
 }
 
-export const SetSelect: FC<SetSelectProps> = ({ value, onValueChange, multiple = false, ...props }) => {
+interface SetSelectMultiProps extends Omit<SelectProps, 'value' | 'onValueChange'> {
+  multiple: true;
+  value: string[];
+  onValueChange?: (value: string[]) => void;
+}
+
+type SetSelectProps = SetSelectSingleProps | SetSelectMultiProps;
+
+export const SetSelect: FC<SetSelectProps> = (props) => {
   const { t } = useTranslation();
   const data = useLoaderData<{ locale?: string }>();
   const lang = data?.locale ?? "en";
@@ -29,32 +38,27 @@ export const SetSelect: FC<SetSelectProps> = ({ value, onValueChange, multiple =
     [CardSet.Bise]: titleForCardSet(CardSet.Bise, lang),
     [CardSet.Cyclone]: titleForCardSet(CardSet.Cyclone, lang),
   }
+  
   // When multiple selection is requested, use the existing MultiSelect
-  if (multiple) {
+  if (props.multiple) {
     const options = Object.values(CardSet).map((set) => ({
-      label: (labelMap as any)[set] ?? set,
+      label: labelMap[set as keyof typeof labelMap] ?? set,
       value: set,
     }))
-
-    const defaultValue = Array.isArray(value)
-      ? value
-      : value && value !== "any"
-      ? [value as string]
-      : []
 
     return (
       <MultiSelect
         options={options}
-        defaultValue={defaultValue}
-        onValueChange={(vals) => onValueChange?.(vals)}
+        defaultValue={props.value}
+        onValueChange={(vals) => props.onValueChange?.(vals)}
         placeholder={t('select_sets')}
-        {...(props as any)}
       />
     )
   }
 
+  const { value, onValueChange, ...restProps } = props;
   return (
-    <Select value={value} onValueChange={onValueChange} {...props}>
+    <Select value={value} onValueChange={onValueChange} {...restProps}>
       <SelectTrigger>
         <SelectValue />
       </SelectTrigger>
