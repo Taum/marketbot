@@ -1462,13 +1462,30 @@ const SearchForm: FC<
           </div>
         </div>
 
-        {/* Search Button */}
-        <Button
-          type="submit"
-          className="w-full bg-accent/80 text-foreground hover:bg-accent"
-        >
-          {t('search')}
-        </Button>
+        {/* Search and Reset Buttons */}
+        <div className="flex gap-2">
+          <Button
+            type="submit"
+            className="flex-1 bg-accent/80 text-foreground hover:bg-accent"
+          >
+            {t('search')}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              // Clear the selected search from localStorage
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('lastSelectedSearch');
+              }
+              const currentLang = searchParams.get("lang") ?? locale ?? "en";
+              window.location.href = `/search?lang=${currentLang}`;
+            }}
+            className="flex-1"
+          >
+            {t('reset')}
+          </Button>
+        </div>
 
         <input type="hidden" name="lang" value={locale ?? searchParams.get("lang") ?? "en"} />
       </div>
