@@ -666,14 +666,25 @@ const SearchForm: FC<
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setSelectedSearch(localStorage.getItem('lastSelectedSearch') || "");
+      const lastSearch = localStorage.getItem('lastSelectedSearch') || "";
+      // Only set if the saved search still exists
+      if (lastSearch && savedSearches.find(s => s.id.toString() === lastSearch)) {
+        setSelectedSearch(lastSearch);
+      }
     }
-  }, [])
+    return () => {
+      localStorage.removeItem('lastSelectedSearch');
+    };
+  }, [savedSearches])
   
   // Save to localStorage whenever selection changes
   useEffect(() => {
-    if (typeof window !== 'undefined' && selectedSearch) {
-      localStorage.setItem('lastSelectedSearch', selectedSearch);
+    if (typeof window !== 'undefined') {
+      if (selectedSearch) {
+        localStorage.setItem('lastSelectedSearch', selectedSearch);
+      } else {
+        localStorage.removeItem('lastSelectedSearch');
+      }
     }
   }, [selectedSearch]);
   
@@ -937,8 +948,12 @@ const SearchForm: FC<
             <Label htmlFor="saved-search">Saved Searches</Label>
             <div className="flex flex-row gap-2 mt-2">
               <Select
-                value={selectedSearch}
+                value={selectedSearch || "none"}
                 onValueChange={(value) => {
+                  if (value === "none") {
+                    setSelectedSearch("");
+                    return;
+                  }
                   setSelectedSearch(value);
                   const search = savedSearches.find(s => s.id.toString() === value);
                   if (search) {
@@ -954,6 +969,9 @@ const SearchForm: FC<
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">
+                    <span className="text-muted-foreground">Select a saved search...</span>
+                  </SelectItem>
                   {savedSearches.map((search) => (
                     <SelectItem key={search.id} value={search.id.toString()}>
                       {search.name}
