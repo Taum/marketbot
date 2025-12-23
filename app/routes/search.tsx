@@ -773,8 +773,10 @@ const SearchForm: FC<
   });
 
   const [isAdvSearchOpen, setIsAdvSearchOpen] = useState(false);
+  const [isIdentityOpen, setIsIdentityOpen] = useState(true);
   const [isCostsOpen, setIsCostsOpen] = useState(false);
   const [isPowersOpen, setIsPowersOpen] = useState(false);
+  const [isTextTypeOpen, setIsTextTypeOpen] = useState(false);
   const [isEffectsOpen, setIsEffectsOpen] = useState(false);
   const [isPricesOpen, setIsPricesOpen] = useState(false);
   const [isSaveLoadOpen, setIsSaveLoadOpen] = useState(false);
@@ -1024,55 +1026,67 @@ const SearchForm: FC<
           </div>
         )}
         
-        {/* Basic Filters - Always visible */}
-        {/* Faction */}
-        <div>
-          <Label>{t('faction')}</Label>
-          <FactionSelect
-            value={selectedFaction ?? "any"}
-            onValueChange={(newVal) => setSelectedFaction(newVal == "any" ? undefined : newVal)} />
-          <input type="hidden" name="f" value={selectedFaction} />
+        {/* Identity Section - Collapsible, Open by default */}
+        <div className="border-t border-border pt-4">
+          <button
+            type="button"
+            onClick={() => setIsIdentityOpen(!isIdentityOpen)}
+            className="w-full flex items-center justify-between py-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
+          >
+            <span>Identity</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`transition-transform ${isIdentityOpen ? 'rotate-180' : ''}`}
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
         </div>
+        {isIdentityOpen && (
+          <div className="space-y-4">
+              {/* Faction */}
+              <div>
+                <Label>{t('faction')}</Label>
+                <FactionSelect
+                  value={selectedFaction ?? "any"}
+                  onValueChange={(newVal) => setSelectedFaction(newVal == "any" ? undefined : newVal)} />
+                <input type="hidden" name="f" value={selectedFaction} />
+              </div>
 
-        {/* Set */}
-        <div>
-          <Label htmlFor="cname">{t('set')}</Label>
-          <SetSelect
-            multiple
-            value={Array.isArray(selectedSet) ? selectedSet : selectedSet ? [selectedSet] : []}
-            onValueChange={(newVals) => setSelectedSet(Array.isArray(newVals) && newVals.length > 0 ? newVals : undefined)} />
-          {Array.isArray(selectedSet) ? (
-            <input type="hidden" name="s" value={selectedSet.join(",")} />
-          ) : selectedSet ? (
-            <input type="hidden" name="s" value={selectedSet} />
-          ) : null}
-        </div>
+              {/* Set */}
+              <div>
+                <Label htmlFor="cname">{t('set')}</Label>
+                <SetSelect
+                  multiple
+                  value={Array.isArray(selectedSet) ? selectedSet : selectedSet ? [selectedSet] : []}
+                  onValueChange={(newVals) => setSelectedSet(Array.isArray(newVals) && newVals.length > 0 ? newVals : undefined)} />
+                {Array.isArray(selectedSet) ? (
+                  <input type="hidden" name="s" value={selectedSet.join(",")} />
+                ) : selectedSet ? (
+                  <input type="hidden" name="s" value={selectedSet} />
+                ) : null}
+              </div>
 
-        {/* Character Name */}
-        <div>
-          <Label htmlFor="cname">{t('character_name')}</Label>
-          <Input
-            type="text"
-            name="cname"
-            defaultValue={characterName ?? ""}
-            placeholder={t('placeholder_character_name')}
-          />
-        </div>
-
-        {/* Character Type */}
-        <div>
-          <Label htmlFor="cname">{t('character_type')}</Label>
-          <MultiSelect
-            options={allCardSubTypes}
-            onValueChange={handleCardSubTypesChange}
-            defaultValue={selectedCardSubTypes}
-            placeholder={t('placeholder_select_character_types')}
-            variant="secondary"
-            animation={0.5}
-            maxCount={2}
-          />
-          <input type="hidden" name="types" value={selectedCardSubTypes.join(",")} />
-        </div>
+              {/* Character Name */}
+              <div>
+                <Label htmlFor="cname">{t('character_name')}</Label>
+                <Input
+                  type="text"
+                  name="cname"
+                  defaultValue={characterName ?? ""}
+                  placeholder={t('placeholder_character_name')}
+                />
+              </div>
+          </div>
+        )}
 
         {/* COSTS Section - Collapsible */}
         <div className="border-t border-border pt-4">
@@ -1182,6 +1196,60 @@ const SearchForm: FC<
           </div>
         )}
 
+        {/* TEXT & TYPE Section - Collapsible */}
+        <div className="border-t border-border pt-4">
+          <button
+            type="button"
+            onClick={() => setIsTextTypeOpen(!isTextTypeOpen)}
+            className="w-full flex items-center justify-between py-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
+          >
+            <span>Text & Type</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`transition-transform ${isTextTypeOpen ? 'rotate-180' : ''}`}
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+        </div>
+        {isTextTypeOpen && (
+          <div className="space-y-4">
+            {/* Card Text */}
+            <div>
+              <Label htmlFor="text">Card text</Label>
+              <Input
+                type="search"
+                name="text"
+                defaultValue={cardText ?? ""}
+                placeholder={t('placeholder_card_text')}
+              />
+            </div>
+
+            {/* Character Type */}
+            <div>
+              <Label htmlFor="cname">{t('character_type')}</Label>
+              <MultiSelect
+                options={allCardSubTypes}
+                onValueChange={handleCardSubTypesChange}
+                defaultValue={selectedCardSubTypes}
+                placeholder={t('placeholder_select_character_types')}
+                variant="secondary"
+                animation={0.5}
+                maxCount={2}
+              />
+              <input type="hidden" name="types" value={selectedCardSubTypes.join(",")} />
+            </div>
+          </div>
+        )}
+
         {/* EFFECTS Section - Collapsible */}
         <div className="border-t border-border pt-4">
           <button
@@ -1208,17 +1276,6 @@ const SearchForm: FC<
         </div>
         {isEffectsOpen && (
           <div className="space-y-4">
-            {/* Card Text */}
-            <div>
-              <Label htmlFor="text">Card text</Label>
-              <Input
-                type="search"
-                name="text"
-                defaultValue={cardText ?? ""}
-                placeholder={t('placeholder_card_text')}
-              />
-            </div>
-
             {/* Trigger */}
             <div className="relative">
               <Label htmlFor="tr">{t('trigger')}</Label>
