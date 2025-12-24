@@ -33,6 +33,8 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
     conditionPart,
     effectPart,
     partIncludeSupport,
+    filterZeroStat,
+    filterTextless,
     mainCosts,
     recallCosts,
     includeExpiredCards,
@@ -166,13 +168,20 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
   if (oceanPowers && oceanPowers.length > 0) {
     query = query.where('oceanPower', 'in', oceanPowers)
   }
+  if(filterZeroStat) {
+      query = query.where((eb) => eb.or([
+      eb('forestPower', '=', 0),
+      eb('mountainPower', '=', 0),
+      eb('oceanPower', '=', 0)
+    ]))
+  }
 
   if (set != null) {
-    if (set == CardSet.Core) {
-      query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
-    } else {
-      query = query.where('cardSet', '=', set)
-    }
+    const sets = Array.isArray(set) ? set : [set];
+    const expandedSets = sets.flatMap(s => 
+      s === CardSet.Core ? [CardSet.Core, "COREKS"] : [s]
+    );
+    query = query.where('cardSet', 'in', expandedSets);
   }
 
   if (cardText != null) {
@@ -203,6 +212,9 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
     query = query.where('seenInLastGeneration', '=', true)
   }
 
+  if (filterTextless) {
+    query = query.where('mainEffectEn', '=', "")
+  }
 
   const queryWithSelect = query
     .select([
@@ -327,6 +339,8 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
     conditionPart,
     effectPart,
     partIncludeSupport,
+    filterZeroStat,
+    filterTextless,
     mainCosts,
     recallCosts,
     forestPowers,
@@ -501,13 +515,20 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
   if (oceanPowers && oceanPowers.length > 0) {
     query = query.where('oceanPower', 'in', oceanPowers)
   }
+  if(filterZeroStat) {
+      query = query.where((eb) => eb.or([
+      eb('forestPower', '=', 0),
+      eb('mountainPower', '=', 0),
+      eb('oceanPower', '=', 0)
+    ]))
+  }
 
   if (set != null) {
-    if (set == CardSet.Core) {
-      query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
-    } else {
-      query = query.where('cardSet', '=', set)
-    }
+    const sets = Array.isArray(set) ? set : [set];
+    const expandedSets = sets.flatMap(s => 
+      s === CardSet.Core ? [CardSet.Core, "COREKS"] : [s]
+    );
+    query = query.where('cardSet', 'in', expandedSets);
   }
 
   if (cardText != null) {
@@ -538,6 +559,9 @@ export async function searchWithCTEs(searchQuery: SearchQuery, pageParams: PageP
     query = query.where('seenInLastGeneration', '=', true)
   }
 
+  if (filterTextless) {
+    query = query.where('mainEffectEn', '=', "")
+  }
 
   const queryWithSelect = query
     .select([
@@ -661,6 +685,7 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
     triggerPart,
     conditionPart,
     effectPart,
+    matchAllAbilities,
     mainCosts,
     recallCosts,
     forestPowers,
@@ -673,6 +698,7 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
   const {
     page,
     includePagination,
+    locale,
   } = pageParams
 
   if (
@@ -687,17 +713,60 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
     return { results: [], pagination: undefined }
   }
 
+  // Group ability parts into combinations
+  // Each index represents one ability search (trigger[i], condition[i], effect[i])
+  const maxAbilityCount = Math.max(
+    triggerPart?.length ?? 0,
+    conditionPart?.length ?? 0,
+    effectPart?.length ?? 0
+  );
+  
+  const abilityCombinations: Array<{ trigger?: string; condition?: string; effect?: string }> = [];
+  for (let i = 0; i < maxAbilityCount; i++) {
+    const combo = {
+      trigger: triggerPart?.[i] || undefined,
+      condition: conditionPart?.[i] || undefined,
+      effect: effectPart?.[i] || undefined
+    };
+    // Only add if at least one part is defined and non-empty
+    if (combo.trigger || combo.condition || combo.effect) {
+      abilityCombinations.push(combo);
+    }
+  }
+
+  if (debug) {
+    console.log('=== Ability Combinations (searchWithCTEsIndexingCharacterNames) ===');
+    console.log('matchAllAbilities:', matchAllAbilities);
+    console.log('Raw trigger parts:', triggerPart);
+    console.log('Raw condition parts:', conditionPart);
+    console.log('Raw effect parts:', effectPart);
+    console.log('abilityCombinations:', JSON.stringify(abilityCombinations, null, 2));
+  }
+
+  // Build ability parts from combinations for the existing logic
+  // For now, we'll use the first combination to maintain compatibility
+  const firstCombo = abilityCombinations[0] || {};
   const abilityParts = [
-    { part: AbilityPartType.Trigger, text: triggerPart },
-    { part: AbilityPartType.Condition, text: conditionPart },
-    { part: AbilityPartType.Effect, text: effectPart }
+    { part: AbilityPartType.Trigger, text: firstCombo.trigger },
+    { part: AbilityPartType.Condition, text: firstCombo.condition },
+    { part: AbilityPartType.Effect, text: firstCombo.effect }
   ]
 
   const partIncludeSupport = searchQuery.partIncludeSupport ?? false
+  const partFilterArrow = searchQuery.partFilterArrow ?? false
+  const partFilterHand = searchQuery.partFilterHand ?? false
+  const partFilterReserve = searchQuery.partFilterReserve ?? false
+  const filterZeroStat = searchQuery.filterZeroStat ?? false
+  const filterTextless = searchQuery.filterTextless ?? false
 
   const nonNullAbilityParts = abilityParts.filter(x => x.text != null)
     .map(x => {
       const [neg, pos] = partition(tokenize(x.text!), (token) => token.negated)
+      if (debug) {
+        console.log(`Part ${x.part}: "${x.text}"`)
+        console.log('Tokens:', pos.map(t => `"${t.text}"`).join(', '))
+        console.log('Negated:', neg.map(t => `"${t.text}"`).join(', '))
+      }
       return { part: x.part, neg, pos }
     })
     .sort((a, b) => {
@@ -727,12 +796,24 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
           return eb.selectFrom('AbilityPartLink')
             .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
             .select('AbilityPartLink.abilityId')
-            .where(({ eb, and }) => {
+            .where(({ eb, and, or }) => {
               return and([
                 eb(`upa.partType`, '=', ap.part),
                 !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
-                ...ap.pos.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
-                ...ap.neg.map(token => eb('upa.textEn', 'not ilike', `%${token.text}%`)),
+                // Positive filters: match in textEn OR textFr
+                ...ap.pos.map(token => 
+                  or([
+                    eb('upa.textEn', 'ilike', `%${token.text}%`),
+                    eb('upa.textFr', 'ilike', `%${token.text}%`)
+                  ])
+                ),
+                // Negative filters: must NOT match in textEn AND must NOT match in textFr
+                ...ap.neg.map(token => 
+                  and([
+                    eb('upa.textEn', 'not ilike', `%${token.text}%`),
+                    eb('upa.textFr', 'not ilike', `%${token.text}%`)
+                  ])
+                ),
               ].filter(x => x != null))
             })
         } else {
@@ -761,12 +842,24 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
           return eb.selectFrom('AbilityPartLink')
             .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
             .select('AbilityPartLink.abilityId')
-            .where(({ eb, and }) => {
+            .where(({ eb, and, or }) => {
               return and([
                 eb(`upa.partType`, '=', ap.part),
                 !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
-                ...ap.pos.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
-                ...ap.neg.map(token => eb('upa.textEn', 'not ilike', `%${token.text}%`)),
+                // Positive filters: match in textEn OR textFr
+                ...ap.pos.map(token => 
+                  or([
+                    eb('upa.textEn', 'ilike', `%${token.text}%`),
+                    eb('upa.textFr', 'ilike', `%${token.text}%`)
+                  ])
+                ),
+                // Negative filters: must NOT match in textEn AND must NOT match in textFr
+                ...ap.neg.map(token => 
+                  and([
+                    eb('upa.textEn', 'not ilike', `%${token.text}%`),
+                    eb('upa.textFr', 'not ilike', `%${token.text}%`)
+                  ])
+                ),
               ].filter(x => x != null))
             })
         } else {
@@ -795,12 +888,24 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
           return eb.selectFrom('AbilityPartLink')
             .innerJoin('UniqueAbilityPart as upa', 'AbilityPartLink.partId', 'upa.id')
             .select('AbilityPartLink.abilityId')
-            .where(({ eb, and }) => {
+            .where(({ eb, and, or }) => {
               return and([
                 eb(`upa.partType`, '=', ap.part),
                 !partIncludeSupport ? eb(`upa.isSupport`, '=', false) : null,
-                ...ap.pos.map(token => eb('upa.textEn', 'ilike', `%${token.text}%`)),
-                ...ap.neg.map(token => eb('upa.textEn', 'not ilike', `%${token.text}%`)),
+                // Positive filters: match in textEn OR textFr
+                ...ap.pos.map(token => 
+                  or([
+                    eb('upa.textEn', 'ilike', `%${token.text}%`),
+                    eb('upa.textFr', 'ilike', `%${token.text}%`)
+                  ])
+                ),
+                // Negative filters: must NOT match in textEn AND must NOT match in textFr
+                ...ap.neg.map(token => 
+                  and([
+                    eb('upa.textEn', 'not ilike', `%${token.text}%`),
+                    eb('upa.textFr', 'not ilike', `%${token.text}%`)
+                  ])
+                ),
               ].filter(x => x != null))
             })
         } else {
@@ -927,13 +1032,20 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
   if (oceanPowers && oceanPowers.length > 0) {
     query = query.where('oceanPower', 'in', oceanPowers)
   }
+  if(filterZeroStat) {
+      query = query.where((eb) => eb.or([
+      eb('forestPower', '=', 0),
+      eb('mountainPower', '=', 0),
+      eb('oceanPower', '=', 0)
+    ]))
+  }
 
   if (set != null) {
-    if (set == CardSet.Core) {
-      query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
-    } else {
-      query = query.where('cardSet', '=', set)
-    }
+    const sets = Array.isArray(set) ? set : [set];
+    const expandedSets = sets.flatMap(s => 
+      s === CardSet.Core ? [CardSet.Core, "COREKS"] : [s]
+    );
+    query = query.where('cardSet', 'in', expandedSets);
   }
 
   if (cardText != null) {
@@ -953,20 +1065,66 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
     query = query.where('seenInLastGeneration', '=', true)
   }
 
+  if (filterTextless) {
+    query = query.where('mainEffectEn', '=', "")
+  }
+
+  if(partFilterHand) {
+    const { tsQuery } = await db.selectNoFrom(
+      websearch_to_tsquery("{H}").as('tsQuery')
+    ).executeTakeFirstOrThrow()
+
+    query = query
+      .where(eb => eb(
+        to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
+        '@@',
+        tsQuery,
+      ))  
+  }
+  
+  if(partFilterReserve) {
+    const { tsQuery } = await db.selectNoFrom(
+      websearch_to_tsquery("{R}").as('tsQuery')
+    ).executeTakeFirstOrThrow()
+
+    query = query
+      .where(eb => eb(
+        to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
+        '@@',
+        tsQuery,
+      ))  
+  }
+  
+  if(partFilterArrow) {
+    const { tsQuery } = await db.selectNoFrom(
+      websearch_to_tsquery("{J}").as('tsQuery')
+    ).executeTakeFirstOrThrow()
+
+    query = query
+      .where(eb => eb(
+        to_tsvector2(eb.ref('mainEffectEn'), eb.ref('echoEffectEn')),
+        '@@',
+        tsQuery,
+      ))  
+  }
 
   const queryWithSelect = query
     .select([
       'UniqueInfo.id',
       'UniqueInfo.ref',
       'UniqueInfo.nameEn',
+      'UniqueInfo.nameFr',
       'UniqueInfo.faction',
       'UniqueInfo.mainEffectEn',
+      'UniqueInfo.mainEffectFr',
       'UniqueInfo.echoEffectEn',
+      'UniqueInfo.echoEffectFr',
       'UniqueInfo.lastSeenInSaleAt',
       'UniqueInfo.lastSeenInSalePrice',
       'UniqueInfo.seenInLastGeneration',
       'UniqueInfo.cardSet',
       'UniqueInfo.imageUrlEn',
+      'UniqueInfo.imageUrlFr',
       'UniqueInfo.oceanPower',
       'UniqueInfo.mountainPower',
       'UniqueInfo.forestPower',
@@ -979,7 +1137,7 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
     .select((eb) => [
       jsonArrayFrom(
         eb.selectFrom('UniqueAbilityLine')
-          .select(['UniqueAbilityLine.id', 'UniqueAbilityLine.lineNumber', 'UniqueAbilityLine.textEn', 'UniqueAbilityLine.isSupport', 'UniqueAbilityLine.characterData'])
+          .select(['UniqueAbilityLine.id', 'UniqueAbilityLine.lineNumber', 'UniqueAbilityLine.textEn', 'UniqueAbilityLine.textFr', 'UniqueAbilityLine.isSupport', 'UniqueAbilityLine.characterData'])
           .select((eb2) => [
             jsonArrayFrom(
               eb2.selectFrom('AbilityPartLink')
@@ -1044,17 +1202,17 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
     }
 
     let displayAbilities: DisplayAbilityOnCard[] = result.mainAbilities
-      .map((a) => buildDisplayAbility(a))
+      .map((a) => buildDisplayAbility(a, locale))
       .filter((x) => x != null)
 
     return {
       ref: result.ref,
-      name: result.nameEn,
+      name: (locale == "fr" && !!result.nameFr ? result.nameFr : result.nameEn) ?? '',
       faction: result.faction as Faction,
       cardSet: result.cardSet!,
-      imageUrl: result.imageUrlEn!,
-      mainEffect: result.mainEffectEn,
-      echoEffect: result.echoEffectEn,
+      imageUrl: locale == "fr" && !!result.imageUrlFr ? result.imageUrlFr : result.imageUrlEn!,
+      mainEffect: locale == "fr" && !!result.mainEffectFr ? result.mainEffectFr : result.mainEffectEn,
+      echoEffect: locale == "fr" && !!result.echoEffectFr ? result.echoEffectFr : result.echoEffectEn,
       lastSeenInSaleAt: result.lastSeenInSaleAt?.toISOString(),
       lastSeenInSalePrice: Decimal(result.lastSeenInSalePrice ?? 0).toFixed(2).toString(),
       mainAbilities: displayAbilities.sort((a, b) => a.lineNumber - b.lineNumber),
@@ -1108,6 +1266,8 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
   ]
 
   const partIncludeSupport = searchQuery.partIncludeSupport ?? false
+  const filterZeroStat = searchQuery.filterZeroStat ?? false
+  const filterTextless = searchQuery.filterTextless ?? false
 
   const nonNullAbilityParts = abilityParts.filter(x => x.text != null)
     .map(x => {
@@ -1328,13 +1488,20 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
   if (oceanPowers && oceanPowers.length > 0) {
     query = query.where('oceanPower', 'in', oceanPowers)
   }
+  if(filterZeroStat) {
+      query = query.where((eb) => eb.or([
+      eb('forestPower', '=', 0),
+      eb('mountainPower', '=', 0),
+      eb('oceanPower', '=', 0)
+    ]))
+  }
 
   if (set != null) {
-    if (set == CardSet.Core) {
-      query = query.where('cardSet', 'in', [CardSet.Core, "COREKS"])
-    } else {
-      query = query.where('cardSet', '=', set)
-    }
+    const sets = Array.isArray(set) ? set : [set];
+    const expandedSets = sets.flatMap(s => 
+      s === CardSet.Core ? [CardSet.Core, "COREKS"] : [s]
+    );
+    query = query.where('cardSet', 'in', expandedSets);
   }
 
   if (cardText != null) {
@@ -1364,7 +1531,10 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
   if (!includeExpiredCards) {
     query = query.where('seenInLastGeneration', '=', true)
   }
-
+  
+  if (filterTextless) {
+    query = query.where('mainEffectEn', '=', "")
+  }
 
   const queryWithSelect = query
     .select([
@@ -1391,7 +1561,7 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
     .select((eb) => [
       jsonArrayFrom(
         eb.selectFrom('UniqueAbilityLine')
-          .select(['UniqueAbilityLine.id', 'UniqueAbilityLine.lineNumber', 'UniqueAbilityLine.textEn', 'UniqueAbilityLine.isSupport', 'UniqueAbilityLine.characterData'])
+          .select(['UniqueAbilityLine.id', 'UniqueAbilityLine.lineNumber', 'UniqueAbilityLine.textEn', 'UniqueAbilityLine.textFr', 'UniqueAbilityLine.isSupport', 'UniqueAbilityLine.characterData'])
           .select((eb2) => [
             jsonArrayFrom(
               eb2.selectFrom('AbilityPartLink')
@@ -1475,3 +1645,4 @@ export async function searchWithCTEsWithExcept(searchQuery: SearchQuery, pagePar
 
   return { results: outResults, pagination };
 }
+

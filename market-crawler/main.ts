@@ -4,6 +4,7 @@ import { ExhaustiveInSaleCrawler, MarketUpdateCrawlerStats, marketUpdateStatsCom
 import prisma from '@common/utils/prisma.server.js';
 import { AuthTokenService } from './refresh-token.js';
 import { CommunityDbUniquesCrawler } from './uniques-community-db.js';
+import { UniquesPublicApiCrawler } from './uniques-public-api.js';
 
 const sessionName = getEnv("ALT_SESSION_NAME")
 if (!sessionName) {
@@ -11,6 +12,7 @@ if (!sessionName) {
 }
 
 const debugCrawler = getEnv("DEBUG_CRAWLER") == "true";
+const usePublicCrawler = getEnv("USE_PUBLIC_API") == "true";
 
 const communityDbPath = getEnv("COMMUNITY_DB_PATH")
 const authorName = getEnv("GIT_AUTHOR_NAME") ?? "Marketbot"
@@ -20,11 +22,13 @@ const authTokenService = new AuthTokenService(sessionName);
 
 const exhaustiveInSaleCrawler = new ExhaustiveInSaleCrawler(authTokenService);
 
-let uniquesCrawler: UniquesCrawler
+let uniquesCrawler: any
 if (communityDbPath != null && communityDbPath != "") {
   let com = new CommunityDbUniquesCrawler(communityDbPath, authorName, authorEmail);
   await com.communityDbBeginUpdate()
   uniquesCrawler = com
+} else if (usePublicCrawler) {
+  uniquesCrawler = new UniquesPublicApiCrawler();
 } else {
   uniquesCrawler = new UniquesCrawler();
 }
@@ -47,7 +51,7 @@ console.log(`Token refreshed: ${token.token.slice(0, 20)}...[redacted] - Expires
 await exhaustiveInSaleCrawler.addAllWithFilter(fetchGenerationId, (c) => {
   // We can implement filters here to exclude certain families
   if (debugCrawler) {
-    return c.name.en.startsWith("Copp") || c.name.en.startsWith("Alelo");
+    return c.name.en.startsWith("Bessie");
   }
   return true;
 })

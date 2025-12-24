@@ -1,5 +1,6 @@
 import type { MetaFunction } from "@remix-run/node";
 import { Link } from "@remix-run/react";
+import { useTranslation, useLocale } from "~/lib/i18n";
 
 export const meta: MetaFunction = () => {
   return [
@@ -8,14 +9,16 @@ export const meta: MetaFunction = () => {
 };
 
 export default function Index() {
+  const locale = useLocale();
+  const { t } = useTranslation(locale);
   return (
     <div className="flex flex-col h-screen items-center justify-center">
       <Link to="/search" className="text-primary hover:underline">
-        Uniques Search
+        {t('uniques_search')}
       </Link>
       <hr className="m-4 border-subtle-foreground border-b-1 min-w-24" />
       <Link to="/abilities-list" className="text-primary hover:underline">
-        See all abilities
+        {t('see_all_abilities')}
       </Link>
     </div>
   );

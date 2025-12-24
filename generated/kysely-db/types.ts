@@ -36,6 +36,11 @@ export type CardFamilyStats = {
     fetchCompletedGeneration: number | null;
     totalItems: number | null;
 };
+export type FtsAlias = {
+    id: Generated<number>;
+    from: string;
+    to: string;
+};
 export type MarketUpdateStats = {
     generationId: Generated<number>;
     updateStartedAt: Timestamp;
@@ -43,6 +48,14 @@ export type MarketUpdateStats = {
     newCardsAdded: number | null;
     totalOffersUpdated: number | null;
     totalPagesLoaded: number | null;
+};
+export type SavedSearch = {
+    id: Generated<number>;
+    userId: number;
+    name: string;
+    searchParams: string;
+    createdAt: Generated<Timestamp>;
+    updatedAt: Timestamp;
 };
 export type UniqueAbilityLine = {
     id: Generated<number>;
@@ -53,11 +66,13 @@ export type UniqueAbilityLine = {
      * @kyselyType(JsonValue)
      */
     characterData: JsonValue | null;
-    textEn: string;
+    textEn: Generated<string>;
+    textFr: Generated<string>;
 };
 export type UniqueAbilityPart = {
     id: Generated<number>;
-    textEn: string;
+    textEn: Generated<string>;
+    textFr: Generated<string>;
     partType: AbilityPartType;
     isSupport: boolean;
 };
@@ -72,6 +87,7 @@ export type UniqueInfo = {
     mountainPower: number | null;
     forestPower: number | null;
     nameEn: string | null;
+    nameFr: string | null;
     imageUrlEn: string | null;
     imageUrlDe: string | null;
     imageUrlEs: string | null;
@@ -79,6 +95,8 @@ export type UniqueInfo = {
     imageUrlIt: string | null;
     mainEffectEn: string | null;
     echoEffectEn: string | null;
+    mainEffectFr: string | null;
+    echoEffectFr: string | null;
     cardSubTypes: string[];
     fetchedDetails: Generated<boolean>;
     fetchedDetailsAt: Timestamp | null;
@@ -92,12 +110,25 @@ export type UniqueInfo = {
     seenInLastGeneration: Generated<boolean>;
     cardFamilyId: string | null;
 };
+export type User = {
+    id: Generated<number>;
+    email: string;
+    password: string | null;
+    name: string | null;
+    createdAt: Generated<Timestamp>;
+    updatedAt: Timestamp;
+    googleId: string | null;
+    provider: string | null;
+};
 export type DB = {
     AbilityPartLink: AbilityPartLink;
     AltggSession: AltggSession;
     CardFamilyStats: CardFamilyStats;
+    FtsAlias: FtsAlias;
     MarketUpdateStats: MarketUpdateStats;
+    SavedSearch: SavedSearch;
     UniqueAbilityLine: UniqueAbilityLine;
     UniqueAbilityPart: UniqueAbilityPart;
     UniqueInfo: UniqueInfo;
+    User: User;
 };

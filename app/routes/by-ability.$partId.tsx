@@ -1,11 +1,13 @@
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
+import { useTranslation, useLocale } from "~/lib/i18n";
 import { AbilityPartType, UniqueAbilityLine, UniqueAbilityPart } from "@prisma/client";
 import prisma from "@common/utils/prisma.server";
 import { DisplayAbilityOnCard, DisplayUniqueCard, Faction } from "~/models/cards";
 import { ResultGrid } from "~/components/altered/ResultGrid";
 import { ResultsPagination } from "~/components/common/pagination";
 import { buildDisplayAbility } from "~/loaders/search";
+import { useEffect } from "react";
 
 interface DisplayAbility {
   id: number
@@ -136,11 +138,21 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
 export default function ByAbilityPartRoute() {
   const { part, results, pagination, generalSearchLink } = useLoaderData<LoaderData>();
+  const locale = useLocale();
+  const { t } = useTranslation(locale);
   const { currentPage, totalCount, pageCount } = pagination;
   const [searchParams] = useSearchParams();
 
+  // Prevent body scroll on this page
+  // useEffect(() => {
+  //   document.body.style.overflow = 'hidden';
+  //   return () => {
+  //     document.body.style.overflow = '';
+  //   };
+  // }, []);
+
   if (!part) {
-    return <div className="container mx-auto p-6">Ability part not found</div>;
+    return <div className="container mx-auto p-6">{t('no_results')}</div>;
   }
 
   const handlePageChange = (page: number) => {
@@ -151,40 +163,43 @@ export default function ByAbilityPartRoute() {
   const now = new Date()
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mt-6 mb-2">
-        <Link to="/abilities-list" className="text-primary hover:underline">
-          ← Back to abilities list
-        </Link>
+    <div className="container mx-auto p-6 h-[calc(100vh-3rem)] flex flex-col overflow-hidden">
+      <div className="flex-shrink-0">
+        <div className="mt-6 mb-2">
+          <Link to="/abilities-list" className="text-primary hover:underline">
+            ← Back to abilities list
+          </Link>
+        </div>
+        <div className="bg-muted px-4 py-2 rounded-lg mb-6">
+          <span className="text text-muted-foreground">{t('ability_label', { type: part.partType })}</span>
+          <h1 className="text-xl font-bold mb-2">{part.textEn}</h1>
+          <div className="text-sm text-muted-foreground">
+            <span>{t('found_count', { count: pagination.totalCount })}</span>
+            <span className="px-2">&middot;</span>
+            <span>{generalSearchLink ? <Link to={generalSearchLink} className="text-link">{t('search_with_other_filters')}</Link> : null}</span>
+          </div>
+        </div>
+
+        {pagination.pageCount && pagination.pageCount > 1 ? (
+          <div className="mb-6">
+            <ResultsPagination
+              currentPage={currentPage}
+              totalPages={pagination.pageCount}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        ) : null}
       </div>
-      <div className="bg-muted px-4 py-2 rounded-lg mb-6">
-        <span className="text text-muted-foreground">Ability ({part.partType}):</span>
-        <h1 className="text-xl font-bold mb-2">{part.textEn}</h1>
-        <div className="text-sm text-muted-foreground">
-          <span>Found in {pagination.totalCount} cards</span>
-          <span className="px-2">&middot;</span>
-          <span>{generalSearchLink ? <Link to={generalSearchLink} className="text-link">Search with other filters</Link> : null}</span>
-        </div>
+
+      <div className="overflow-auto flex-1">
+        {results.length > 0 ? (
+          <ResultGrid results={results} now={now} />
+        ) : (
+          <div className="text-center py-6">
+            <p>{t('no_unique_cards_with_part')}</p>
+          </div>
+        )}
       </div>
-
-      {pagination.pageCount && pagination.pageCount > 1 ? (
-        <div className="mb-6">
-          <ResultsPagination
-            currentPage={currentPage}
-            totalPages={pagination.pageCount}
-            onPageChange={handlePageChange}
-          />
-        </div>
-      ) : null}
-
-      {results.length > 0 ? (
-        <ResultGrid results={results} now={now} />
-      ) : (
-        <div className="text-center py-6">
-          <p>No unique cards found with this ability part.</p>
-        </div>
-      )}
-
     </div>
   );
 }

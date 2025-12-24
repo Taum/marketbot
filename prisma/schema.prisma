@@ -28,6 +28,7 @@ model UniqueInfo {
   mountainPower Int?
   forestPower   Int?
   nameEn        String?
+  nameFr        String?
   imageUrlEn    String?
   imageUrlDe    String?
   imageUrlEs    String?
@@ -36,6 +37,8 @@ model UniqueInfo {
 
   mainEffectEn  String? // Indexed for full text search managed outside of Prisma
   echoEffectEn  String? // Indexed for full text search managed outside of Prisma
+  mainEffectFr  String? // Indexed for full text search managed outside of Prisma
+  echoEffectFr  String? // Indexed for full text search managed outside of Prisma
   cardSubTypes  String[]
 
   fetchedDetails   Boolean   @default(false)
@@ -79,7 +82,8 @@ model UniqueAbilityLine {
   /// @kyselyType(JsonValue)
   characterData Json?
 
-  textEn String
+  textEn String @default("")
+  textFr String @default("")
 
   allParts AbilityPartLink[]
 
@@ -109,7 +113,8 @@ model AbilityPartLink {
 
 model UniqueAbilityPart {
   id     Int    @id @default(autoincrement())
-  textEn String
+  textEn String @default("")
+  textFr String @default("")
 
   partType  AbilityPartType
   isSupport Boolean
@@ -120,6 +125,7 @@ model UniqueAbilityPart {
   @@unique([textEn, partType, isSupport])
   @@index([id])
   @@index([textEn])
+  @@index([textFr])
 }
 
 // This will be a singleton entry
@@ -167,6 +173,50 @@ model AltggSession {
 
   @@unique([id])
   @@index([id])
+}
+
+model FtsAlias {
+  id   Int    @id @default(autoincrement())
+  from String
+  to   String
+
+  @@unique([id])
+  @@unique([from])
+  @@index([from])
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String
+  password  String?  // Optional for OAuth users
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // OAuth fields
+  googleId  String?  @unique
+  provider  String?  // "local", "google", etc.
+
+  savedSearches SavedSearch[]
+
+  @@unique([id])
+  @@unique([email])
+  @@index([email])
+  @@index([googleId])
+}
+
+model SavedSearch {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  searchParams String  // URL search parameters as string
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([id])
+  @@unique([userId, name]) // Each user can have unique search names
+  @@index([userId])
 }
 
 enum AbilityPartType {
