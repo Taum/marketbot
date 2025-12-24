@@ -188,16 +188,21 @@ model FtsAlias {
 model User {
   id        Int      @id @default(autoincrement())
   email     String
-  password  String   // This will store the hashed password
+  password  String?  // Optional for OAuth users
   name      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // OAuth fields
+  googleId  String?  @unique
+  provider  String?  // "local", "google", etc.
 
   savedSearches SavedSearch[]
 
   @@unique([id])
   @@unique([email])
   @@index([email])
+  @@index([googleId])
 }
 
 model SavedSearch {

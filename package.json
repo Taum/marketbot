@@ -52,6 +52,8 @@
     "radash": "^12.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "remix-auth": "^3.7.0",
+    "remix-auth-google": "^2.0.0",
     "simple-git": "^3.28.0",
     "tailwind-merge": "^3.3.0",
     "tailwindcss-animate": "^1.0.7",

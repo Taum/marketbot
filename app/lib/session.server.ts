@@ -17,6 +17,9 @@ const storage = createCookieSessionStorage({
   },
 });
 
+// Export sessionStorage for remix-auth
+export const sessionStorage = storage;
+
 export async function createUserSession(userId: number, redirectTo: string) {
   const session = await storage.getSession();
   session.set("userId", userId);
@@ -33,9 +36,20 @@ export async function getUserSession(request: Request) {
 
 export async function getUserId(request: Request): Promise<number | null> {
   const session = await getUserSession(request);
+  
+  // Check for userId set by local auth
   const userId = session.get("userId");
-  if (!userId || typeof userId !== "number") return null;
-  return userId;
+  if (userId && typeof userId === "number") {
+    return userId;
+  }
+  
+  // Check for user object set by remix-auth (OAuth)
+  const user = session.get("user");
+  if (user && typeof user === "object" && "id" in user && typeof user.id === "number") {
+    return user.id;
+  }
+  
+  return null;
 }
 
 export async function requireUserId(

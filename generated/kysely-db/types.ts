@@ -113,10 +113,12 @@ export type UniqueInfo = {
 export type User = {
     id: Generated<number>;
     email: string;
-    password: string;
+    password: string | null;
     name: string | null;
     createdAt: Generated<Timestamp>;
     updatedAt: Timestamp;
+    googleId: string | null;
+    provider: string | null;
 };
 export type DB = {
     AbilityPartLink: AbilityPartLink;

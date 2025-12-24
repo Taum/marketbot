@@ -31,6 +31,8 @@ export function UserMenu({ user }: UserMenuProps) {
   const [password, setPassword] = useState("");
   const fetcher = useFetcher<{ error?: string }>();
 
+  const isOAuthUser = user.provider && user.provider !== "local";
+
   const handleDeleteAccount = () => {
     fetcher.submit(
       { _action: "delete", password },
@@ -122,23 +124,32 @@ export function UserMenu({ user }: UserMenuProps) {
           <DialogHeader>
             <DialogTitle>{t('unregister_confirm_title')}</DialogTitle>
             <DialogDescription>
-              {t('unregister_confirm_description')}
+              {isOAuthUser 
+                ? t('unregister_confirm_description_oauth')
+                : t('unregister_confirm_description')}
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="confirm-password">{t('password')}</Label>
-            <Input
-              id="confirm-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-2"
-              placeholder={t('password_placeholder')}
-            />
-            {fetcher.data?.error && (
-              <p className="mt-2 text-sm text-destructive">{fetcher.data.error}</p>
-            )}
-          </div>
+          {!isOAuthUser && (
+            <div className="py-4">
+              <Label htmlFor="confirm-password">{t('password')}</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-2"
+                placeholder={t('password_placeholder')}
+              />
+              {fetcher.data?.error && (
+                <p className="mt-2 text-sm text-destructive">{fetcher.data.error}</p>
+              )}
+            </div>
+          )}
+          {isOAuthUser && fetcher.data?.error && (
+            <div className="py-4">
+              <p className="text-sm text-destructive">{fetcher.data.error}</p>
+            </div>
+          )}
           <DialogFooter>
             <Button
               variant="outline"
@@ -152,7 +163,7 @@ export function UserMenu({ user }: UserMenuProps) {
             <Button
               variant="destructive"
               onClick={handleDeleteAccount}
-              disabled={!password || fetcher.state === "submitting"}
+              disabled={(!isOAuthUser && !password) || fetcher.state === "submitting"}
             >
               {fetcher.state === "submitting" ? t('deleting') : t('unregister_confirm')}
             </Button>

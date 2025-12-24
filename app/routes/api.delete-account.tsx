@@ -15,13 +15,9 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  // Get the password from form data
+  // Get the password from form data (optional for OAuth users)
   const formData = await request.formData();
   const password = formData.get("password");
-
-  if (typeof password !== "string" || !password) {
-    return json({ error: "Password is required" }, { status: 400 });
-  }
 
   // Get the user from database
   const user = await prisma.user.findUnique({
@@ -32,11 +28,18 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ error: "User not found" }, { status: 404 });
   }
 
-  // Verify the password
-  const isValid = await bcrypt.compare(password, user.password);
-  if (!isValid) {
-    return json({ error: "Invalid password" }, { status: 400 });
+  // If user has a password (local auth), verify it
+  if (user.password) {
+    if (typeof password !== "string" || !password) {
+      return json({ error: "Password is required" }, { status: 400 });
+    }
+
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      return json({ error: "Invalid password" }, { status: 400 });
+    }
   }
+  // For OAuth users (no password), no password verification needed
 
   // Delete the user
   await prisma.user.delete({
