@@ -34,6 +34,7 @@ import {
 import { SaveSelect } from "~/components/save/SaveSelect";
 import { search } from "~/loaders/search";
 import { getUserId } from "~/lib/session.server";
+import { runCheckIsDesktop } from "~/lib/mediaQueries";
 
 
 interface SearchQuery {
@@ -342,6 +343,7 @@ export default function SearchPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'row'>('grid');
   const [gridColumns, setGridColumns] = useState<2 | 3 | 4>(3);
   const [hasLastSearch, setHasLastSearch] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(true);
   const hasLoadedPreferences = useRef(false);
 
   const now = new Date();
@@ -350,6 +352,30 @@ export default function SearchPage() {
   const pagination = loaderData.pagination
 
   const currentPage = parseInt(searchParams.get("p") ?? "1");
+
+  // Prevent body scroll on this page
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  // Check if we're on desktop
+  useEffect(() => {
+    const checkDesktop = () => {
+      const desktop = runCheckIsDesktop();
+      setIsDesktop(desktop);
+      // Force row mode on mobile
+      if (!desktop) {
+        setViewMode('row');
+      }
+    };
+    
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
 
   // Load view preferences from localStorage on mount
   useEffect(() => {
@@ -522,6 +548,9 @@ export default function SearchPage() {
   };
 
   const activeFilters = getActiveFiltersSummary();
+  
+  // Use row mode on mobile, otherwise use the selected view mode
+  const effectiveViewMode = isDesktop ? viewMode : 'row';
 
   return (
     <div className="flex flex-row h-[calc(100vh-3rem)] overflow-hidden">
@@ -531,7 +560,7 @@ export default function SearchPage() {
           <div id="results" className="relative flex flex-col h-full">
             {pagination ? (
               <div className="mb-6">
-                <div className="flex flex-row items-center mb-4">
+                <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
                   {/* Left: Results count */}
                   <div className="flex-1">
                     <h2 className="text-xl font-semibold inline-block">
@@ -550,7 +579,7 @@ export default function SearchPage() {
                   </div>
                   
                   {/* Center: Pagination */}
-                  <div className="flex-1 flex justify-center">
+                  <div className="flex-1 flex justify-center md:justify-center">
                     {pagination.pageCount && pagination.pageCount > 1 ? (
                       <ResultsPagination
                         currentPage={currentPage ?? 1}
@@ -562,7 +591,8 @@ export default function SearchPage() {
                   
                   {/* Right: Control buttons */}
                   <div className="flex-1 flex flex-row gap-4 items-center justify-end">
-                    {viewMode === 'grid' && (
+                    {/* Only show column selector and view toggle on desktop */}
+                    {isDesktop && viewMode === 'grid' && (
                       <Select
                         value={gridColumns.toString()}
                         onValueChange={(value) => setGridColumns(parseInt(value) as 2 | 3 | 4)}
@@ -577,36 +607,39 @@ export default function SearchPage() {
                         </SelectContent>
                       </Select>
                     )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setViewMode(viewMode === 'grid' ? 'row' : 'grid')}
-                      className="flex items-center gap-2"
-                    >
-                      {viewMode === 'grid' ? (
-                        <>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="8" y1="6" x2="21" y2="6"/>
-                            <line x1="8" y1="12" x2="21" y2="12"/>
-                            <line x1="8" y1="18" x2="21" y2="18"/>
-                            <line x1="3" y1="6" x2="3.01" y2="6"/>
-                            <line x1="3" y1="12" x2="3.01" y2="12"/>
-                            <line x1="3" y1="18" x2="3.01" y2="18"/>
-                          </svg>
-                          {t('row_view')}
-                        </>
-                      ) : (
-                        <>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="3" y="3" width="7" height="7"/>
-                            <rect x="14" y="3" width="7" height="7"/>
-                            <rect x="14" y="14" width="7" height="7"/>
-                            <rect x="3" y="14" width="7" height="7"/>
-                          </svg>
-                          {t('grid_view')}
-                        </>
-                      )}
-                    </Button>
+                    {isDesktop && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setViewMode(viewMode === 'grid' ? 'row' : 'grid')}
+                        className="flex items-center gap-2"
+                      >
+                        {viewMode === 'grid' ? (
+                          <>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="8" y1="6" x2="21" y2="6"/>
+                              <line x1="8" y1="12" x2="21" y2="12"/>
+                              <line x1="8" y1="18" x2="21" y2="18"/>
+                              <line x1="3" y1="6" x2="3.01" y2="6"/>
+                              <line x1="3" y1="12" x2="3.01" y2="12"/>
+                              <line x1="3" y1="18" x2="3.01" y2="18"/>
+                            </svg>
+                            {t('row_view')}
+                          </>
+                        ) : (
+                          <>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="3" width="7" height="7"/>
+                              <rect x="14" y="3" width="7" height="7"/>
+                              <rect x="14" y="14" width="7" height="7"/>
+                              <rect x="3" y="14" width="7" height="7"/>
+                            </svg>
+                            {t('grid_view')}
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    {/* Show filters toggle button - always visible */}
                     <Button
                       variant="outline"
                       size="sm"
@@ -634,16 +667,42 @@ export default function SearchPage() {
               </div>
             ) : null}
             <div className="overflow-y-auto flex-1">
-              <ResultGrid results={results} now={now} viewMode={viewMode} gridColumns={gridColumns} />
+              <ResultGrid results={results} now={now} viewMode={effectiveViewMode} gridColumns={gridColumns} />
             </div>
           </div>
         ) : (loaderData.error ? (
           <div className="flex flex-col items-center justify-center h-full gap-4">
             <p className="text-red-500">{t('error_prefix')} {loaderData.error}</p>
+            {!showFilters && (
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => setShowFilters(true)}
+                className="flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                </svg>
+                {t('show_filters')}
+              </Button>
+            )}
           </div>
         ) : loaderData.query ? (
           <div className="flex flex-col items-center justify-center h-full gap-4">
             <p className="text-gray-600">{t('no_results')}</p>
+            {!showFilters && (
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => setShowFilters(true)}
+                className="flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                </svg>
+                {t('show_filters')}
+              </Button>
+            )}
           </div>
         ) : (
           // Empty state - show restore button if available
@@ -669,43 +728,117 @@ export default function SearchPage() {
             ) : (
               <p className="text-muted-foreground">{t('no_search_yet')}</p>
             )}
+            {!showFilters && (
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => setShowFilters(true)}
+                className="flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                </svg>
+                {t('show_filters')}
+              </Button>
+            )}
           </div>
         ))}
       </div>
 
       {/* Right Sidebar - Search Form */}
       {showFilters && (
-        <div className="w-[360px] flex-shrink-0 border-l border-border overflow-y-auto p-6 bg-muted/5">
-          <h2 className="text-lg font-semibold mb-4">{t('search_filters')}</h2>
-          
-          {/* Restore Last Search Button */}
-          {hasLastSearch && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRestoreLastSearch}
-              className="w-full flex items-center justify-center gap-2 mb-4"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-                <path d="M21 3v5h-5"/>
-                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-                <path d="M3 21v-5h5"/>
-              </svg>
-              {t('restore_last_search')}
-            </Button>
+        <>
+          {/* Mobile: Full-screen overlay */}
+          {!isDesktop && (
+            <div className="fixed inset-0 z-50 bg-background">
+              <div className="flex flex-col h-full">
+                {/* Mobile header with close button */}
+                <div className="flex items-center justify-between p-4 border-b border-border bg-muted/5">
+                  <h2 className="text-lg font-semibold">{t('search_filters')}</h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowFilters(false)}
+                    className="flex items-center gap-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    {t('close')}
+                  </Button>
+                </div>
+                
+                {/* Scrollable content */}
+                <div className="flex-1 overflow-y-auto p-4">
+                  {/* Restore Last Search Button */}
+                  {hasLastSearch && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRestoreLastSearch}
+                      className="w-full flex items-center justify-center gap-2 mb-4"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                        <path d="M21 3v5h-5"/>
+                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                        <path d="M3 21v-5h5"/>
+                      </svg>
+                      {t('restore_last_search')}
+                    </Button>
+                  )}
+                  
+                  <SearchForm 
+                    {...loaderData.query} 
+                    triggers={loaderData.triggers}
+                    conditions={loaderData.conditions}
+                    effects={loaderData.effects}
+                    locale={loaderData.locale}
+                    userId={loaderData.userId}
+                    savedSearches={loaderData.savedSearches}
+                    onSearch={() => setShowFilters(false)}
+                  />
+                </div>
+              </div>
+            </div>
           )}
           
-          <SearchForm 
-            {...loaderData.query} 
-            triggers={loaderData.triggers}
-            conditions={loaderData.conditions}
-            effects={loaderData.effects}
-            locale={loaderData.locale}
-            userId={loaderData.userId}
-            savedSearches={loaderData.savedSearches}
-          />
-        </div>
+          {/* Desktop: Side drawer */}
+          {isDesktop && (
+            <div className="w-[360px] flex-shrink-0 border-l border-border overflow-y-auto p-6 bg-muted/5">
+              <h2 className="text-lg font-semibold mb-4">{t('search_filters')}</h2>
+          
+              {/* Restore Last Search Button */}
+              {hasLastSearch && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRestoreLastSearch}
+                  className="w-full flex items-center justify-center gap-2 mb-4"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                    <path d="M21 3v5h-5"/>
+                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                    <path d="M3 21v-5h5"/>
+                  </svg>
+                  {t('restore_last_search')}
+                </Button>
+              )}
+          
+              <SearchForm 
+                {...loaderData.query} 
+                triggers={loaderData.triggers}
+                conditions={loaderData.conditions}
+                effects={loaderData.effects}
+                locale={loaderData.locale}
+                userId={loaderData.userId}
+                savedSearches={loaderData.savedSearches}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -719,6 +852,7 @@ const SearchForm: FC<
     locale?: string;
     userId?: number;
     savedSearches?: Array<{ id: number; name: string; searchParams: string; updatedAt: string }>;
+    onSearch?: () => void;
   }
 > = ({
   faction,
@@ -748,7 +882,8 @@ const SearchForm: FC<
   , locale
   , userId
   , savedSearches = []
-}: SearchQuery & { triggers?: { id: number; text: string }[]; conditions?: { id: number; text: string }[]; effects?: { id: number; text: string }[]; locale?: string; userId?: number; savedSearches?: Array<{ id: number; name: string; searchParams: string; updatedAt: string }> }) => {
+  , onSearch
+}: SearchQuery & { triggers?: { id: number; text: string }[]; conditions?: { id: number; text: string }[]; effects?: { id: number; text: string }[]; locale?: string; userId?: number; savedSearches?: Array<{ id: number; name: string; searchParams: string; updatedAt: string }>; onSearch?: () => void }) => {
   const { t } = useTranslation(locale);
   const saveFetcher = useFetcher<{ success?: boolean; error?: string; message?: string }>();
   const deleteFetcher = useFetcher<{ success?: boolean; error?: string; message?: string }>();
@@ -1856,6 +1991,7 @@ const SearchForm: FC<
           <Button
             type="submit"
             className="flex-1 bg-accent/80 text-foreground hover:bg-accent"
+            onClick={() => onSearch?.()}
           >
             {t('search')}
           </Button>

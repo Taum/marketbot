@@ -15,12 +15,12 @@ export interface ResultGridProps {
 
 export const ResultGrid: FC<ResultGridProps> = ({ results, now, viewMode = 'grid', gridColumns = 3 }) => {
   const gridClass = viewMode === 'grid' 
-    ? `grid gap-4 ${
-        gridColumns === 2 ? 'grid-cols-2' :
-        gridColumns === 3 ? 'grid-cols-3' :
-        'grid-cols-4'
+    ? `grid gap-3 sm:gap-4 ${
+        gridColumns === 2 ? 'grid-cols-1 sm:grid-cols-2' :
+        gridColumns === 3 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' :
+        'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
       }`
-    : 'flex flex-col gap-4';
+    : 'flex flex-col gap-3 sm:gap-4';
     
   return (
     <div className={gridClass}>
@@ -36,26 +36,26 @@ export const Result: FC<{ result: DisplayUniqueCard, now: Date, viewMode?: 'grid
   
   if (viewMode === 'row') {
     return (
-      <div className="rounded-lg p-4 bg-subtle-background flex flex-row gap-6">
-        <div className="w-48 flex-shrink-0">
+      <div className="rounded-lg p-3 sm:p-4 bg-subtle-background flex flex-col sm:flex-row gap-4 sm:gap-6">
+        <div className="w-full sm:w-48 flex-shrink-0">
           <CardImage card={result} className="rounded-alt-card" />
         </div>
         <div className="flex-1 flex flex-col gap-2">
           <div className="flex flex-row justify-between items-start">
             <div>
-              <div className="font-bold text-2xl">
+              <div className="font-bold text-xl sm:text-2xl">
                 {result.lastSeenInSalePrice}&euro;
               </div>
-              <div className="text-sm text-subtle-foreground">
+              <div className="text-xs sm:text-sm text-subtle-foreground">
                 {formatLastSeen(result.lastSeenInSaleAt, now)}
               </div>
             </div>
-            <Link to={`https://www.altered.gg/cards/${result.ref}`} className="text-sm">
+            <Link to={`https://www.altered.gg/cards/${result.ref}`} className="text-xs sm:text-sm">
               {t('viewOnAltered')}
             </Link>
           </div>
           {result.mainEffect && (
-            <div className="text-base">{result.mainAbilities ? formatEffect(result.mainAbilities) : result.mainEffect}</div>
+            <div className="text-sm sm:text-base">{result.mainAbilities ? formatEffect(result.mainAbilities) : result.mainEffect}</div>
           )}
         </div>
       </div>
@@ -63,34 +63,34 @@ export const Result: FC<{ result: DisplayUniqueCard, now: Date, viewMode?: 'grid
   }
   
   return (
-    <div className="rounded-lg p-2 bg-subtle-background flex flex-row gap-4">
+    <div className="rounded-lg p-2 bg-subtle-background flex flex-row gap-2 sm:gap-4">
       <div className="flex-1">
         <CardImage card={result} className="rounded-alt-card" />
         <div className="text-subtle-foreground">
         </div>
       </div>
       <div className="flex-1 flex flex-col justify-between">
-        <div className="pb-2 flex flex-row gap-2 justify-between">
+        <div className="pb-2 flex flex-row gap-1 sm:gap-2 justify-between">
           <div>
-            <div className="font-bold text-lg">
+            <div className="font-bold text-base sm:text-lg">
               {result.lastSeenInSalePrice}&euro;
             </div>
-            <div className="text-xs text-subtle-foreground">
+            <div className="text-[10px] sm:text-xs text-subtle-foreground">
               {formatLastSeen(result.lastSeenInSaleAt, now)}
             </div>
           </div>
           <div>
-            <Link to={`https://www.altered.gg/cards/${result.ref}`}>
+            <Link to={`https://www.altered.gg/cards/${result.ref}`} className="text-xs sm:text-sm">
               {t('viewOnAltered')}
             </Link>
           </div>
         </div>
-        <div className="flex flex-col gap-4">
-          {result.mainEffect && <div className="text-sm">{result.mainAbilities ? formatEffect(result.mainAbilities) : result.mainEffect}</div>}
+        <div className="flex flex-col gap-2 sm:gap-4">
+          {result.mainEffect && <div className="text-xs sm:text-sm">{result.mainAbilities ? formatEffect(result.mainAbilities) : result.mainEffect}</div>}
           {result.mainEffect && result.echoEffect && (
             <hr className="border-subtle-foreground border-b-1" />
           )}
-          {result.echoEffect && <div className="text-xs">{result.mainAbilities ? formatSupport(result.mainAbilities) : result.echoEffect}</div>}
+          {result.echoEffect && <div className="text-[10px] sm:text-xs">{result.mainAbilities ? formatSupport(result.mainAbilities) : result.echoEffect}</div>}
         </div>
         <div className="grow-0"></div>
       </div>

@@ -1,8 +1,6 @@
 import { range } from "radash";
 import { FC, useMemo } from "react";
-import { buttonVariants } from "~/components/ui/button";
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "~/components/ui/pagination";
-import { cn } from "~/lib/utils";
 
 interface ResultsPaginationProps {
   currentPage: number;
@@ -16,19 +14,23 @@ export const ResultsPagination: FC<ResultsPaginationProps> = ({ currentPage, tot
   const hasNext = currentPage < totalPages;
 
   const pageItems = useMemo(() => {
-    let pagesToShow: number[] = (totalPages <= 7) ?
+    const pagesToShow: number[] = (totalPages <= 7) ?
       Array.from(range(1, totalPages)) :
       [1, ...Array.from(range(Math.max(2, currentPage - 2), Math.min(totalPages - 1, currentPage + 2))), totalPages];
 
-    let pageItems: React.ReactNode[] = [];
+    const pageItems: React.ReactNode[] = [];
     for (let i = 0; i < pagesToShow.length; i++) {
-      let pageNumber = pagesToShow[i];
+      const pageNumber = pagesToShow[i];
       if (i > 0 && pagesToShow[i - 1] != pageNumber - 1) {
-        pageItems.push(<PaginationEllipsis key={`ellipsis-${i}`} />);
+        pageItems.push(
+          <PaginationEllipsis key={`ellipsis-${i}`} className="hidden sm:flex" />
+        );
       }
       const isDisabled = pageNumber === currentPage;
+      // On mobile, only show current page, first and last
+      const hideOnMobile = pageNumber !== 1 && pageNumber !== totalPages && pageNumber !== currentPage;
       pageItems.push(
-        <PaginationItem key={i}>
+        <PaginationItem key={i} className={hideOnMobile ? "hidden sm:block" : ""}>
           <PaginationLink
             onClick={() => onPageChange(pageNumber)}
             isActive={pageNumber === currentPage}
@@ -41,11 +43,11 @@ export const ResultsPagination: FC<ResultsPaginationProps> = ({ currentPage, tot
       )
     }
     return pageItems;
-  }, [totalPages, currentPage])
+  }, [totalPages, currentPage, onPageChange])
 
   return (
     <Pagination>
-      <PaginationContent>
+      <PaginationContent className="gap-0.5 sm:gap-1">
         <PaginationItem>
           <PaginationPrevious
             onClick={() => onPageChange(Math.max(currentPage - 1, 1))}

@@ -50,7 +50,8 @@
   "table_count": "Nombre",
   "support": "Support",
   "main": "Principal",
-  "view_cards": "Voir\u00A0cartes"
+  "view_cards": "Voir\u00A0cartes",
+  "back_to_top": "Retour en haut"
   ,
   "placeholder_character_name": "Nom du personnage",
   "placeholder_hand_cost": "1-3",

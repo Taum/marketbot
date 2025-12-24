@@ -1,4 +1,4 @@
-import { FC, useState } from "react"
+import { FC, useState, useEffect } from "react"
 import { cn } from "~/lib/utils"
 import { DisplayUniqueCard } from "~/models/cards"
 import { Dialog, DialogContent } from "~/components/ui/dialog"
@@ -16,25 +16,48 @@ export interface CardImageProps {
 export const CardImage: FC<CardImageProps> = (props) => {
   // const lang = props.lang ?? 'en';
   const [isOpen, setIsOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(true);
   const url = addCdn(props.card.imageUrl, props.quality, props.width);
   const width = parseInt((props.width ?? 300) + "", 10);
   const largeUrl = addCdn(props.card.imageUrl, 95, 800); // Higher quality and larger for modal
   
+  // Check if desktop on mount and resize
+  useEffect(() => {
+    const checkIsDesktop = () => {
+      setIsDesktop(window.innerWidth >= 640); // sm breakpoint
+    };
+    
+    checkIsDesktop();
+    window.addEventListener('resize', checkIsDesktop);
+    return () => window.removeEventListener('resize', checkIsDesktop);
+  }, []);
+  
   // Preload large image on hover for faster modal opening
   const preloadImage = () => {
-    const img = new Image();
-    img.src = largeUrl!;
+    if (isDesktop) {
+      const img = new Image();
+      img.src = largeUrl!;
+    }
+  };
+  
+  const handleClick = () => {
+    if (isDesktop) {
+      setIsOpen(true);
+    }
   };
   
   return (
     <>
       <button 
         type="button"
-        onClick={() => setIsOpen(true)}
+        onClick={handleClick}
         onMouseEnter={preloadImage}
         onFocus={preloadImage}
-        className="border-0 p-0 bg-transparent cursor-pointer"
-        aria-label={`View larger image of ${props.card.name}`}
+        className={cn(
+          "border-0 p-0 bg-transparent",
+          isDesktop ? "cursor-pointer" : "cursor-default"
+        )}
+        aria-label={isDesktop ? `View larger image of ${props.card.name}` : props.card.name}
       >
         <img 
           src={url}
@@ -47,22 +70,24 @@ export const CardImage: FC<CardImageProps> = (props) => {
         />
       </button>
       
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-4xl w-fit p-2">
-          <button
-            type="button"
-            onClick={() => setIsOpen(false)}
-            className="border-0 p-0 bg-transparent cursor-pointer"
-            aria-label="Close image"
-          >
-            <img
-              src={largeUrl}
-              alt={props.card.name}
-              className="rounded-alt-card max-h-[90vh] w-auto"
-            />
-          </button>
-        </DialogContent>
-      </Dialog>
+      {isDesktop && (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogContent className="max-w-4xl w-fit p-2">
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="border-0 p-0 bg-transparent cursor-pointer"
+              aria-label="Close image"
+            >
+              <img
+                src={largeUrl}
+                alt={props.card.name}
+                className="rounded-alt-card max-h-[90vh] w-auto"
+              />
+            </button>
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   )
 }
