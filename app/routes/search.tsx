@@ -1,5 +1,5 @@
 import { type LoaderFunctionArgs } from "@remix-run/node";
-import { Form, useLoaderData, useSearchParams, useFetcher } from "@remix-run/react";
+import { Form, useLoaderData, useSearchParams, useFetcher, useSubmit } from "@remix-run/react";
 import { FC, useState, useEffect, useRef } from "react";
 import { FactionSelect } from "~/components/altered/FactionSelect";
 import { SetSelect } from "~/components/altered/SetSelect";
@@ -42,9 +42,10 @@ interface SearchQuery {
   characterName?: string;
   cardSubTypes?: string[];
   cardText?: string;
-  triggerPart?: string;
-  conditionPart?: string;
-  effectPart?: string;
+  triggerPart?: string[];
+  conditionPart?: string[];
+  effectPart?: string[];
+  matchAllAbilities?: boolean;
   partIncludeSupport?: boolean;
   partFilterArrow?: boolean;
   partFilterHand?: boolean;
@@ -60,6 +61,9 @@ interface SearchQuery {
   mountainPowerRange?: string;
   oceanPowerRange?: string;
 }
+
+// Maximum number of ability combinations allowed
+const MAX_ABILITY_COMBINATIONS = 3;
 
 interface LoaderData {
   results: DisplayUniqueCard[];
@@ -93,9 +97,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const faction = nullifyTrim(url.searchParams.get("f"));
   const setParam = nullifyTrim(url.searchParams.get("s"));
   const set = setParam?.includes(",") ? setParam.split(",") : setParam ?? undefined;
-  const triggerPart = nullifyTrim(url.searchParams.get("tr"));
-  const conditionPart = nullifyTrim(url.searchParams.get("cond"));
-  const effectPart = nullifyTrim(url.searchParams.get("eff"));
+  
+  // Parse ability parts as arrays - keep empty strings to maintain alignment
+  const triggerParts = url.searchParams.getAll("tr").map(v => v.trim() || "");
+  const conditionParts = url.searchParams.getAll("cond").map(v => v.trim() || "");
+  const effectParts = url.searchParams.getAll("eff").map(v => v.trim() || "");
+  const matchAllAbilities = nullifyTrim(url.searchParams.get("matchAll")) === "1";
+  
   const partIncludeSupport = nullifyTrim(url.searchParams.get("inclSup")) === "1";
   const partFilterArrow = nullifyTrim(url.searchParams.get("arrow")) === "1";
   const partFilterHand = nullifyTrim(url.searchParams.get("hand")) === "1";
@@ -119,9 +127,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
     characterName,
     cardSubTypes: validSubtypes,
     cardText,
-    triggerPart,
-    conditionPart,
-    effectPart,
+    triggerPart: triggerParts.length > 0 ? triggerParts : undefined,
+    conditionPart: conditionParts.length > 0 ? conditionParts : undefined,
+    effectPart: effectParts.length > 0 ? effectParts : undefined,
+    matchAllAbilities,
     partIncludeSupport,
     partFilterArrow,
     partFilterHand,
@@ -181,37 +190,107 @@ export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const startTs = performance.now()
 
-    const { results, pagination } = await searchWithCTEsIndexingCharacterNames(
-      {
-        faction,
-        set,
-        characterName,
-        cardSubTypes: validSubtypes,
-        cardText,
-        triggerPart,
-        conditionPart,
-        effectPart,
-        partIncludeSupport,
-        partFilterArrow,
-        partFilterHand,
-        partFilterReserve,
-        filterTextless,
-        filterZeroStat,
-        mainCosts,
-        recallCosts,
-        includeExpiredCards,
-        minPrice,
-        maxPrice,
-        forestPowers,
-        mountainPowers,
-        oceanPowers
-      },
-      {
-        page: currentPage,
-        includePagination: true,
-        locale: lang
+    // Edge case: Limit maximum ability combinations
+    const MAX_ABILITY_COMBINATIONS = 3;
+    const maxLength = Math.max(triggerParts.length, conditionParts.length, effectParts.length);
+    
+    if (maxLength > MAX_ABILITY_COMBINATIONS) {
+      return {
+        results: [],
+        pagination: undefined,
+        metrics: undefined,
+        triggers,
+        conditions,
+        effects,
+        locale: lang,
+        localizedFoundText: undefined,
+        query: originalQuery,
+        error: `Too many ability combinations. Maximum allowed is ${MAX_ABILITY_COMBINATIONS}.`,
+        userId,
+        savedSearches
+      };
+    }
+
+    // Check if we have multiple ability combinations
+    // Count how many complete combinations we have (at least one part filled per index)
+    let combinationCount = 0;
+    for (let i = 0; i < maxLength; i++) {
+      const hasTrigger = triggerParts[i]?.trim();
+      const hasCondition = conditionParts[i]?.trim();
+      const hasEffect = effectParts[i]?.trim();
+      if (hasTrigger || hasCondition || hasEffect) {
+        combinationCount++;
       }
-    );
+    }
+    const hasMultipleAbilities = combinationCount > 1;
+
+    // Use search.ts for multiple abilities (has full multi-ability support)
+    // Use searchWithCTEsIndexingCharacterNames for single ability (optimized)
+    const { results, pagination } = hasMultipleAbilities 
+      ? await search(
+          {
+            faction,
+            set,
+            characterName,
+            cardSubTypes: validSubtypes,
+            cardText,
+            triggerPart: triggerParts.length > 0 ? triggerParts : undefined,
+            conditionPart: conditionParts.length > 0 ? conditionParts : undefined,
+            effectPart: effectParts.length > 0 ? effectParts : undefined,
+            matchAllAbilities,
+            partIncludeSupport,
+            partFilterArrow,
+            partFilterHand,
+            partFilterReserve,
+            filterTextless,
+            filterZeroStat,
+            mainCosts,
+            recallCosts,
+            includeExpiredCards,
+            minPrice,
+            maxPrice,
+            forestPowers,
+            mountainPowers,
+            oceanPowers
+          },
+          {
+            page: currentPage,
+            includePagination: true,
+            locale: lang
+          }
+        )
+      : await searchWithCTEsIndexingCharacterNames(
+          {
+            faction,
+            set,
+            characterName,
+            cardSubTypes: validSubtypes,
+            cardText,
+            triggerPart: triggerParts.length > 0 ? triggerParts : undefined,
+            conditionPart: conditionParts.length > 0 ? conditionParts : undefined,
+            effectPart: effectParts.length > 0 ? effectParts : undefined,
+            matchAllAbilities,
+            partIncludeSupport,
+            partFilterArrow,
+            partFilterHand,
+            partFilterReserve,
+            filterTextless,
+            filterZeroStat,
+            mainCosts,
+            recallCosts,
+            includeExpiredCards,
+            minPrice,
+            maxPrice,
+            forestPowers,
+            mountainPowers,
+            oceanPowers
+          },
+          {
+            page: currentPage,
+            includePagination: true,
+            locale: lang
+          }
+        );
 
     const endTs = performance.now()
     const duration = endTs - startTs
@@ -411,9 +490,25 @@ export default function SearchPage() {
     if (query.mountainPowerRange) filters.push(t('mountain_power') + `: ${query.mountainPowerRange}`);
     if (query.oceanPowerRange) filters.push(t('ocean_power') + `: ${query.oceanPowerRange}`);
     if (query.cardText) filters.push(t('placeholder_card_text') + `: "${query.cardText}"`);
-    if (query.triggerPart) filters.push(t('trigger') + `: "${query.triggerPart}"`);
-    if (query.conditionPart) filters.push(t('condition') + `: "${query.conditionPart}"`);
-    if (query.effectPart) filters.push(t('effect') + `: "${query.effectPart}"`);
+    
+    // Display ability searches
+    if (query.triggerPart && query.triggerPart.length > 0) {
+      query.triggerPart.forEach((tp, idx) => {
+        const parts: string[] = [];
+        if (tp) parts.push(t('trigger') + `: "${tp}"`);
+        if (query.conditionPart?.[idx]) parts.push(t('condition') + `: "${query.conditionPart[idx]}"`);
+        if (query.effectPart?.[idx]) parts.push(t('effect') + `: "${query.effectPart[idx]}"`);
+        if (parts.length > 0) {
+          filters.push(`Ability ${idx + 1}: ${parts.join(' + ')}`);
+        }
+      });
+      if (query.matchAllAbilities) {
+        filters.push('Match: ALL abilities');
+      } else {
+        filters.push('Match: ANY ability');
+      }
+    }
+    
     if (query.minPrice !== undefined || query.maxPrice !== undefined) {
       const priceRange = [
         query.minPrice !== undefined ? `${query.minPrice}` : '',
@@ -631,9 +726,10 @@ const SearchForm: FC<
   characterName,
   cardSubTypes,
   cardText,
-  triggerPart,
-  conditionPart,
-  effectPart,
+  triggerPart: triggerParts,
+  conditionPart: conditionParts,
+  effectPart: effectParts,
+  matchAllAbilities,
   partIncludeSupport,
   partFilterArrow,
   partFilterHand,
@@ -745,14 +841,64 @@ const SearchForm: FC<
     }
   };
   
+  const submit = useSubmit();
+  
+  const handleRemoveAbility = (index: number) => {
+    const newAbilities = savedAbilities.filter((_, i) => i !== index);
+    setSavedAbilities(newAbilities);
+    
+    // Build form data with updated abilities
+    const formData = new FormData(document.getElementById('search-form') as HTMLFormElement);
+    
+    // Remove all existing ability params
+    formData.delete('tr');
+    formData.delete('cond');
+    formData.delete('eff');
+    
+    // Add updated abilities
+    newAbilities.forEach(ability => {
+      if (ability.trigger) formData.append('tr', ability.trigger);
+      if (ability.condition) formData.append('cond', ability.condition);
+      if (ability.effect) formData.append('eff', ability.effect);
+    });
+    
+    // Submit the form
+    submit(formData, { method: "get" });
+  };
+  
   const [selectedFaction, setSelectedFaction] = useState(faction ?? undefined);
   const [selectedSet, setSelectedSet] = useState<string | string[] | undefined>(set ?? undefined);
   const [selectedCardSubTypes, setSelectedCardSubTypes] = useState<string[]>(cardSubTypes ?? []);
-  const [triggerValue, setTriggerValue] = useState<string>(triggerPart ?? "");
+  
+  // State for managing multiple ability searches
+  type AbilitySearch = { trigger: string; condition: string; effect: string };
+  const [savedAbilities, setSavedAbilities] = useState<AbilitySearch[]>(() => {
+    // Initialize from URL params
+    const maxLen = Math.max(triggerParts?.length ?? 0, conditionParts?.length ?? 0, effectParts?.length ?? 0);
+    if (maxLen === 0) return [];
+    
+    const abilities: AbilitySearch[] = [];
+    for (let i = 0; i < maxLen; i++) {
+      const ability: AbilitySearch = {
+        trigger: triggerParts?.[i] || "",
+        condition: conditionParts?.[i] || "",
+        effect: effectParts?.[i] || ""
+      };
+      // Only add if at least one part is non-empty
+      if (ability.trigger || ability.condition || ability.effect) {
+        abilities.push(ability);
+      }
+    }
+    return abilities;
+  });
+  const [matchAll, setMatchAll] = useState<boolean>(matchAllAbilities ?? false);
+  
+  // Current input values (for adding new ability search)
+  const [triggerValue, setTriggerValue] = useState<string>("");
   const [showTriggerOptions, setShowTriggerOptions] = useState<boolean>(false);
-  const [conditionValue, setConditionValue] = useState<string>(conditionPart ?? "");
+  const [conditionValue, setConditionValue] = useState<string>("");
   const [showConditionOptions, setShowConditionOptions] = useState<boolean>(false);
-  const [effectValue, setEffectValue] = useState<string>(effectPart ?? "");  const [showEffectOptions, setShowEffectOptions] = useState<boolean>(false);
+  const [effectValue, setEffectValue] = useState<string>("");  const [showEffectOptions, setShowEffectOptions] = useState<boolean>(false);
 
   const filteredTriggers = triggers.filter(tr => {
     const q = triggerValue?.toLowerCase().trim();
@@ -940,14 +1086,44 @@ const SearchForm: FC<
     setMessage(`The save "${loadingSave}" has been deleted.`);
   }
 
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    // If there are values in the current input fields, add them as a new ability before submitting
+    if (triggerValue || conditionValue || effectValue) {
+      e.preventDefault();
+      
+      const newAbilities = [...savedAbilities, {
+        trigger: triggerValue,
+        condition: conditionValue,
+        effect: effectValue
+      }];
+      
+      const formData = new FormData(e.currentTarget);
+      
+      // Remove all existing ability params
+      formData.delete('tr');
+      formData.delete('cond');
+      formData.delete('eff');
+      
+      // Add all abilities (including the new one) with proper array alignment
+      newAbilities.forEach(ability => {
+        formData.append('tr', ability.trigger || "");
+        formData.append('cond', ability.condition || "");
+        formData.append('eff', ability.effect || "");
+      });
+      
+      submit(formData, { method: "get" });
+    }
+    // Otherwise, let the form submit normally with just the saved abilities
+  };
+
   return (
-    <Form method="get" id="search-form" className="space-y-4">
+    <Form method="get" id="search-form" className="space-y-4" onSubmit={handleFormSubmit}>
       {/* Preserve the lang parameter across form submissions */}
       <div className="space-y-4">
         {/* Saved Searches - Only visible when logged in */}
         {userId && savedSearches && savedSearches.length > 0 && (
           <div className="border-b border-border pb-4">
-            <Label htmlFor="saved-search">Saved Searches</Label>
+            <Label htmlFor="saved-search">{t('saved_searches')}</Label>
             <div className="flex flex-row gap-2 mt-2">
               <Select
                 value={selectedSearch || "none"}
@@ -967,12 +1143,12 @@ const SearchForm: FC<
                   <SelectValue>
                     {selectedSearch 
                       ? savedSearches.find(s => s.id.toString() === selectedSearch)?.name 
-                      : "Select a saved search..."}
+                      : t('select_saved_search')}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">
-                    <span className="text-muted-foreground">Select a saved search...</span>
+                    <span className="text-muted-foreground">{t('select_saved_search')}</span>
                   </SelectItem>
                   {savedSearches.map((search) => (
                     <SelectItem key={search.id} value={search.id.toString()}>
@@ -987,7 +1163,7 @@ const SearchForm: FC<
                 variant="outline"
                 size="icon"
                 onClick={() => setShowSaveDialog(true)}
-                title="Save current search"
+                title={t('save_current_search')}
                 className="w-10 h-10 p-0"
               >
                 <img src="/assets/save.svg" alt="Save" className="w-5 h-5 dark:invert" />
@@ -999,7 +1175,7 @@ const SearchForm: FC<
                   variant="outline"
                   size="icon"
                   onClick={() => handleDeleteSearch(parseInt(selectedSearch))}
-                  title="Delete selected search"
+                  title={t('delete_saved_search')}
                   className="w-10 h-10 p-0"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1021,7 +1197,7 @@ const SearchForm: FC<
               className="w-full flex items-center justify-center gap-2"
             >
               <img src="/assets/save.svg" alt="Save" className="w-5 h-5 dark:invert" />
-              <span>Save current search</span>
+              <span>{t('save_current_search')}</span>
             </Button>
           </div>
         )}
@@ -1033,7 +1209,7 @@ const SearchForm: FC<
             onClick={() => setIsIdentityOpen(!isIdentityOpen)}
             className="w-full flex items-center justify-between py-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
           >
-            <span>Identity</span>
+            <span>{t('section_identity')}</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -1095,7 +1271,7 @@ const SearchForm: FC<
             onClick={() => setIsCostsOpen(!isCostsOpen)}
             className="w-full flex items-center justify-between py-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
           >
-            <span>Costs</span>
+            <span>{t('section_costs')}</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -1145,7 +1321,7 @@ const SearchForm: FC<
             onClick={() => setIsPowersOpen(!isPowersOpen)}
             className="w-full flex items-center justify-between py-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
           >
-            <span>Power Stats</span>
+            <span>{t('section_power_stats')}</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -1203,7 +1379,7 @@ const SearchForm: FC<
             onClick={() => setIsTextTypeOpen(!isTextTypeOpen)}
             className="w-full flex items-center justify-between py-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
           >
-            <span>Text & Type</span>
+            <span>{t('section_text_type')}</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -1257,7 +1433,7 @@ const SearchForm: FC<
             onClick={() => setIsEffectsOpen(!isEffectsOpen)}
             className="w-full flex items-center justify-between py-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
           >
-            <span>Effects</span>
+            <span>{t('section_effects')}</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -1276,12 +1452,86 @@ const SearchForm: FC<
         </div>
         {isEffectsOpen && (
           <div className="space-y-4">
+            {/* Saved Abilities List */}
+            {savedAbilities.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">{t('saved_ability_searches')}</Label>
+                  <span className="text-xs text-muted-foreground">
+                    {savedAbilities.length} / {MAX_ABILITY_COMBINATIONS}
+                  </span>
+                </div>
+                {savedAbilities.map((ability, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 bg-secondary/50 rounded-md border border-border">
+                    <div className="flex-1 text-sm">
+                      {ability.trigger && <span className="font-medium">{t('trigger')}: {ability.trigger}</span>}
+                      {ability.trigger && (ability.condition || ability.effect) && <span className="mx-1">+</span>}
+                      {ability.condition && <span className="font-medium">{t('condition')}: {ability.condition}</span>}
+                      {ability.condition && ability.effect && <span className="mx-1">+</span>}
+                      {ability.effect && <span className="font-medium">{t('effect')}: {ability.effect}</span>}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAbility(index)}
+                      className="ml-2 text-red-500 hover:text-red-700"
+                      aria-label="Remove ability"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Match All/Any Toggle */}
+            {savedAbilities.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Label htmlFor="matchAll" className="text-sm">{t('match_label')}</Label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMatchAll(false);
+                      // Build form data with updated matchAll value
+                      const formData = new FormData(document.getElementById('search-form') as HTMLFormElement);
+                      formData.delete('matchAll');
+                      formData.set('matchAll', '0');
+                      // Submit the form
+                      setTimeout(() => submit(formData, { method: "get" }), 0);
+                    }}
+                    className={`px-3 py-1 rounded text-sm ${!matchAll ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}
+                  >
+                    {t('match_any_ability')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMatchAll(true);
+                      // Build form data with updated matchAll value
+                      const formData = new FormData(document.getElementById('search-form') as HTMLFormElement);
+                      formData.delete('matchAll');
+                      formData.set('matchAll', '1');
+                      // Submit the form
+                      setTimeout(() => submit(formData, { method: "get" }), 0);
+                    }}
+                    className={`px-3 py-1 rounded text-sm ${matchAll ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}
+                  >
+                    {t('match_all_abilities')}
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* Current Ability Input */}
+            <div className="border-t border-border pt-4 mt-4">
+              <Label className="text-sm font-medium mb-2 block">{t('add_ability_search')}</Label>
+              <p className="text-xs text-muted-foreground mb-3">{t('use_quotes_exact_match')}</p>
+            
             {/* Trigger */}
             <div className="relative">
               <Label htmlFor="tr">{t('trigger')}</Label>
               <Input
                 type="search"
-                name="tr"
                 id="tr"
                 value={triggerValue}
                 onChange={(e) => { setTriggerValue(e.target.value); setShowTriggerOptions(true); }}
@@ -1302,7 +1552,7 @@ const SearchForm: FC<
                         className="cursor-pointer px-3 py-2 hover:bg-accent hover:text-accent-foreground text-sm" 
                         onMouseDown={(e) => { 
                           e.preventDefault(); 
-                          setTriggerValue(t.text); 
+                          setTriggerValue(`"${t.text}"`); 
                           setShowTriggerOptions(false); 
                         }}
                       >
@@ -1323,7 +1573,6 @@ const SearchForm: FC<
               <Label htmlFor="cond">{t('condition')}</Label>
               <Input
                 type="search"
-                name="cond"
                 id="cond"
                 value={conditionValue}
                 onChange={(e) => { setConditionValue(e.target.value); setShowConditionOptions(true); }}
@@ -1343,7 +1592,7 @@ const SearchForm: FC<
                       className="cursor-pointer px-3 py-2 hover:bg-accent hover:text-accent-foreground text-sm" 
                       onMouseDown={(e) => { 
                         e.preventDefault(); 
-                        setConditionValue(t.text); 
+                        setConditionValue(`"${t.text}"`); 
                         setShowConditionOptions(false); 
                       }}
                     >
@@ -1359,7 +1608,6 @@ const SearchForm: FC<
               <Label htmlFor="eff">{t('effect')}</Label>
               <Input
                 type="search"
-                name="eff"
                 id="eff"
                 value={effectValue}
                 onChange={(e) => { setEffectValue(e.target.value); setShowEffectOptions(true); }}
@@ -1379,7 +1627,7 @@ const SearchForm: FC<
                       className="cursor-pointer px-3 py-2 hover:bg-accent hover:text-accent-foreground text-sm" 
                       onMouseDown={(e) => { 
                         e.preventDefault(); 
-                        setEffectValue(t.text); 
+                        setEffectValue(`"${t.text}"`); 
                         setShowEffectOptions(false); 
                       }}
                     >
@@ -1389,6 +1637,67 @@ const SearchForm: FC<
                 </ul>
               )}
             </div>
+            
+            {/* Add Ability Button */}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={savedAbilities.length >= MAX_ABILITY_COMBINATIONS}
+                onClick={() => {
+                  if (triggerValue || conditionValue || effectValue) {
+                    const newAbilities = [...savedAbilities, {
+                      trigger: triggerValue,
+                      condition: conditionValue,
+                      effect: effectValue
+                    }];
+                    setSavedAbilities(newAbilities);
+                    setTriggerValue("");
+                    setConditionValue("");
+                    setEffectValue("");
+                    
+                    // Build form data with updated abilities
+                    const formData = new FormData(document.getElementById('search-form') as HTMLFormElement);
+                    
+                    // Remove all existing ability params
+                    formData.delete('tr');
+                    formData.delete('cond');
+                    formData.delete('eff');
+                    
+                    // Add updated abilities with proper array alignment
+                    // We need to ensure all arrays have the same length with empty strings as placeholders
+                    newAbilities.forEach(ability => {
+                      formData.append('tr', ability.trigger || "");
+                      formData.append('cond', ability.condition || "");
+                      formData.append('eff', ability.effect || "");
+                    });
+                    
+                    // Preserve matchAll if we have multiple abilities
+                    if (newAbilities.length > 1) {
+                      formData.set('matchAll', matchAll ? "1" : "0");
+                    }
+                    
+                    // Submit the form
+                    submit(formData, { method: "get" });
+                  }
+                }}
+                className="flex-1"
+                title={savedAbilities.length >= MAX_ABILITY_COMBINATIONS ? t('max_abilities_reached') : undefined}
+              >
+                {t('add_ability_button')}
+              </Button>
+            </div>
+            </div>
+            
+            {/* Hidden inputs for form submission - only if not adding/editing abilities */}
+            {savedAbilities.map((ability, index) => (
+              <div key={index}>
+                <input type="hidden" name="tr" value={ability.trigger || ""} />
+                <input type="hidden" name="cond" value={ability.condition || ""} />
+                <input type="hidden" name="eff" value={ability.effect || ""} />
+              </div>
+            ))}
+            {savedAbilities.length > 1 && <input type="hidden" name="matchAll" value={matchAll ? "1" : "0"} />}
           </div>
         )}
 
@@ -1399,7 +1708,7 @@ const SearchForm: FC<
             onClick={() => setIsPricesOpen(!isPricesOpen)}
             className="w-full flex items-center justify-between py-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
           >
-            <span>Prices</span>
+            <span>{t('section_prices')}</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -1446,7 +1755,7 @@ const SearchForm: FC<
             onClick={() => setIsAdvSearchOpen(!isAdvSearchOpen)}
             className="w-full flex items-center justify-between py-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
           >
-            <span>Advanced Filters</span>
+            <span>{t('section_advanced_filters')}</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -1473,7 +1782,7 @@ const SearchForm: FC<
                 defaultChecked={partFilterArrow ?? false}
                 onCheckedChange={handleArrow}
               />
-              <Label htmlFor="arrow" className="text-xs/3 inline-block">Filter by arrow effect</Label>
+              <Label htmlFor="arrow" className="text-xs/3 inline-block">{t('filter_arrow_effect')}</Label>
             </div>
             <div className="flex flex-row gap-2 items-center">
               <Checkbox
@@ -1483,7 +1792,7 @@ const SearchForm: FC<
                 defaultChecked={partFilterHand ?? false}
                 onCheckedChange={handleHand}
               />
-              <Label htmlFor="hand" className="text-xs/3 inline-block">Filter by hand effect</Label>
+              <Label htmlFor="hand" className="text-xs/3 inline-block">{t('filter_hand_effect')}</Label>
             </div>
             <div className="flex flex-row gap-2 items-center">
               <Checkbox
@@ -1493,7 +1802,7 @@ const SearchForm: FC<
                 defaultChecked={partFilterReserve ?? false}
                 onCheckedChange={handleReserve}
               />
-              <Label htmlFor="reserve" className="text-xs/3 inline-block">Filter by reserve effect</Label>
+              <Label htmlFor="reserve" className="text-xs/3 inline-block">{t('filter_reserve_effect')}</Label>
             </div>
             <div className="flex flex-row gap-2 items-center">
               <Checkbox
@@ -1503,7 +1812,7 @@ const SearchForm: FC<
                 defaultChecked={partIncludeSupport ?? false}
                 onCheckedChange={handleIncludeSupport}
               />
-              <Label htmlFor="inclSup" className="text-xs/3 inline-block">Also match support abilities</Label>
+              <Label htmlFor="inclSup" className="text-xs/3 inline-block">{t('also_match_support')}</Label>
             </div>
             <div className="flex flex-row gap-2 items-center">
               <Checkbox
@@ -1513,7 +1822,7 @@ const SearchForm: FC<
                 defaultChecked={filterZeroStat ?? false}
                 onCheckedChange={handleSearchZero}
               />
-              <Label htmlFor="zeroStat" className="text-xs/3 inline-block">Search for at least one 0 stat</Label>
+              <Label htmlFor="zeroStat" className="text-xs/3 inline-block">{t('filter_zero_stat')}</Label>
             </div>
             <div className="flex flex-row gap-2 items-center">
               <Checkbox
@@ -1523,7 +1832,7 @@ const SearchForm: FC<
                 defaultChecked={filterTextless ?? false}
                 onCheckedChange={handleTextless}
               />
-              <Label htmlFor="textless" className="text-xs/3 inline-block">Search for cards without text (only support)</Label>
+              <Label htmlFor="textless" className="text-xs/3 inline-block">{t('filter_textless')}</Label>
             </div>
           </div>
         )}
@@ -1580,14 +1889,14 @@ const SearchForm: FC<
       }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Save Current Search</DialogTitle>
+            <DialogTitle>{t('save_search_title')}</DialogTitle>
             <DialogDescription>
-              Give your search a name to save it for later use.
+              {t('save_search_description')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="search-name">Search Name</Label>
+              <Label htmlFor="search-name">{t('search_name_label')}</Label>
               <Input
                 id="search-name"
                 value={searchName}
@@ -1595,12 +1904,12 @@ const SearchForm: FC<
                   setSearchName(e.target.value);
                   setShowOverwriteWarning(false);
                 }}
-                placeholder="e.g., Axiom cards with high power"
+                placeholder={t('search_name_placeholder')}
               />
             </div>
             {showOverwriteWarning && (
               <p className="text-sm text-yellow-600 dark:text-yellow-500">
-                ⚠️ A search with this name already exists. Clicking &quot;Save&quot; will overwrite it.
+                ⚠️ {t('overwrite_warning')}
               </p>
             )}
             {saveFetcher.data?.error && (
@@ -1619,13 +1928,13 @@ const SearchForm: FC<
                 setShowOverwriteWarning(false);
               }}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button
               onClick={handleSaveSearch}
               disabled={!searchName.trim() || saveFetcher.state === "submitting"}
             >
-              {saveFetcher.state === "submitting" ? "Saving..." : showOverwriteWarning ? "Overwrite" : "Save"}
+              {saveFetcher.state === "submitting" ? t('saving') : showOverwriteWarning ? t('overwrite') : t('save')}
             </Button>
           </DialogFooter>
         </DialogContent>

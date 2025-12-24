@@ -685,6 +685,7 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
     triggerPart,
     conditionPart,
     effectPart,
+    matchAllAbilities,
     mainCosts,
     recallCosts,
     forestPowers,
@@ -712,10 +713,43 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
     return { results: [], pagination: undefined }
   }
 
+  // Group ability parts into combinations
+  // Each index represents one ability search (trigger[i], condition[i], effect[i])
+  const maxAbilityCount = Math.max(
+    triggerPart?.length ?? 0,
+    conditionPart?.length ?? 0,
+    effectPart?.length ?? 0
+  );
+  
+  const abilityCombinations: Array<{ trigger?: string; condition?: string; effect?: string }> = [];
+  for (let i = 0; i < maxAbilityCount; i++) {
+    const combo = {
+      trigger: triggerPart?.[i] || undefined,
+      condition: conditionPart?.[i] || undefined,
+      effect: effectPart?.[i] || undefined
+    };
+    // Only add if at least one part is defined and non-empty
+    if (combo.trigger || combo.condition || combo.effect) {
+      abilityCombinations.push(combo);
+    }
+  }
+
+  if (debug) {
+    console.log('=== Ability Combinations (searchWithCTEsIndexingCharacterNames) ===');
+    console.log('matchAllAbilities:', matchAllAbilities);
+    console.log('Raw trigger parts:', triggerPart);
+    console.log('Raw condition parts:', conditionPart);
+    console.log('Raw effect parts:', effectPart);
+    console.log('abilityCombinations:', JSON.stringify(abilityCombinations, null, 2));
+  }
+
+  // Build ability parts from combinations for the existing logic
+  // For now, we'll use the first combination to maintain compatibility
+  const firstCombo = abilityCombinations[0] || {};
   const abilityParts = [
-    { part: AbilityPartType.Trigger, text: triggerPart },
-    { part: AbilityPartType.Condition, text: conditionPart },
-    { part: AbilityPartType.Effect, text: effectPart }
+    { part: AbilityPartType.Trigger, text: firstCombo.trigger },
+    { part: AbilityPartType.Condition, text: firstCombo.condition },
+    { part: AbilityPartType.Effect, text: firstCombo.effect }
   ]
 
   const partIncludeSupport = searchQuery.partIncludeSupport ?? false
@@ -728,6 +762,11 @@ export async function searchWithCTEsIndexingCharacterNames(searchQuery: SearchQu
   const nonNullAbilityParts = abilityParts.filter(x => x.text != null)
     .map(x => {
       const [neg, pos] = partition(tokenize(x.text!), (token) => token.negated)
+      if (debug) {
+        console.log(`Part ${x.part}: "${x.text}"`)
+        console.log('Tokens:', pos.map(t => `"${t.text}"`).join(', '))
+        console.log('Negated:', neg.map(t => `"${t.text}"`).join(', '))
+      }
       return { part: x.part, neg, pos }
     })
     .sort((a, b) => {
