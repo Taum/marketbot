@@ -1,5 +1,5 @@
 import { type LoaderFunctionArgs } from "@remix-run/node";
-import { Form, useLoaderData, useSearchParams, useFetcher, useSubmit } from "@remix-run/react";
+import { Form, useLoaderData, useSearchParams, useSubmit } from "@remix-run/react";
 import { FC, useState, useEffect, useRef } from "react";
 import { FactionSelect } from "~/components/altered/FactionSelect";
 import { SetSelect } from "~/components/altered/SetSelect";
@@ -31,9 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { SaveSelect } from "~/components/save/SaveSelect";
 import { search } from "~/loaders/search";
-import { getUserId } from "~/lib/session.server";
 import { runCheckIsDesktop } from "~/lib/mediaQueries";
 
 
@@ -83,14 +81,11 @@ interface LoaderData {
   localizedFoundText?: string;
   query: SearchQuery;
   error: string | undefined;
-  userId?: number;
-  savedSearches?: Array<{ id: number; name: string; searchParams: string; updatedAt: string }>;
 }
 
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
-  const userId = await getUserId(request);
   const lang = nullifyTrim(url.searchParams.get("lang")) ?? "en";
   const cardText = nullifyTrim(url.searchParams.get("text"));
   const characterName = nullifyTrim(url.searchParams.get("cname"));
@@ -173,21 +168,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const conditions = sortedParts.filter(p => p.partType === "Condition").map(p => ({ id: p.id, text: lang === "fr" && !!p.textFr ? p.textFr : p.textEn }));
   const effects = sortedParts.filter(p => p.partType === "Effect").map(p => ({ id: p.id, text: lang === "fr" && !!p.textFr ? p.textFr : p.textEn }));
 
-  // Fetch saved searches for the logged-in user
-  let savedSearches: Array<{ id: number; name: string; searchParams: string; updatedAt: Date }> = [];
-  if (userId) {
-    savedSearches = await prisma.savedSearch.findMany({
-      where: { userId },
-      orderBy: { updatedAt: 'desc' },
-      select: {
-        id: true,
-        name: true,
-        searchParams: true,
-        updatedAt: true,
-      }
-    });
-  }
-
   try {
     const startTs = performance.now()
 
@@ -207,8 +187,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
         localizedFoundText: undefined,
         query: originalQuery,
         error: `Too many ability combinations. Maximum allowed is ${MAX_ABILITY_COMBINATIONS}.`,
-        userId,
-        savedSearches
       };
     }
 
@@ -311,8 +289,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
       locale: lang,
       localizedFoundText,
       query: originalQuery,
-      userId,
-      savedSearches,
     };
   } catch (e) {
     console.error("Search error: ", e);
@@ -326,8 +302,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
       effects,
       locale: lang,
       query: originalQuery,
-      userId,
-      savedSearches,
     }
   }
 }
@@ -336,7 +310,6 @@ export default function SearchPage() {
   const loaderData = useLoaderData<LoaderData>();
   const { t } = useTranslation(loaderData.locale);
   const [searchParams] = useSearchParams();
-  const saveFetcher = useFetcher<{ success?: boolean; error?: string; message?: string }>();
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [searchName, setSearchName] = useState("");
   const [showFilters, setShowFilters] = useState(true);
@@ -795,8 +768,6 @@ export default function SearchPage() {
                     conditions={loaderData.conditions}
                     effects={loaderData.effects}
                     locale={loaderData.locale}
-                    userId={loaderData.userId}
-                    savedSearches={loaderData.savedSearches}
                     onSearch={() => setShowFilters(false)}
                   />
                 </div>
@@ -833,8 +804,6 @@ export default function SearchPage() {
                 conditions={loaderData.conditions}
                 effects={loaderData.effects}
                 locale={loaderData.locale}
-                userId={loaderData.userId}
-                savedSearches={loaderData.savedSearches}
               />
             </div>
           )}
@@ -850,8 +819,6 @@ const SearchForm: FC<
     conditions?: { id: number; text: string }[];
     effects?: { id: number; text: string }[];
     locale?: string;
-    userId?: number;
-    savedSearches?: Array<{ id: number; name: string; searchParams: string; updatedAt: string }>;
     onSearch?: () => void;
   }
 > = ({
@@ -880,99 +847,117 @@ const SearchForm: FC<
   oceanPowerRange
   , triggers = [], conditions = [], effects = []
   , locale
-  , userId
-  , savedSearches = []
   , onSearch
-}: SearchQuery & { triggers?: { id: number; text: string }[]; conditions?: { id: number; text: string }[]; effects?: { id: number; text: string }[]; locale?: string; userId?: number; savedSearches?: Array<{ id: number; name: string; searchParams: string; updatedAt: string }>; onSearch?: () => void }) => {
+}: SearchQuery & { triggers?: { id: number; text: string }[]; conditions?: { id: number; text: string }[]; effects?: { id: number; text: string }[]; locale?: string; onSearch?: () => void }) => {
   const { t } = useTranslation(locale);
-  const saveFetcher = useFetcher<{ success?: boolean; error?: string; message?: string }>();
-  const deleteFetcher = useFetcher<{ success?: boolean; error?: string; message?: string }>();
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [searchName, setSearchName] = useState("");
   const [searchParams] = useSearchParams();
   const [showOverwriteWarning, setShowOverwriteWarning] = useState(false);
   
-  // Load the last selected search from localStorage on mount
+  // localStorage-based saved searches state
+  interface LocalSavedSearch {
+    name: string;
+    searchParams: string;
+    savedAt: number;
+  }
+  
+  const [localSavedSearches, setLocalSavedSearches] = useState<Map<string, LocalSavedSearch>>(new Map());
   const [selectedSearch, setSelectedSearch] = useState<string>("");
 
+  // Load saved searches from localStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const lastSearch = localStorage.getItem('lastSelectedSearch') || "";
-      // Only set if the saved search still exists
-      if (lastSearch && savedSearches.find(s => s.id.toString() === lastSearch)) {
-        setSelectedSearch(lastSearch);
+      try {
+        const saved = localStorage.getItem('marketbot-saved-searches');
+        const lastSelected = localStorage.getItem('marketbot-last-selected-search');
+        
+        if (saved) {
+          const searches = JSON.parse(saved) as Record<string, LocalSavedSearch>;
+          setLocalSavedSearches(new Map(Object.entries(searches)));
+        }
+        
+        if (lastSelected) {
+          setSelectedSearch(lastSelected);
+        }
+      } catch (e) {
+        console.error('Failed to load saved searches from localStorage:', e);
       }
     }
-    return () => {
-      localStorage.removeItem('lastSelectedSearch');
-    };
-  }, [savedSearches])
+  }, []);
   
-  // Save to localStorage whenever selection changes
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (selectedSearch) {
-        localStorage.setItem('lastSelectedSearch', selectedSearch);
-      } else {
-        localStorage.removeItem('lastSelectedSearch');
-      }
-    }
-  }, [selectedSearch]);
+  // Helper function to generate unique ID for a search
+  const generateSearchId = (): string => {
+    return `search_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+  };
   
-  // Check if search name exists
-  const existingSearch = savedSearches.find(s => s.name === searchName.trim());
-  
+  // Save search to localStorage
   const handleSaveSearch = () => {
     if (!searchName.trim()) return;
     
-    // If name exists and user hasn't confirmed, show warning
-    if (existingSearch && !showOverwriteWarning) {
+    const existingKey = Array.from(localSavedSearches.entries()).find(
+      ([_, search]) => search.name === searchName.trim()
+    )?.[0];
+    
+    // If search name exists and user hasn't confirmed, show warning
+    if (existingKey && !showOverwriteWarning) {
       setShowOverwriteWarning(true);
       return;
     }
     
-    saveFetcher.submit(
-      {
-        name: searchName.trim(),
-        searchParams: searchParams.toString()
-      },
-      { method: "post", action: "/api/save-search" }
-    );
-    setShowOverwriteWarning(false);
-  };
-  
-  // Close dialog and reload when save is successful
-  useEffect(() => {
-    if (saveFetcher.data?.success) {
+    const searchId = existingKey || generateSearchId();
+    const newSearch: LocalSavedSearch = {
+      name: searchName.trim(),
+      searchParams: searchParams.toString(),
+      savedAt: Date.now()
+    };
+    
+    const newSearches = new Map(localSavedSearches);
+    newSearches.set(searchId, newSearch);
+    
+    try {
+      localStorage.setItem('marketbot-saved-searches', JSON.stringify(Object.fromEntries(newSearches)));
+      setLocalSavedSearches(newSearches);
       setSearchName("");
       setShowSaveDialog(false);
       setShowOverwriteWarning(false);
-      // Small delay before reload to show success message
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      setSelectedSearch(searchId);
+      localStorage.setItem('marketbot-last-selected-search', searchId);
+    } catch (e) {
+      console.error('Failed to save search to localStorage:', e);
     }
-  }, [saveFetcher.data]);
-  
-  // Reload when delete is successful
-  useEffect(() => {
-    if (deleteFetcher.data?.success) {
-      localStorage.removeItem('lastSelectedSearch');
-      window.location.reload();
-    }
-  }, [deleteFetcher.data]);
-  
-  const handleLoadSearch = (searchParamsStr: string) => {
-    window.location.search = searchParamsStr;
   };
   
-  const handleDeleteSearch = (searchId: number) => {
+  // Load a saved search
+  const handleLoadSearch = (searchId: string) => {
+    const search = localSavedSearches.get(searchId);
+    if (search) {
+      setSelectedSearch(searchId);
+      localStorage.setItem('marketbot-last-selected-search', searchId);
+      window.location.search = search.searchParams;
+    }
+  };
+  
+  // Delete a saved search
+  const handleDeleteSearch = (searchId: string) => {
     if (confirm(t('confirm_delete_search') || "Are you sure you want to delete this saved search?")) {
-      deleteFetcher.submit(
-        { searchId: searchId.toString() },
-        { method: "post", action: "/api/delete-saved-search" }
-      );
-      setSelectedSearch("");
+      const newSearches = new Map(localSavedSearches);
+      newSearches.delete(searchId);
+      
+      try {
+        if (newSearches.size === 0) {
+          localStorage.removeItem('marketbot-saved-searches');
+        } else {
+          localStorage.setItem('marketbot-saved-searches', JSON.stringify(Object.fromEntries(newSearches)));
+        }
+        setLocalSavedSearches(newSearches);
+        if (selectedSearch === searchId) {
+          setSelectedSearch("");
+          localStorage.removeItem('marketbot-last-selected-search');
+        }
+      } catch (e) {
+        console.error('Failed to delete search from localStorage:', e);
+      }
     }
   };
   
@@ -1255,8 +1240,8 @@ const SearchForm: FC<
     <Form method="get" id="search-form" className="space-y-4" onSubmit={handleFormSubmit}>
       {/* Preserve the lang parameter across form submissions */}
       <div className="space-y-4">
-        {/* Saved Searches - Only visible when logged in */}
-        {userId && savedSearches && savedSearches.length > 0 && (
+        {/* Saved Searches - All users can save/load searches locally */}
+        {localSavedSearches.size > 0 && (
           <div className="border-b border-border pb-4">
             <Label htmlFor="saved-search">{t('saved_searches')}</Label>
             <div className="flex flex-row gap-2 mt-2">
@@ -1265,19 +1250,16 @@ const SearchForm: FC<
                 onValueChange={(value) => {
                   if (value === "none") {
                     setSelectedSearch("");
+                    localStorage.removeItem('marketbot-last-selected-search');
                     return;
                   }
-                  setSelectedSearch(value);
-                  const search = savedSearches.find(s => s.id.toString() === value);
-                  if (search) {
-                    handleLoadSearch(search.searchParams);
-                  }
+                  handleLoadSearch(value);
                 }}
               >
                 <SelectTrigger className="flex-1">
                   <SelectValue>
                     {selectedSearch 
-                      ? savedSearches.find(s => s.id.toString() === selectedSearch)?.name 
+                      ? localSavedSearches.get(selectedSearch)?.name 
                       : t('select_saved_search')}
                   </SelectValue>
                 </SelectTrigger>
@@ -1285,8 +1267,8 @@ const SearchForm: FC<
                   <SelectItem value="none">
                     <span className="text-muted-foreground">{t('select_saved_search')}</span>
                   </SelectItem>
-                  {savedSearches.map((search) => (
-                    <SelectItem key={search.id} value={search.id.toString()}>
+                  {Array.from(localSavedSearches.entries()).map(([id, search]) => (
+                    <SelectItem key={id} value={id}>
                       {search.name}
                     </SelectItem>
                   ))}
@@ -1309,7 +1291,7 @@ const SearchForm: FC<
                   type="button"
                   variant="outline"
                   size="icon"
-                  onClick={() => handleDeleteSearch(parseInt(selectedSearch))}
+                  onClick={() => handleDeleteSearch(selectedSearch)}
                   title={t('delete_saved_search')}
                   className="w-10 h-10 p-0"
                 >
@@ -1322,8 +1304,8 @@ const SearchForm: FC<
           </div>
         )}
         
-        {/* Save button for logged in users with no saved searches yet */}
-        {userId && (!savedSearches || savedSearches.length === 0) && (
+        {/* Save button for users with no saved searches yet */}
+        {localSavedSearches.size === 0 && (
           <div className="border-b border-border pb-4">
             <Button
               type="button"
@@ -2048,12 +2030,6 @@ const SearchForm: FC<
                 ⚠️ {t('overwrite_warning')}
               </p>
             )}
-            {saveFetcher.data?.error && (
-              <p className="text-sm text-red-500">{saveFetcher.data.error}</p>
-            )}
-            {saveFetcher.data?.success && (
-              <p className="text-sm text-green-500">{saveFetcher.data.message}</p>
-            )}
           </div>
           <DialogFooter>
             <Button
@@ -2068,9 +2044,9 @@ const SearchForm: FC<
             </Button>
             <Button
               onClick={handleSaveSearch}
-              disabled={!searchName.trim() || saveFetcher.state === "submitting"}
+              disabled={!searchName.trim()}
             >
-              {saveFetcher.state === "submitting" ? t('saving') : showOverwriteWarning ? t('overwrite') : t('save')}
+              {showOverwriteWarning ? t('overwrite') : t('save')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -4,16 +4,9 @@ import { useState } from "react";
 import { useTranslation } from "~/lib/i18n";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { ThemeSwitcher } from "./ThemeSwitcher";
-import { Button } from "~/components/ui/button";
-import { UserMenu } from "./UserMenu";
-import type { User } from "~/types/user";
-
-interface NavigationProps {
-  user?: User | null;
-}
 
 // eslint-disable-next-line react/prop-types
-export const Navigation: React.FC<NavigationProps> = ({ user }) => {
+export const Navigation: React.FC = () => {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const lang = searchParams.get("lang");
@@ -46,17 +39,6 @@ export const Navigation: React.FC<NavigationProps> = ({ user }) => {
         <div className="flex gap-2 items-center">
           <ThemeSwitcher />
           <LanguageSwitcher />
-          
-          {/* User menu */}
-          {user ? (
-            <UserMenu user={user} />
-          ) : (
-            <Link to={`/login${langParam}`}>
-              <Button variant="outline" size="sm">
-                {t('login_button')}
-              </Button>
-            </Link>
-          )}
         </div>
       </div>
       

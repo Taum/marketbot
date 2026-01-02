@@ -1,5 +1,5 @@
 {
-  "name": "",
+  "name": "market-bot",
   "private": true,
   "sideEffects": false,
   "type": "module",
@@ -36,7 +36,6 @@
     "@remix-run/node": "^2.16.6",
     "@remix-run/react": "^2.16.6",
     "@remix-run/serve": "^2.16.6",
-    "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -52,8 +51,6 @@
     "radash": "^12.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "remix-auth": "^3.7.0",
-    "remix-auth-google": "^2.0.0",
     "simple-git": "^3.28.0",
     "tailwind-merge": "^3.3.0",
     "tailwindcss-animate": "^1.0.7",
@@ -64,7 +61,6 @@
   },
   "devDependencies": {
     "@remix-run/dev": "^2.16.6",
-    "@types/bcryptjs": "^3.0.0",
     "@types/node": "^22.0.0",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
