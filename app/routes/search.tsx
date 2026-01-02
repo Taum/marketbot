@@ -312,7 +312,16 @@ export default function SearchPage() {
   const [searchParams] = useSearchParams();
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [searchName, setSearchName] = useState("");
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(() => {
+    // Check if we're on a mobile device on initial render
+    try {
+      const isDesktopInitial = runCheckIsDesktop();
+      // Default to false (filters hidden) on mobile, true (filters visible) on desktop
+      return isDesktopInitial;
+    } catch {
+      return true; // Fallback to true if check fails
+    }
+  });
   const [viewMode, setViewMode] = useState<'grid' | 'row'>('grid');
   const [gridColumns, setGridColumns] = useState<2 | 3 | 4>(3);
   const [hasLastSearch, setHasLastSearch] = useState(false);
@@ -356,6 +365,7 @@ export default function SearchPage() {
       const savedViewMode = localStorage.getItem('viewMode');
       const savedGridColumns = localStorage.getItem('gridColumns');
       const savedShowFilters = localStorage.getItem('showFilters');
+      const isDesktopNow = runCheckIsDesktop();
       
       if (savedViewMode === 'grid' || savedViewMode === 'row') {
         setViewMode(savedViewMode);
@@ -368,8 +378,12 @@ export default function SearchPage() {
         }
       }
       
-      if (savedShowFilters !== null) {
+      // Only restore showFilters preference on desktop
+      if (isDesktopNow && savedShowFilters !== null) {
         setShowFilters(savedShowFilters === 'true');
+      } else if (!isDesktopNow) {
+        // On mobile, always default to closed filters
+        setShowFilters(false);
       }
       
       // Mark as loaded after state updates are queued
