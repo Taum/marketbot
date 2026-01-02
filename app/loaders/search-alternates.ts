@@ -61,10 +61,16 @@ export async function searchWithJoins(searchQuery: SearchQuery, pageParams: Page
     return { results: [], pagination: undefined }
   }
 
+  // Extract single ability combination for search-alternates
+  // search-alternates only handles solo ability searches, multiple abilities go to simple search
+  const singleTrigger = triggerPart?.[0] || undefined;
+  const singleCondition = conditionPart?.[0] || undefined;
+  const singleEffect = effectPart?.[0] || undefined;
+
   const abilityParts = [
-    { part: AbilityPartType.Trigger, text: triggerPart },
-    { part: AbilityPartType.Condition, text: conditionPart },
-    { part: AbilityPartType.Effect, text: effectPart }
+    { part: AbilityPartType.Trigger, text: singleTrigger },
+    { part: AbilityPartType.Condition, text: singleCondition },
+    { part: AbilityPartType.Effect, text: singleEffect }
   ]
 
   let query: SelectQueryBuilder<DB, "UniqueInfo", {}> = db.selectFrom('UniqueInfo')

@@ -46,7 +46,7 @@ const testCases: TestCase[] = [
       mainCosts: [1, 2],
       recallCosts: [1, 2, 3],
       cardText: "You may return",
-      conditionPart: "[]",
+      conditionPart: ["[]"],
     },
   },
   {
@@ -56,7 +56,7 @@ const testCases: TestCase[] = [
       faction: "BR",
       mainCosts: [1, 2, 3],
       cardText: "landmark",
-      triggerPart: "{j}",
+      triggerPart: ["{j}"],
     },
   },
   {
@@ -66,7 +66,7 @@ const testCases: TestCase[] = [
       faction: "BR",
       mainCosts: [1, 2, 3],
       cardText: "-landmark",
-      triggerPart: "{j}",
+      triggerPart: ["{j}"],
     },
   },
   {
@@ -76,9 +76,9 @@ const testCases: TestCase[] = [
       faction: "LY",
       mainCosts: [1, 2, 3],
       cardText: undefined,
-      triggerPart: "when",
-      conditionPart: "-landmark",
-      effectPart: "boost",
+      triggerPart: ["when"],
+      conditionPart: ["-landmark"],
+      effectPart: ["boost"],
     },
   },
   {
@@ -87,9 +87,9 @@ const testCases: TestCase[] = [
     query: {
       mainCosts: [1, 2, 3],
       cardText: undefined,
-      triggerPart: "-when",
+      triggerPart: ["-when"],
       conditionPart: undefined,
-      effectPart: "boost",
+      effectPart: ["boost"],
     },
   },
   {
@@ -98,9 +98,9 @@ const testCases: TestCase[] = [
     query: {
       mainCosts: [1, 2, 3],
       cardText: undefined,
-      triggerPart: "-when",
-      conditionPart: "-landmark",
-      effectPart: "-boost",
+      triggerPart: ["-when"],
+      conditionPart: ["-landmark"],
+      effectPart: ["-boost"],
     },
   },
   {
@@ -109,9 +109,9 @@ const testCases: TestCase[] = [
     query: {
       faction: "MU",
       cardText: undefined,
-      triggerPart: "when",
-      conditionPart: "reserve -discard",
-      effectPart: "anchored",
+      triggerPart: ["when"],
+      conditionPart: ["reserve -discard"],
+      effectPart: ["anchored"],
     },
   },
   {
@@ -123,8 +123,8 @@ const testCases: TestCase[] = [
       recallCosts: [5, 6, 7],
       cardText: undefined,
       characterName: "issitoq",
-      triggerPart: "{J}",
-      conditionPart: "[]",
+      triggerPart: ["{J}"],
+      conditionPart: ["[]"],
       effectPart: undefined,
     },
   },
@@ -141,7 +141,7 @@ const testCases: TestCase[] = [
     url: "http://localhost:5173/search?f=&s=&cname=ordis&mc=&rc=&text=&tr=%7Bj%7D&cond=&eff=&minpr=&maxpr=",
     query: {
       characterName: "ordis",
-      triggerPart: "{J}",
+      triggerPart: ["{J}"],
     },
   },
   // Multi-ability search tests
