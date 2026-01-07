@@ -46,7 +46,7 @@ const testCases: TestCase[] = [
       mainCosts: [1, 2],
       recallCosts: [1, 2, 3],
       cardText: "You may return",
-      conditionPart: "[]",
+      conditionPart: ["[]"],
     },
   },
   {
@@ -56,7 +56,7 @@ const testCases: TestCase[] = [
       faction: "BR",
       mainCosts: [1, 2, 3],
       cardText: "landmark",
-      triggerPart: "{j}",
+      triggerPart: ["{j}"],
     },
   },
   {
@@ -66,7 +66,7 @@ const testCases: TestCase[] = [
       faction: "BR",
       mainCosts: [1, 2, 3],
       cardText: "-landmark",
-      triggerPart: "{j}",
+      triggerPart: ["{j}"],
     },
   },
   {
@@ -76,9 +76,9 @@ const testCases: TestCase[] = [
       faction: "LY",
       mainCosts: [1, 2, 3],
       cardText: undefined,
-      triggerPart: "when",
-      conditionPart: "-landmark",
-      effectPart: "boost",
+      triggerPart: ["when"],
+      conditionPart: ["-landmark"],
+      effectPart: ["boost"],
     },
   },
   {
@@ -87,9 +87,9 @@ const testCases: TestCase[] = [
     query: {
       mainCosts: [1, 2, 3],
       cardText: undefined,
-      triggerPart: "-when",
+      triggerPart: ["-when"],
       conditionPart: undefined,
-      effectPart: "boost",
+      effectPart: ["boost"],
     },
   },
   {
@@ -98,9 +98,9 @@ const testCases: TestCase[] = [
     query: {
       mainCosts: [1, 2, 3],
       cardText: undefined,
-      triggerPart: "-when",
-      conditionPart: "-landmark",
-      effectPart: "-boost",
+      triggerPart: ["-when"],
+      conditionPart: ["-landmark"],
+      effectPart: ["-boost"],
     },
   },
   {
@@ -109,9 +109,9 @@ const testCases: TestCase[] = [
     query: {
       faction: "MU",
       cardText: undefined,
-      triggerPart: "when",
-      conditionPart: "reserve -discard",
-      effectPart: "anchored",
+      triggerPart: ["when"],
+      conditionPart: ["reserve -discard"],
+      effectPart: ["anchored"],
     },
   },
   {
@@ -123,8 +123,8 @@ const testCases: TestCase[] = [
       recallCosts: [5, 6, 7],
       cardText: undefined,
       characterName: "issitoq",
-      triggerPart: "{J}",
-      conditionPart: "[]",
+      triggerPart: ["{J}"],
+      conditionPart: ["[]"],
       effectPart: undefined,
     },
   },
@@ -141,7 +141,82 @@ const testCases: TestCase[] = [
     url: "http://localhost:5173/search?f=&s=&cname=ordis&mc=&rc=&text=&tr=%7Bj%7D&cond=&eff=&minpr=&maxpr=",
     query: {
       characterName: "ordis",
-      triggerPart: "{J}",
+      triggerPart: ["{J}"],
+    },
+  },
+  // Multi-ability search tests
+  {
+    name: "Multi-ability: 2 abilities with ANY (OR logic)",
+    url: "http://localhost:5173/search?cname=Bessie+Coleman&tr=%22When+you+sacrifice+a+Permanent%22&tr=&cond=&cond=%22You+may+discard+a+card+from+your+Reserve.+If+you+do%3A%22&eff=%22I+gain+1+boost.%22&eff=&matchAll=0",
+    query: {
+      characterName: "Bessie Coleman",
+      triggerPart: ['"When you sacrifice a Permanent"', ''],
+      conditionPart: ['', '"You may discard a card from your Reserve. If you do:"'],
+      effectPart: ['"I gain 1 boost."', ''],
+      matchAllAbilities: false,
+    },
+  },
+  {
+    name: "Multi-ability: 2 abilities with ALL (AND logic)",
+    url: "http://localhost:5173/search?cname=Bessie+Coleman&tr=%22When+you+sacrifice+a+Permanent%22&tr=&cond=&cond=%22You+may+discard+a+card+from+your+Reserve.+If+you+do%3A%22&eff=%22I+gain+1+boost.%22&eff=&matchAll=1",
+    query: {
+      characterName: "Bessie Coleman",
+      triggerPart: ['"When you sacrifice a Permanent"', ''],
+      conditionPart: ['', '"You may discard a card from your Reserve. If you do:"'],
+      effectPart: ['"I gain 1 boost."', ''],
+      matchAllAbilities: true,
+    },
+  },
+  {
+    name: "Multi-ability: 3 abilities with ANY",
+    url: "http://localhost:5173/search?tr=when&tr=%7BH%7D&tr=&cond=&cond=&cond=%5B%5D&eff=boost&eff=&eff=token&matchAll=0",
+    query: {
+      triggerPart: ['when', '{H}', ''],
+      conditionPart: ['', '', '[]'],
+      effectPart: ['boost', '', 'token'],
+      matchAllAbilities: false,
+    },
+  },
+  {
+    name: "Multi-ability: 3 abilities with ALL",
+    url: "http://localhost:5173/search?tr=when&tr=%7BH%7D&tr=&cond=&cond=&cond=%5B%5D&eff=boost&eff=&eff=token&matchAll=1",
+    query: {
+      triggerPart: ['when', '{H}', ''],
+      conditionPart: ['', '', '[]'],
+      effectPart: ['boost', '', 'token'],
+      matchAllAbilities: true,
+    },
+  },
+  {
+    name: "Multi-ability: Mixed with other filters",
+    url: "http://localhost:5173/search?f=YZ&mc=1-3&tr=when&tr=&cond=&cond=%5B%5D&eff=&eff=boost&matchAll=0",
+    query: {
+      faction: "YZ",
+      mainCosts: [1, 2, 3],
+      triggerPart: ['when', ''],
+      conditionPart: ['', '[]'],
+      effectPart: ['', 'boost'],
+      matchAllAbilities: false,
+    },
+  },
+  {
+    name: "Multi-ability: Empty strings in arrays",
+    url: "http://localhost:5173/search?tr=&tr=when&tr=&cond=&cond=&cond=&eff=boost&eff=&eff=&matchAll=0",
+    query: {
+      triggerPart: ['', 'when', ''],
+      conditionPart: ['', '', ''],
+      effectPart: ['boost', '', ''],
+      matchAllAbilities: false,
+    },
+  },
+  {
+    name: "Multi-ability: Negation in multiple abilities",
+    url: "http://localhost:5173/search?tr=when&tr=-permanent&cond=&cond=&eff=boost&eff=-landmark&matchAll=0",
+    query: {
+      triggerPart: ['when', '-permanent'],
+      conditionPart: ['', ''],
+      effectPart: ['boost', '-landmark'],
+      matchAllAbilities: false,
     },
   }
 ];

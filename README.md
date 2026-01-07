@@ -139,12 +139,34 @@ This project uses [Shadcn/ui](https://ui.shadcn.com/) for the UI components. The
 
 ## Crawler
 
+## General
 The `market-crawler` directory contains a simple Node.js application. It is broken down into several components which should each have a specific task:
 * `GenericIndexer` is a class that provides a generic implementation of a crawler that can be used enqueue and process requests. It is the base class for the other crawlers:
   * `market` is the Marketplace crawler, it loads all the pages from `api.altered.gg/cards/stats` and records the Unique IDs and current Offer price. This can be run regularly to get the latest offers from the Marketplace.
   * `uniques` fetches Uniques characteristics (name, effects, cost, power, etc.) from the Altered API using the `api.altered.gg/cards/<ID>` endpoint. Each unique should only be fetched once, and the results are saved to the database.
 * `refresh-token` provides a `AuthTokenService` that can be used to get a fresh token for the Altered API.
 * `post-process` takes the Uniques data and break them down into sub-components (Trigger, Condition, Effect, etc.) and builds to make querying the database faster.
+
+## Before starting
+The crawler requires tokens for Altered API requesting process. Those tokens are saved in database through starting the crawler, but first are read from the disk in a file, place under /tmp and called cookie 
+You need to create it manually and provide values following the given json pattern:
+```
+{
+	"Response Cookies": {
+	  "__Secure-next-auth.session-token.0": {
+		"value": "token value here",
+		"expires": "expiry date here"
+	  },
+	  "__Secure-next-auth.session-token.1": {
+		"value": "token value here",
+		"expires": "expiry date here"
+	  }
+	}
+}
+```
+Values can be found in the cookies of any browser who ever connected to Altered webpage
+
+## Running the crawler
 
 The `main` files provide entry points for each of the tasks, and can be run from the command line using the corresponding `npm` scripts, for example:
 ```

@@ -65,7 +65,10 @@ export interface AlteredggCard {
   }[];
   imagePath: string;
   allImagePath: { [key: string]: string };
+  inSale: boolean;
   name: string;
+  mainEffect: string;
+  echoEffect: string;
   mainFaction: {
     reference: Faction,
   }

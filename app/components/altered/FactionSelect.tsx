@@ -1,5 +1,6 @@
 import { SelectProps } from "@radix-ui/react-select"
 import { FC } from "react"
+import { useTranslation } from "~/lib/i18n";
 import {
   Select,
   SelectContent,
@@ -16,9 +17,10 @@ interface FactionSelectProps extends SelectProps {
 }
 
 export const FactionSelect: FC<FactionSelectProps> = ({ value, onValueChange, ...props }) => {
+  const { t } = useTranslation();
 
-  const labelMap = {
-    "any": "Any faction",
+  const labelMap = { 
+    "any": t('faction_any'),
     [Faction.Axiom]: "Axiom",
     [Faction.Bravos]: "Bravos",
     [Faction.Lyra]: "Lyra",

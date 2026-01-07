@@ -3,53 +3,94 @@ import { formatDistance } from "date-fns";
 import { FC, useCallback } from "react";
 import { AlteredIcon, AlteredIconType } from "~/components/altered/AlteredIcon";
 import { CardImage } from "~/components/altered/CardImage";
+import { useTranslation } from "~/lib/i18n";
 import { AbilityPartType, DisplayAbilityOnCard, DisplayPartOnCard, DisplayUniqueCard } from "~/models/cards";
 
 export interface ResultGridProps {
   results: DisplayUniqueCard[]
   now: Date
+  viewMode?: 'grid' | 'row'
+  gridColumns?: 2 | 3 | 4
 }
 
-export const ResultGrid: FC<ResultGridProps> = ({ results, now }) => {
+export const ResultGrid: FC<ResultGridProps> = ({ results, now, viewMode = 'grid', gridColumns = 3 }) => {
+  const gridClass = viewMode === 'grid' 
+    ? `grid gap-3 sm:gap-4 ${
+        gridColumns === 2 ? 'grid-cols-1 sm:grid-cols-2' :
+        gridColumns === 3 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' :
+        'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+      }`
+    : 'flex flex-col gap-3 sm:gap-4';
+    
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className={gridClass}>
       {results.map((result) => (
-        <Result key={result.ref} result={result} now={now} />
+        <Result key={result.ref} result={result} now={now} viewMode={viewMode} />
       ))}
     </div>
   )
 }
 
-export const Result: FC<{ result: DisplayUniqueCard, now: Date }> = ({ result, now }) => {
+export const Result: FC<{ result: DisplayUniqueCard, now: Date, viewMode?: 'grid' | 'row' }> = ({ result, now, viewMode = 'grid' }) => {
+  const { t } = useTranslation();
+  
+  if (viewMode === 'row') {
+    return (
+      <div className="rounded-lg p-3 sm:p-4 bg-subtle-background flex flex-col sm:flex-row gap-4 sm:gap-6">
+        <div className="w-full sm:w-48 flex-shrink-0">
+          <CardImage card={result} className="rounded-alt-card" />
+        </div>
+        <div className="flex-1 flex flex-col gap-2">
+          <div className="flex flex-row justify-between items-start">
+            <div>
+              <div className="font-bold text-xl sm:text-2xl">
+                {result.lastSeenInSalePrice}&euro;
+              </div>
+              <div className="text-xs sm:text-sm text-subtle-foreground">
+                {formatLastSeen(result.lastSeenInSaleAt, now)}
+              </div>
+            </div>
+            <Link to={`https://www.altered.gg/cards/${result.ref}`} className="text-xs sm:text-sm">
+              {t('viewOnAltered')}
+            </Link>
+          </div>
+          {result.mainEffect && (
+            <div className="text-sm sm:text-base">{result.mainAbilities ? formatEffect(result.mainAbilities) : result.mainEffect}</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  
   return (
-    <div className="rounded-lg p-2 bg-subtle-background flex flex-row gap-4">
+    <div className="rounded-lg p-2 bg-subtle-background flex flex-row gap-2 sm:gap-4">
       <div className="flex-1">
         <CardImage card={result} className="rounded-alt-card" />
         <div className="text-subtle-foreground">
         </div>
       </div>
       <div className="flex-1 flex flex-col justify-between">
-        <div className="pb-2 flex flex-row gap-2 justify-between">
+        <div className="pb-2 flex flex-row gap-1 sm:gap-2 justify-between">
           <div>
-            <div className="font-bold text-lg">
+            <div className="font-bold text-base sm:text-lg">
               {result.lastSeenInSalePrice}&euro;
             </div>
-            <div className="text-xs text-subtle-foreground">
+            <div className="text-[10px] sm:text-xs text-subtle-foreground">
               {formatLastSeen(result.lastSeenInSaleAt, now)}
             </div>
           </div>
           <div>
-            <Link to={`https://www.altered.gg/cards/${result.ref}`}>
-              View on Altered
+            <Link to={`https://www.altered.gg/cards/${result.ref}`} className="text-xs sm:text-sm">
+              {t('viewOnAltered')}
             </Link>
           </div>
         </div>
-        <div className="flex flex-col gap-4">
-          {result.mainEffect && <div className="text-sm">{result.mainAbilities ? formatEffect(result.mainAbilities) : result.mainEffect}</div>}
+        <div className="flex flex-col gap-2 sm:gap-4">
+          {result.mainEffect && <div className="text-xs sm:text-sm">{result.mainAbilities ? formatEffect(result.mainAbilities) : result.mainEffect}</div>}
           {result.mainEffect && result.echoEffect && (
             <hr className="border-subtle-foreground border-b-1" />
           )}
-          {result.echoEffect && <div className="text-xs">{result.mainAbilities ? formatSupport(result.mainAbilities) : result.echoEffect}</div>}
+          {result.echoEffect && <div className="text-[10px] sm:text-xs">{result.mainAbilities ? formatSupport(result.mainAbilities) : result.echoEffect}</div>}
         </div>
         <div className="grow-0"></div>
       </div>
@@ -192,6 +233,25 @@ export function findReplaceSymbols(text: string): JSX.Element {
 }
 
 const AbilityLink: FC<{ part: DisplayPartOnCard, children: string, ability: DisplayAbilityOnCard }> = ({ part, children, ability }) => {
+  // Hooks must be called at the top, before any conditional returns
+  const [searchParams] = useSearchParams();
+  const onClickHandler = useCallback(() => {
+    const newParams = new URLSearchParams(searchParams);
+    switch (part.partType) {
+      case AbilityPartType.Trigger:
+        newParams.set("tr", `"${children}"`)
+        break
+      case AbilityPartType.Condition:
+        newParams.set("cond", `"${children}"`)
+        break
+      case AbilityPartType.Effect:
+      case AbilityPartType.ExtraEffect:
+        newParams.set("eff", `"${children}"`)
+        break
+    }
+    const newSearch = newParams.toString();
+    window.location.search = newSearch;
+  }, [part.partType, searchParams, children])
 
   let linkText = children
   let addedText: string | undefined = undefined
@@ -241,24 +301,6 @@ const AbilityLink: FC<{ part: DisplayPartOnCard, children: string, ability: Disp
   }
 
   classes += " font-medium hover:underline hover:underline-offset-1 cursor-pointer"
-
-  const [searchParams] = useSearchParams();
-  const onClickHandler = useCallback(() => {
-    switch (part.partType) {
-      case AbilityPartType.Trigger:
-        searchParams.set("tr", `"${children}"`)
-        break
-      case AbilityPartType.Condition:
-        searchParams.set("cond", `"${children}"`)
-        break
-      case AbilityPartType.Effect:
-      case AbilityPartType.ExtraEffect:
-        searchParams.set("eff", `"${children}"`)
-        break
-    }
-    const newSearch = searchParams.toString();
-    window.location.search = newSearch;
-  }, [part.partId, part.partType, searchParams])
 
   if (addedText) {
     return <><a onClick={onClickHandler} className={classes} title={title}>{textWithSymbols}</a>{addedText}</>

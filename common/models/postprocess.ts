@@ -9,5 +9,8 @@ export interface AbilityCharacterDataV1 {
   version: 1
   lineStartIndex: number
   lineEndIndex: number
+  lineStartIndexFr: number
+  lineEndIndexFr: number
   parts: PartCharacterData[]
+  partsFr: PartCharacterData[]
 }

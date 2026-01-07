@@ -1,9 +1,8 @@
-import prisma from "@common/utils/prisma.server.js";
 import { CardSet, DisplayAbilityOnCard, DisplayPartOnCard, DisplayUniqueCard, AbilityPartType, Faction } from "~/models/cards";
 import { UniqueAbilityLine, Prisma, UniqueInfo, UniqueAbilityPart, AbilityPartType as DbAbilityPartType, AbilityPartLink } from '@prisma/client';
 import { AbilityCharacterDataV1 } from "@common/models/postprocess";
 import { db } from "@common/utils/kysely.server";
-import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/postgres'
+import { jsonArrayFrom } from 'kysely/helpers/postgres'
 import { Decimal } from "decimal.js";
 import { Expression, SelectQueryBuilder, sql } from "kysely";
 import { partition } from "~/lib/utils";
@@ -16,14 +15,20 @@ const debug = process.env.DEBUG_WEB == "true"
 
 export interface SearchQuery {
   faction?: string;
-  set?: string;
+  set?: string | string[];
   characterName?: string;
   cardSubTypes?: string[];
   cardText?: string;
-  triggerPart?: string;
-  conditionPart?: string;
-  effectPart?: string;
+  triggerPart?: string[];
+  conditionPart?: string[];
+  effectPart?: string[];
+  matchAllAbilities?: boolean;
   partIncludeSupport?: boolean;
+  partFilterArrow?: boolean;
+  partFilterHand?: boolean;
+  partFilterReserve?: boolean;
+  filterTextless?: boolean;
+  filterZeroStat?: boolean;
   mainCosts?: number[];
   recallCosts?: number[];
   includeExpiredCards?: boolean;
@@ -37,6 +42,7 @@ export interface SearchQuery {
 export interface PageParams {
   page: number;
   includePagination: boolean;
+  locale?: string;
 }
 
 export interface Token {
@@ -99,7 +105,13 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     triggerPart,
     conditionPart,
     effectPart,
+    matchAllAbilities,
     partIncludeSupport,
+    partFilterArrow,
+    partFilterHand,
+    partFilterReserve,
+    filterTextless,
+    filterZeroStat,
     mainCosts,
     recallCosts,
     includeExpiredCards,
@@ -112,6 +124,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
   const {
     page,
     includePagination,
+    locale,
   } = pageParams
 
   if (
@@ -126,75 +139,135 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     return { results: [], pagination: undefined }
   }
 
-  const abilityParts = [
-    { part: AbilityPartType.Trigger, text: triggerPart },
-    { part: AbilityPartType.Condition, text: conditionPart },
-    { part: AbilityPartType.Effect, text: effectPart }
-  ].filter((x) => x.text != null)
+  // Group ability parts into combinations
+  // Each index represents one ability search (trigger[i], condition[i], effect[i])
+  const maxAbilityCount = Math.max(
+    triggerPart?.length ?? 0,
+    conditionPart?.length ?? 0,
+    effectPart?.length ?? 0
+  );
+  
+  // Edge case: Prevent excessive combinations (protect against potential abuse)
+  const MAX_ABILITY_COMBINATIONS = 3;
+  if (maxAbilityCount > MAX_ABILITY_COMBINATIONS) {
+    throw new Error(`Too many ability combinations. Maximum allowed is ${MAX_ABILITY_COMBINATIONS}.`);
+  }
+  
+  const abilityCombinations: Array<{ trigger?: string; condition?: string; effect?: string }> = [];
+  for (let i = 0; i < maxAbilityCount; i++) {
+    // Trim and clean up each part
+    const triggerValue = triggerPart?.[i]?.trim() || undefined;
+    const conditionValue = conditionPart?.[i]?.trim() || undefined;
+    const effectValue = effectPart?.[i]?.trim() || undefined;
+    
+    const combo = {
+      trigger: triggerValue,
+      condition: conditionValue,
+      effect: effectValue
+    };
+    
+    // Only add if at least one part is defined and non-empty
+    if (combo.trigger || combo.condition || combo.effect) {
+      abilityCombinations.push(combo);
+    }
+  }
+  
+  // Edge case: If after filtering we have no valid combinations, 
+  // treat as if no ability search was specified
+  if (abilityCombinations.length === 0 && (triggerPart || conditionPart || effectPart)) {
+    // User specified ability arrays but all were empty/whitespace
+    // Continue with query but don't add ability filters
+  }
 
   let query: SelectQueryBuilder<DB, "UniqueInfo", {}> = db.selectFrom('UniqueInfo')
 
-  if (abilityParts.length > 0) {
-    // If our search is based on ability parts, we start from UniqueAbilityLine and join to UniqueInfo instead
-    let abLineQuery = db.selectFrom('UniqueAbilityLine')
+  if (abilityCombinations.length > 0) {
+    // Build filters for each ability combination
+    // For each combination, we check if the card has an ability line matching all specified parts
+    
+    const combinationFilters = abilityCombinations.map((combo) => {
+      // Build list of parts for this combination
+      const parts: Array<{ part: AbilityPartType; text: string }> = [];
+      if (combo.trigger) parts.push({ part: AbilityPartType.Trigger, text: combo.trigger });
+      if (combo.condition) parts.push({ part: AbilityPartType.Condition, text: combo.condition });
+      if (combo.effect) parts.push({ part: AbilityPartType.Effect, text: combo.effect });
 
-    if (!partIncludeSupport) {
-      abLineQuery = abLineQuery.where('isSupport', '=', false)
-    }
-
-    // Find all the ability lines that match our search
-    abLineQuery = abLineQuery.where(({ eb, and, or, not, exists, selectFrom }) => {
-      const abilityPartFilters = abilityParts.map((part) => {
-        const [negatedTokens, tokens] = partition(tokenize(part.text!), (token) => token.negated);
-        if (debug) {
-          console.log(`Part ${part.part}: ${part.text}`)
-          console.dir(tokens, { depth: null })
-          console.dir(negatedTokens, { depth: null })
-        }
-
+      return ({ exists, selectFrom }) => {
         return exists(
-          selectFrom('AbilityPartLink')
-            .where(({ eb, and, or, not, exists, selectFrom }) => {
-              return and([
-                tokens.length > 0 ?
-                  exists(
-                    selectFrom('UniqueAbilityPart')
-                      .where(({ eb, and, or, not, exists, selectFrom }) => {
-                        return and([
-                          eb('UniqueAbilityPart.partType', '=', part.part),
-                          !partIncludeSupport ? eb('UniqueAbilityPart.isSupport', '=', false) : null,
-                          ...tokens.map(token => eb('UniqueAbilityPart.textEn', 'ilike', `%${token.text}%`)),
-                        ].filter(x => x != null))
-                      })
-                      .whereRef('UniqueAbilityPart.id', '=', 'AbilityPartLink.partId')
-                  )
-                  : null,
-                negatedTokens.length > 0 ?
-                  not(
-                    exists(
-                      selectFrom('UniqueAbilityPart')
-                        .where(({ eb, and, or, not, exists, selectFrom }) => {
-                          return and([
-                            eb('UniqueAbilityPart.partType', '=', part.part),
-                            !partIncludeSupport ? eb('UniqueAbilityPart.isSupport', '=', false) : null,
-                            or(
-                              negatedTokens.map(token => eb('UniqueAbilityPart.textEn', 'ilike', `%${token.text}%`)),
-                            )
-                          ].filter(x => x != null))
-                        })
-                        .whereRef('UniqueAbilityPart.id', '=', 'AbilityPartLink.partId')
-                    )
-                  )
-                  : null,
-              ].filter(x => x != null))
-            })
-            .whereRef('AbilityPartLink.abilityId', '=', 'UniqueAbilityLine.id')
-        )
-      })
-      return and(abilityPartFilters)
-    })
+          selectFrom('UniqueAbilityLine')
+            .where(({ and, exists, selectFrom, not, eb }) => {
+              // This ability line must match ALL parts in this combination
+              const partFilters = parts.map((part) => {
+                const [negatedTokens, tokens] = partition(tokenize(part.text), (token) => token.negated);
 
-    query = abLineQuery.innerJoin('UniqueInfo', 'UniqueAbilityLine.uniqueInfoId', 'UniqueInfo.id')
+                return exists(
+                  selectFrom('AbilityPartLink')
+                    .where(({ and, exists, selectFrom, not, eb }) => {
+                      return and([
+                        tokens.length > 0 ?
+                          exists(
+                            selectFrom('UniqueAbilityPart')
+                              .where(({ and, or, eb }) => {
+                                return and([
+                                  eb('UniqueAbilityPart.partType', '=', part.part),
+                                  !partIncludeSupport ? eb('UniqueAbilityPart.isSupport', '=', false) : null,
+                                  // OR between English and French text search
+                                  or([
+                                    and(tokens.map(token => eb('UniqueAbilityPart.textEn', 'ilike', `%${token.text}%`))),
+                                    and(tokens.map(token => eb('UniqueAbilityPart.textFr', 'ilike', `%${token.text}%`))),
+                                  ]),
+                                ].filter(x => x != null))
+                              })
+                              .whereRef('UniqueAbilityPart.id', '=', 'AbilityPartLink.partId')
+                          )
+                          : null,
+                        negatedTokens.length > 0 ?
+                          not(
+                            exists(
+                              selectFrom('UniqueAbilityPart')
+                                .where(({ and, or, eb }) => {
+                                  return and([
+                                    eb('UniqueAbilityPart.partType', '=', part.part),
+                                    !partIncludeSupport ? eb('UniqueAbilityPart.isSupport', '=', false) : null,
+                                    or([
+                                      // OR between English and French text for negated tokens
+                                      or(negatedTokens.map(token => eb('UniqueAbilityPart.textEn', 'ilike', `%${token.text}%`))),
+                                      or(negatedTokens.map(token => eb('UniqueAbilityPart.textFr', 'ilike', `%${token.text}%`))),
+                                    ])
+                                  ].filter(x => x != null))
+                                })
+                                .whereRef('UniqueAbilityPart.id', '=', 'AbilityPartLink.partId')
+                            )
+                          )
+                          : null,
+                      ].filter(x => x != null))
+                    })
+                    .whereRef('AbilityPartLink.abilityId', '=', 'UniqueAbilityLine.id')
+                );
+              });
+
+              return and([
+                !partIncludeSupport ? eb('UniqueAbilityLine.isSupport', '=', false) : null,
+                ...partFilters
+              ].filter(x => x != null));
+            })
+            .whereRef('UniqueAbilityLine.uniqueInfoId', '=', 'UniqueInfo.id')
+        );
+      };
+    });
+
+    // Apply the combination filters based on matchAllAbilities
+    if (matchAllAbilities) {
+      // Match ALL: card must have ability lines matching ALL combinations (AND logic)
+      query = query.where(({ and, exists, selectFrom }) => 
+        and(combinationFilters.map(f => f({ exists, selectFrom })))
+      );
+    } else {
+      // Match ANY: card must have ability line matching ANY combination (OR logic)
+      query = query.where(({ or, exists, selectFrom }) => 
+        or(combinationFilters.map(f => f({ exists, selectFrom })))
+      );
+    }
   }
 
   // Now we can add all the filters based on the UniqueInfo table
@@ -301,7 +374,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     .select((eb) => [
       jsonArrayFrom(
         eb.selectFrom('UniqueAbilityLine')
-          .select(['UniqueAbilityLine.id', 'UniqueAbilityLine.lineNumber', 'UniqueAbilityLine.textEn', 'UniqueAbilityLine.isSupport', 'UniqueAbilityLine.characterData'])
+          .select(['UniqueAbilityLine.id', 'UniqueAbilityLine.lineNumber', 'UniqueAbilityLine.textEn', 'UniqueAbilityLine.textFr', 'UniqueAbilityLine.isSupport', 'UniqueAbilityLine.characterData'])
           .select((eb2) => [
             jsonArrayFrom(
               eb2.selectFrom('AbilityPartLink')
@@ -366,7 +439,7 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
     }
 
     let displayAbilities: DisplayAbilityOnCard[] = result.mainAbilities
-      .map((a) => buildDisplayAbility(a))
+      .map((a) => buildDisplayAbility(a, locale))
       .filter((x) => x != null)
 
     return {
@@ -388,15 +461,17 @@ export async function search(searchQuery: SearchQuery, pageParams: PageParams): 
 
 export function buildDisplayAbility(
   ability:
-    Pick<UniqueAbilityLine, 'id' | 'lineNumber' | 'isSupport' | 'characterData' | 'textEn'> &
-    { allParts: Pick<AbilityPartLink, 'id' | 'partId' | 'partType'>[] }
+    Pick<UniqueAbilityLine, 'id' | 'lineNumber' | 'isSupport' | 'characterData' | 'textEn' | 'textFr'> &
+    { allParts: Pick<AbilityPartLink, 'id' | 'partId' | 'partType'>[] },
+  locale: string = 'en'
 ): DisplayAbilityOnCard | undefined {
   if (ability.characterData == null) {
     return undefined;
   }
   const charData = ability.characterData as unknown as AbilityCharacterDataV1;
-  const line = ability.textEn
-  const displayParts: DisplayPartOnCard[] = charData.parts.map((part) => {
+  const line = locale === "fr" && ability.textFr ? ability.textFr : ability.textEn;
+  const parts = locale === "fr" && charData.partsFr ? charData.partsFr : charData.parts;
+  const displayParts: DisplayPartOnCard[] = parts.map((part) => {
     const matchingPart = ability.allParts
       .find((p) => p?.partId == part.partId)
     if (matchingPart == null) {
