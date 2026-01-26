@@ -6,6 +6,8 @@ import { processAndWriteOneUnique } from "./post-process.js";
 import { ThrottlingConfig, throttlingConfig } from "./config.js";
 import { getEnv } from "./helpers.js";
 import { PrismaClient, UniqueInfo } from "@prisma/client";
+import { PublicApiCardData } from "./market-public-api.js";
+import { getFamilyIdFromRef } from "@common/utils/altered.js";
 
 export interface UniqueRequest {
   id: string;
@@ -16,39 +18,57 @@ export interface UniqueData {
 }
 
 const debugCrawler = getEnv("DEBUG_CRAWLER") == "true";
+const verboseLevel = parseInt(getEnv("VERBOSE_LEVEL") ?? "0");
 
-export const recordOneUnique = async (cardData: AlteredggCard, prisma: PrismaClient) => {
+// Returns true if the unique was newly created, false if it was already in the database
+export const recordOneUnique = async (cardData: PublicApiCardData, generationId: number, prisma: PrismaClient): Promise<boolean> => {
+  const cardFamilyId = getFamilyIdFromRef(cardData.reference);
   const blob = {
     ref: cardData.reference,
     faction: cardData.mainFaction.reference,
     cardSubTypes: cardData.cardSubTypes.map(subtype => subtype.reference),
-    mainCost: parseInt(cardData!.elements.MAIN_COST || "0", 10),
-    recallCost: parseInt(cardData!.elements.RECALL_COST || "0", 10),
-    oceanPower: parseInt(cardData!.elements.OCEAN_POWER || "0", 10),
-    mountainPower: parseInt(cardData!.elements.MOUNTAIN_POWER || "0", 10),
-    forestPower: parseInt(cardData!.elements.FOREST_POWER || "0", 10),
-    nameEn: cardData!.name,
-    imageUrlEn: cardData!.allImagePath['en-us'],
-    mainEffectEn: cardData!.elements.MAIN_EFFECT,
-    echoEffectEn: cardData!.elements.ECHO_EFFECT,
-    cardSet: cardData!.cardSet.reference,
+    mainCost: parseInt(cardData.elements.MAIN_COST || "0", 10),
+    recallCost: parseInt(cardData.elements.RECALL_COST || "0", 10),
+    oceanPower: parseInt(cardData.elements.OCEAN_POWER || "0", 10),
+    mountainPower: parseInt(cardData.elements.MOUNTAIN_POWER || "0", 10),
+    forestPower: parseInt(cardData.elements.FOREST_POWER || "0", 10),
+    nameEn: cardData.name,
+    imageUrlEn: cardData.imagePath,
+    mainEffectEn: cardData.mainEffect,
+    echoEffectEn: cardData.echoEffect,
+    cardSet: cardData.cardSet.reference,
     fetchedDetails: true,
     fetchedDetailsAt: new Date(),
+    lastSeenInSalePrice: cardData.lowerPrice,
+    lastSeenInSaleAt: new Date(),
+    lastSeenGenerationId: generationId,
+    seenInLastGeneration: true,
+    cardFamilyId: cardFamilyId,
   }
 
   try {
     const uniqueInfo = await prisma.uniqueInfo.upsert({
       where: { ref: blob.ref },
       update: blob,
-      create: blob,
+      create: {
+        ...blob,
+        firstSeenGenerationId: generationId,
+      },
     });
-    console.debug(`Recorded unique ${blob.ref} (${blob.nameEn})`);
 
-    // Post-process the unique -- breakdown abilities and upsert them
-    await processAndWriteOneUnique(uniqueInfo, prisma);
+    const isNew = uniqueInfo.firstSeenGenerationId == generationId;
+    if (verboseLevel >= 1) {
+      console.debug(`Recorded unique ${blob.ref} (${blob.nameEn})${isNew ? " (new)" : " (existing)"}`);
+    }
+    if (isNew) {
+      // Post-process the unique -- breakdown abilities and upsert them
+      await processAndWriteOneUnique(uniqueInfo, prisma);
+    }
 
+    return isNew;
   } catch (error) {
     console.error(`Error recording unique ${blob.ref} (${blob.nameEn}): ${error}`);
+    throw error;
   }
 }
 

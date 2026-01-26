@@ -147,7 +147,7 @@ export async function marketUpdateUniqueTableIsCurrent(fetchGenerationId: number
 }
 
 
-export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, CardFamilyStatsData, Response, MarketUpdateCrawlerStats> {
+export class ExhaustiveInSaleCrawler extends GenericIndexer<CardFamilyRequest, Response, MarketUpdateCrawlerStats> {
 
   constructor(private authTokenService: AuthTokenService) {
 

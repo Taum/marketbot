@@ -16,7 +16,7 @@ export class TooManyRequestsError extends Error {
     this.name = "TooManyRequestsError";
   }
 }
-export abstract class GenericIndexer<Req = any, Data = any, Response = Data, Comp = any> {
+export abstract class GenericIndexer<Req = any, Response = any, Comp = any> {
   private queue: Req[] = [];
   private throttle: any;
 
