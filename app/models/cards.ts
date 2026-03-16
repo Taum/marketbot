@@ -49,6 +49,7 @@ export enum CardSet {
   Alize = "ALIZE",
   Bise = "BISE",
   Cyclone = "CYCLONE",
+  Duster = "DUSTER",
 }
 
 export const titleForCardSet = (set: CardSet, locale: string) => {
@@ -58,6 +59,7 @@ export const titleForCardSet = (set: CardSet, locale: string) => {
       case CardSet.Alize: return "Trial by Frost";
       case CardSet.Bise: return "Whispers from the Maze";
       case CardSet.Cyclone: return "Skybound Odyssey";
+      case CardSet.Duster: return "Seeds of Unity";
     }
   } else if (locale === "fr") {
     switch (set) {
@@ -65,6 +67,8 @@ export const titleForCardSet = (set: CardSet, locale: string) => {
       case CardSet.Alize: return "L'Épreuve du froid";
       case CardSet.Bise: return "Murmures du Labyrinthe";
       case CardSet.Cyclone: return "Odyssée des Cieux";
+      // Use the English name as a placeholder until we have the official FR translation.
+      case CardSet.Duster: return "Seeds of Unity";
     }
   }
 }

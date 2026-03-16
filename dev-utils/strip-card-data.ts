@@ -6,10 +6,8 @@ const inputPaths = [
   {path: 'data/raw/raw_card_details_en_BISE.json', set: CardSet.BISE},
   {path: 'data/raw/raw_card_details_en_CORE.json', set: CardSet.CORE},
   {path: 'data/raw/raw_card_details_en_COREKS.json', set: CardSet.CORE},
-  {path: 'data/raw/raw_card_details_en_TCS3.json', set: CardSet.BISE},
-  {path: 'data/raw/raw_card_details_en_WCQ25.json', set: CardSet.CORE},
-  {path: 'data/raw/raw_card_details_en_WCS25.json', set: CardSet.CORE},
   {path: 'data/raw/raw_card_details_en_CYCLONE.json', set: CardSet.CYCLONE},
+  {path: 'data/raw/raw_card_details_en_DUSTER.json', set: CardSet.DUSTER},
 ];
 const outputPath = 'data/cards_min.json';
 

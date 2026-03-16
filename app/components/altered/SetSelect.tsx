@@ -22,6 +22,7 @@ export const SetSelect: FC<SetSelectProps> = ({ value, onValueChange, ...props }
     [CardSet.Alize]: "Trial by Frost",
     [CardSet.Bise]: "Whispers from the Maze",
     [CardSet.Cyclone]: "Skybound Odyssey",
+    [CardSet.Duster]: "Seeds of Unity",
   }
   return (
     <Select value={value} onValueChange={onValueChange} {...props}>
