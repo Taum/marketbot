@@ -33,8 +33,7 @@ POSTGRES_DB=test
 POSTGRES_USER=test
 POSTGRES_PASSWORD=test
 
-# For the marketplace crawler - this is an internal ID for the Database, it can be anything
-ALT_SESSION_NAME=my-dev-account
+DEBUG_CRAWLER=false
 ```
 
 ### Step 2: Run a local PostgreSQL database
@@ -150,9 +149,6 @@ The `main` files provide entry points for each of the tasks, and can be run from
 ```
 # runs the market crawler
 npm run crawler 
-
-# refreshes the Altered API token (this is also done by the crawler, so only useful for debugging)
-npm run crawler-refresh-token
 
 # fetches all the missing uniques from the Altered API
 npm run crawler-get-all-uniques 

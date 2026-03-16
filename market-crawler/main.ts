@@ -1,7 +1,6 @@
 import { getEnv } from './helpers.js';
 import {
   ExhaustiveInSaleCrawler,
-  MarketUpdateCrawlerStats,
   marketUpdateStatsComplete,
   marketUpdateStatsStartAndGetGenerationId,
   marketUpdateUniqueTableIsCurrent,

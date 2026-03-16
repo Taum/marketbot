@@ -9,7 +9,6 @@
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
     "start": "remix-serve ./build/server/index.js",
     "crawler": "tsx --env-file=.env market-crawler/main.ts",
-    "crawler-refresh-token": "tsx --env-file=.env market-crawler/main-refresh-token.ts",
     "crawler-all-uniques": "tsx --env-file=.env market-crawler/main-get-all-uniques.ts",
     "crawler-post-process": "tsx --env-file=.env market-crawler/main-post-process.ts",
     "typecheck": "tsc",
